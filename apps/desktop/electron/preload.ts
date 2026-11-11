@@ -30,6 +30,8 @@ import {
   type ChangedFilesResult,
   type DesktopNotificationPermissionStatus,
   type WorkspaceFilePreview,
+  type CreateTasksBoardTaskInput,
+  type CreateTasksBoardTaskResult,
   type PiDesktopCommand,
   type PiDesktopStateListener,
   type PiDesktopStatePush,
@@ -659,6 +661,11 @@ contextBridge.exposeInMainWorld("piApp", {
     }>,
   listWorkspaceFiles: (workspaceId: string, options?: { readonly force?: boolean }) =>
     ipcRenderer.invoke(desktopIpc.listWorkspaceFiles, workspaceId, options) as Promise<string[]>,
+  createTasksBoardTask: (input: CreateTasksBoardTaskInput) =>
+    ipcRenderer.invoke(
+      desktopIpc.createTasksBoardTask,
+      input,
+    ) as Promise<CreateTasksBoardTaskResult>,
   readWorkspaceFile: (workspaceId: string, filePath: string) =>
     ipcRenderer.invoke(
       desktopIpc.readWorkspaceFile,

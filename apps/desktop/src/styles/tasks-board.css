@@ -271,3 +271,47 @@
 .tasks-board__group + .tasks-board__group {
   border-top: 1px solid var(--border-light);
 }
+
+.tasks-board__add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.tasks-board__add-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-strong);
+  font-size: var(--text-xs);
+}
+
+.tasks-board__add-input::placeholder {
+  color: var(--muted-soft);
+}
+
+.tasks-board__add-button {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted-strong);
+  cursor: pointer;
+  font-size: var(--text-xs);
+}
+
+.tasks-board__add-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tasks-board__add-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}

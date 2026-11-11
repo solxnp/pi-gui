@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import {
@@ -154,6 +154,14 @@ test("reads TASKS.md, ranks in-progress first, and puts a row in the composer", 
     const path = testInfo.outputPath("tasks-board.png");
     await window.screenshot({ path, animations: "disabled" });
     await testInfo.attach("tasks board", { path, contentType: "image/png" });
+
+    // Adding a row from the panel writes it into the ledger, above the finished section.
+    await window.getByTestId("tasks-board-new-title").fill("面板里加的一条");
+    await window.getByTestId("tasks-board-add").click();
+    await expect(todo).toContainText("面板里加的一条", { timeout: 10_000 });
+    const written = await readFile(join(fixture.workspacePath, "TASKS.md"), "utf8");
+    expect(written).toContain("### 面板里加的一条");
+    expect(written.indexOf("### 面板里加的一条")).toBeLessThan(written.indexOf("## 四、已完成"));
 
     await todo.getByRole("button", { name: /跑 npm run dev/ }).click();
     await expect(window.getByTestId("composer")).toHaveValue(/P0-02 客户端本地验证/);

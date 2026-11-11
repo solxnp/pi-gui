@@ -340,6 +340,7 @@ export const desktopIpc = {
   closeWindow: "pi-gui:close-window",
   listWorkspaceFiles: "pi-gui:list-workspace-files",
   readWorkspaceFile: "pi-gui:read-workspace-file",
+  createTasksBoardTask: "pi-gui:create-tasks-board-task",
   revealWorkspaceFile: "pi-gui:reveal-workspace-file",
   getChangedFiles: "pi-gui:get-changed-files",
   getFileDiff: "pi-gui:get-file-diff",
@@ -535,6 +536,17 @@ export type ChangedFilesResult =
       readonly state: "unavailable";
       readonly error: ChangedFilesError;
     };
+
+export interface CreateTasksBoardTaskInput {
+  readonly workspaceId: string;
+  readonly title: string;
+}
+
+export interface CreateTasksBoardTaskResult {
+  readonly path: string;
+  /** True when the ledger did not exist and was created by this call. */
+  readonly created: boolean;
+}
 
 export interface WorkspaceFilePreview {
   readonly path: string;
@@ -1048,6 +1060,8 @@ export interface PiDesktopApi {
     options?: { readonly force?: boolean },
   ): Promise<string[]>;
   readWorkspaceFile(workspaceId: string, filePath: string): Promise<WorkspaceFilePreview>;
+  /** Appends one to-do row to the workspace ledger; never writes other files. */
+  createTasksBoardTask(input: CreateTasksBoardTaskInput): Promise<CreateTasksBoardTaskResult>;
   revealWorkspaceFile(workspaceId: string, filePath: string): Promise<void>;
   getChangedFiles(workspaceId: string): Promise<ChangedFilesResult>;
   getFileDiff(workspaceId: string, filePath: string): Promise<string>;

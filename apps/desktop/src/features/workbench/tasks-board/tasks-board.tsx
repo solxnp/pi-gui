@@ -56,6 +56,9 @@ export function TasksBoardPanel({
     projects.map((project) => project.id),
   );
 
+  const [draft, setDraft] = useState("");
+  const [addError, setAddError] = useState("");
+  const [adding, setAdding] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(() => new Set());
   const [openSections, setOpenSections] = useState<ReadonlySet<string>>(() => new Set());
 
@@ -85,6 +88,22 @@ export function TasksBoardPanel({
   };
 
   const askAbout = (label: string) => onInsertPrompt(t("tasksBoard.prompt", { item: label }));
+  const submitNewTask = () => {
+    const title = draft.trim();
+    if (!api || adding || title.length === 0) return;
+    setAdding(true);
+    setAddError("");
+    api
+      .createTasksBoardTask({ workspaceId: selectedWorkspaceId, title })
+      .then(() => {
+        setDraft("");
+        reload();
+      })
+      .catch((error: unknown) => {
+        setAddError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => setAdding(false));
+  };
   const askRow = (group: TasksBoardGroup, text: string) =>
     askAbout(group.title ? `${group.title} — ${text}` : text);
 
@@ -139,6 +158,36 @@ export function TasksBoardPanel({
             })}
           </select>
         </div>
+      ) : null}
+
+      <form
+        className="tasks-board__add"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submitNewTask();
+        }}
+      >
+        <input
+          aria-label={t("tasksBoard.addPlaceholder")}
+          className="tasks-board__add-input"
+          data-testid="tasks-board-new-title"
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder={t("tasksBoard.addPlaceholder")}
+          value={draft}
+        />
+        <button
+          className="tasks-board__add-button"
+          data-testid="tasks-board-add"
+          disabled={adding || draft.trim().length === 0}
+          type="submit"
+        >
+          {t("tasksBoard.add")}
+        </button>
+      </form>
+      {addError ? (
+        <p className="tasks-board__notice tasks-board__notice--error" role="alert">
+          {t("tasksBoard.addFailed", { message: addError })}
+        </p>
       ) : null}
 
       {state.kind === "loading" ? (

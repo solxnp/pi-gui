@@ -27,6 +27,7 @@ import type { ThemeManager } from "../platform/theme-manager";
 import type { WindowOwner } from "../windows/window-owner";
 import type { PendingComposerDraftFlusher } from "../windows/pending-draft-flush";
 import { WorkbenchRequests, type WorkbenchOwner } from "./workbench-requests";
+import { createTasksBoardTask } from "../tasks/tasks-file";
 import type { DesktopExtensionViewOwner } from "../extensions/extension-view-owner";
 import { registerExtensionViewRequests } from "./extension-view-requests";
 import { registerReviewRequests, type ReviewRequestsOwner } from "./review-requests";
@@ -1226,6 +1227,17 @@ function registerWorkspaceFileIpc(
       return capabilities.listWorkspaceFiles(workspacePath, options);
     },
   );
+  ipcMain.handle(desktopIpc.createTasksBoardTask, async (event, rawInput: unknown) => {
+    windows.windowForSender(event.sender);
+    const input = (rawInput ?? {}) as Record<string, unknown>;
+    const workspaceId = expectNonEmptyString(input.workspaceId, "workspaceId");
+    const title = expectNonEmptyString(input.title, "title");
+    const workspacePath = workspace.getWorkspacePath(workspaceId);
+    if (!workspacePath) {
+      throw new Error(`Unknown workspace: ${workspaceId}`);
+    }
+    return createTasksBoardTask(workspacePath, title);
+  });
   ipcMain.handle(
     desktopIpc.readWorkspaceFile,
     async (event, rawWorkspaceId: unknown, rawFilePath: unknown) => {
