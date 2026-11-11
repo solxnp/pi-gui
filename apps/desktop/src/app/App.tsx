@@ -95,8 +95,10 @@ import { useComposerDraftSync } from "../features/conversation/hooks/use-compose
 import { useSessionComposer } from "../features/conversation/hooks/use-session-composer";
 import { useTranscriptAnnotations } from "../features/conversation/annotations/use-transcript-annotations";
 import { SidebarDrawerBackdrop, useNarrowSidebarDrawer } from "../features/threads/sidebar-drawer";
+import { useTranslation } from "../i18n";
 
 export default function App() {
+  const { t } = useTranslation();
   const desktop = useDesktopAppState();
   const workbenchWidth = useWorkbenchWidth();
   const snapshot = desktop.snapshot;
@@ -1054,7 +1056,7 @@ export default function App() {
 
         {snapshot.startupDiagnostics.length > 0 ? (
           <div className="startup-diagnostics" role="status" data-testid="startup-diagnostics">
-            <strong>Some saved workspaces could not be refreshed.</strong>
+            <strong>{t("app.workspacesRefreshFailed")}</strong>
             <span>
               {snapshot.startupDiagnostics
                 .map((diagnostic) => {
@@ -1140,9 +1142,9 @@ export default function App() {
             ) : (
               <section className="canvas canvas--empty">
                 <div className="empty-panel">
-                  <div className="session-header__eyebrow">Workspace</div>
-                  <h1>Open a folder to start</h1>
-                  <p>Add a project folder before creating a new thread.</p>
+                  <div className="session-header__eyebrow">{t("app.workspaceEyebrow")}</div>
+                  <h1>{t("app.openFolderTitle")}</h1>
+                  <p>{t("app.openFolderBody")}</p>
                 </div>
               </section>
             )
@@ -1156,17 +1158,14 @@ export default function App() {
                       role="status"
                       data-testid="schema-skew-notice"
                     >
-                      <span className="schema-skew-notice__text">
-                        This session was written by a newer version of pi — some content may not
-                        display. Update pi-gui (or open it with the pi CLI) to see everything.
-                      </span>
+                      <span className="schema-skew-notice__text">{t("app.schemaSkewNotice")}</span>
                       <button
                         type="button"
                         className="schema-skew-notice__dismiss"
-                        aria-label="Dismiss notice"
+                        aria-label={t("app.dismissNotice")}
                         onClick={() => dismissSchemaSkewNotice(selectedSessionKey)}
                       >
-                        Dismiss
+                        {t("app.dismiss")}
                       </button>
                     </div>
                   ) : null}
@@ -1308,9 +1307,9 @@ export default function App() {
           ) : selectedWorkspace ? (
             <section className="canvas canvas--empty">
               <div className="empty-panel">
-                <div className="session-header__eyebrow">Workspace</div>
+                <div className="session-header__eyebrow">{t("app.workspaceEyebrow")}</div>
                 <h1>{selectedWorkspace.name}</h1>
-                <p>Create a thread for this folder, then jump between sessions from the sidebar.</p>
+                <p>{t("app.workspaceThreadBody")}</p>
                 <div className="empty-panel__actions">
                   <button
                     className="button button--primary"
@@ -1321,7 +1320,7 @@ export default function App() {
                       )
                     }
                   >
-                    New thread
+                    {t("app.newThread")}
                   </button>
                 </div>
               </div>
@@ -1329,12 +1328,9 @@ export default function App() {
           ) : (
             <section className="canvas canvas--empty">
               <div className="empty-panel">
-                <div className="session-header__eyebrow">Workspace</div>
-                <h1>Open a folder to start</h1>
-                <p>
-                  Add project folders, group sessions under them, and jump between threads from the
-                  sidebar.
-                </p>
+                <div className="session-header__eyebrow">{t("app.workspaceEyebrow")}</div>
+                <h1>{t("app.openFolderTitle")}</h1>
+                <p>{t("app.openFolderBody")}</p>
               </div>
             </section>
           )}

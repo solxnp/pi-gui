@@ -10,6 +10,7 @@ import {
   PinIcon,
   RestoreIcon,
 } from "../../ui/icons";
+import type { Translate } from "../../i18n";
 
 /**
  * The one list of things a thread can do. The thread header menu, the sidebar
@@ -62,6 +63,7 @@ export function archiveThreadShortcut(platform: NodeJS.Platform): string {
 export function buildThreadActions(
   subject: ThreadActionSubject,
   handlers: ThreadActionHandlers,
+  t: Translate,
 ): readonly ThreadAction[] {
   const { session } = subject;
   const archived = Boolean(session.archivedAt);
@@ -69,7 +71,7 @@ export function buildThreadActions(
   const actions: ThreadAction[] = [
     {
       id: "rename-thread",
-      title: "Rename thread",
+      title: t("threadActions.rename"),
       icon: <PencilIcon />,
       hint: renameThreadShortcut(handlers.platform),
       run: () => handlers.startRename(subject),
@@ -78,7 +80,7 @@ export function buildThreadActions(
   if (archived) {
     actions.push({
       id: "restore-thread",
-      title: "Restore thread",
+      title: t("threadActions.restore"),
       icon: <RestoreIcon />,
       run: () => handlers.restore(subject),
     });
@@ -86,13 +88,13 @@ export function buildThreadActions(
     actions.push(
       {
         id: "pin-thread",
-        title: pinned ? "Unpin thread" : "Pin thread",
+        title: pinned ? t("threadActions.unpin") : t("threadActions.pin"),
         icon: <PinIcon filled={pinned} />,
         run: () => handlers.setPinned(subject, !pinned),
       },
       {
         id: "archive-thread",
-        title: "Archive thread",
+        title: t("threadActions.archive"),
         icon: <ArchiveIcon />,
         hint: archiveThreadShortcut(handlers.platform),
         run: () => handlers.archive(subject),
@@ -102,7 +104,7 @@ export function buildThreadActions(
   if (session.hasUnseenUpdate) {
     actions.push({
       id: "mark-read",
-      title: "Mark as read",
+      title: t("threadActions.markRead"),
       icon: <CheckIcon />,
       run: () => handlers.markRead(subject),
     });
@@ -110,13 +112,15 @@ export function buildThreadActions(
   actions.push(
     {
       id: "scheduled-task",
-      title: handlers.hasScheduledTask(subject) ? "Edit scheduled task…" : "Add scheduled task…",
+      title: handlers.hasScheduledTask(subject)
+        ? t("threadActions.editScheduled")
+        : t("threadActions.addScheduled"),
       icon: <ClockIcon />,
       run: () => handlers.openScheduledTask(subject),
     },
     {
       id: "copy-session-id",
-      title: "Copy session ID",
+      title: t("threadActions.copySessionId"),
       icon: <CopyIcon />,
       run: () => handlers.copySessionId(subject),
     },

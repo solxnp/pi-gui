@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { en } from "../../src/i18n/messages/en";
+import type { Translate } from "../../src/i18n";
 import type { SessionRecord } from "../../contracts/desktop-state";
 import {
   buildThreadActions,
@@ -43,8 +45,15 @@ function titles(actions: readonly { readonly title: string }[]): string[] {
   return actions.map((action) => action.title);
 }
 
+/** The English copy, so a title assertion still proves the real string reaches the menu. */
+const t: Translate = (key) => en[key as keyof typeof en] ?? key;
+
 test("an open thread lists rename, pin, archive, scheduled task and copy with shortcut hints", () => {
-  const actions = buildThreadActions({ workspaceId: "ws", session: session() }, handlers("darwin"));
+  const actions = buildThreadActions(
+    { workspaceId: "ws", session: session() },
+    handlers("darwin"),
+    t,
+  );
   expect(titles(actions)).toEqual([
     "Rename thread",
     "Pin thread",
@@ -54,7 +63,7 @@ test("an open thread lists rename, pin, archive, scheduled task and copy with sh
   ]);
   expect(actions.find((action) => action.id === "rename-thread")?.hint).toBe("⇧⌘R");
   expect(actions.find((action) => action.id === "archive-thread")?.hint).toBe("⇧⌘A");
-  const linux = buildThreadActions({ workspaceId: "ws", session: session() }, handlers("linux"));
+  const linux = buildThreadActions({ workspaceId: "ws", session: session() }, handlers("linux"), t);
   expect(linux.find((action) => action.id === "archive-thread")?.hint).toBe("Ctrl+Shift+A");
 });
 
@@ -63,6 +72,7 @@ test("state changes the list: pinned, unseen, scheduled and archived threads", (
   const actions = buildThreadActions(
     { workspaceId: "ws", session: session({ pinnedAt: "x", hasUnseenUpdate: true }) },
     recorder,
+    t,
   );
   expect(titles(actions)).toEqual([
     "Rename thread",
@@ -78,6 +88,7 @@ test("state changes the list: pinned, unseen, scheduled and archived threads", (
   const archived = buildThreadActions(
     { workspaceId: "ws", session: session({ archivedAt: "x" }) },
     handlers("linux"),
+    t,
   );
   expect(titles(archived)).toEqual([
     "Rename thread",
