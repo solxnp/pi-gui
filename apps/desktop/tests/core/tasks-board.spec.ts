@@ -86,6 +86,11 @@ test("reads TASKS.md, ranks in-progress first, and puts a row in the composer", 
     await selectSession(window, TASK);
     await openTool(window, "Tasks");
 
+    // The one-line overview above the composer reads the same ledger.
+    const overview = window.getByTestId("session-overview");
+    await expect(overview).toBeVisible();
+    await expect(window.getByTestId("session-overview-task")).toHaveText(/P0-01 提交后端化改造/);
+
     const board = window.getByTestId("tasks-board");
     await expect(board).toBeVisible();
     const groups = board.locator(".tasks-board__group-title");
@@ -127,6 +132,8 @@ test("explains itself when the workspace has no task list", async () => {
     const board = window.getByTestId("tasks-board");
     // Locale-independent: the empty state names the file the panel looks for.
     await expect(board.locator(".tasks-board__empty")).toBeVisible();
+    // Without a ledger there is no task segment; the strip may still show a branch.
+    await expect(window.getByTestId("session-overview-task")).toHaveCount(0);
     await expect(board).toContainText("TASKS.md");
   } finally {
     await harness.close();

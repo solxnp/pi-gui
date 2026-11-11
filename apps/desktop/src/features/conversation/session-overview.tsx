@@ -11,13 +11,14 @@ interface SessionOverviewProps {
   readonly session: Pick<SessionRecord, "id" | "status">;
 }
 
-interface TurnSummary {
+export interface TurnSummary {
   readonly files: number;
   readonly added: number;
   readonly removed: number;
 }
 
-function summarizeTurn(result: TurnChangesResult): TurnSummary | null {
+/** Public for the unit spec: the strip shows the last turn only. */
+export function summarizeTurn(result: TurnChangesResult): TurnSummary | null {
   if (result.state !== "available" || result.turns.length === 0) return null;
   const turn = result.turns[result.turns.length - 1];
   if (!turn || turn.files.length === 0) return null;
