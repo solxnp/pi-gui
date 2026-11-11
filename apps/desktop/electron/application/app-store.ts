@@ -15,6 +15,7 @@ import {
   SessionLeasedError,
 } from "@pi-gui/pi-sdk-driver";
 import type { SessionCatalogEntry } from "@pi-gui/catalogs";
+import { resolvePiAgentDir } from "../settings/agent-dir";
 import type {
   NavigateSessionTreeOptions,
   NavigateSessionTreeResult,
@@ -5068,13 +5069,7 @@ function withHomeAsTilde(path: string): string {
 }
 
 function resolveGlobalSettingsPath(): string {
-  const override = process.env.PI_CODING_AGENT_DIR;
-  const agentDir = override
-    ? override.startsWith("~")
-      ? join(homedir(), override.slice(1))
-      : override
-    : join(homedir(), ".pi", "agent");
-  return join(agentDir, "settings.json");
+  return join(resolvePiAgentDir(), "settings.json");
 }
 
 async function readProjectModelSettingsFile(

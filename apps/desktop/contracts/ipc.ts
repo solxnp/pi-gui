@@ -130,6 +130,54 @@ export interface PermissionRuleRecord {
   readonly reason: string;
   readonly source: "command" | "path";
 }
+
+/** One line of pi's `recall.json`: a project the `recall` tool searches. */
+export interface RecallProjectEntry {
+  readonly name: string;
+  readonly path: string;
+  readonly sessionDir?: string;
+  readonly note?: string;
+}
+
+/** Why the config could not be shown as a list; the page still offers to rewrite it. */
+export type RecallConfigProblem = "invalidJson" | "invalidShape";
+
+/** The `recall.json` the settings page edits, plus why it was not readable as a list. */
+export interface RecallProjectsSnapshot {
+  readonly path: string;
+  readonly projects: readonly RecallProjectEntry[];
+  readonly problem?: RecallConfigProblem;
+}
+
+/**
+ * A rejected save, described by code rather than prose so the renderer owns the wording.
+ * `index` is the zero-based position in the list that was submitted.
+ */
+export type RecallProjectsProblemCode =
+  | "notAList"
+  | "tooManyEntries"
+  | "notAnObject"
+  | "nameEmpty"
+  | "nameDuplicate"
+  | "nameTooLong"
+  | "pathMissing"
+  | "pathNotAbsolute"
+  | "pathTooLong"
+  | "pathNotDirectory"
+  | "sessionDirInvalid"
+  | "sessionDirMissing";
+
+export interface RecallProjectsProblem {
+  readonly code: RecallProjectsProblemCode;
+  readonly index?: number;
+  readonly value?: string;
+  readonly firstIndex?: number;
+}
+
+export type RecallProjectsSaveResult =
+  | { readonly ok: true; readonly snapshot: RecallProjectsSnapshot }
+  | { readonly ok: false; readonly problems: readonly RecallProjectsProblem[] };
+
 export type McpServerScope = "global" | "project";
 
 /** An `mcp.json` server as Settings shows it; `env`, `headers` and `oauth` never leave main. */
@@ -252,6 +300,8 @@ export const desktopIpc = {
   listRewindUndos: "pi-gui:list-rewind-undos",
   getCustomInstructions: "pi-gui:get-custom-instructions",
   setCustomInstructions: "pi-gui:set-custom-instructions",
+  getRecallProjects: "pi-gui:get-recall-projects",
+  setRecallProjects: "pi-gui:set-recall-projects",
   setEnableTransparency: "pi-gui:set-enable-transparency",
   terminalEnsurePanel: "pi-gui:terminal-ensure-panel",
   terminalCreateSession: "pi-gui:terminal-create-session",
@@ -926,6 +976,8 @@ export interface PiDesktopApi {
   listRewindUndos(workspaceId: string, sessionId: string): Promise<readonly RewindUndoRecord[]>;
   getCustomInstructions(): Promise<CustomInstructionsSnapshot>;
   setCustomInstructions(content: string): Promise<CustomInstructionsSnapshot>;
+  getRecallProjects(): Promise<RecallProjectsSnapshot>;
+  setRecallProjects(projects: readonly RecallProjectEntry[]): Promise<RecallProjectsSaveResult>;
   setEnableTransparency(enabled: boolean): Promise<DesktopAppState>;
   setThemePresetId(presetId: ThemePresetId): Promise<DesktopAppState>;
   ensureTerminalPanel(

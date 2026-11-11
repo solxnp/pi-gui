@@ -19,6 +19,9 @@ import {
   type McpServerScope,
   type McpServersSnapshot,
   type CustomInstructionsSnapshot,
+  type RecallProjectEntry,
+  type RecallProjectsSaveResult,
+  type RecallProjectsSnapshot,
   type RewindPointRecord,
   type RewindPreviewRecord,
   type RewindResultRecord,
@@ -508,6 +511,10 @@ contextBridge.exposeInMainWorld("piApp", {
       desktopIpc.setCustomInstructions,
       content,
     ) as Promise<CustomInstructionsSnapshot>,
+  getRecallProjects: () =>
+    ipcRenderer.invoke(desktopIpc.getRecallProjects) as Promise<RecallProjectsSnapshot>,
+  setRecallProjects: (projects: readonly RecallProjectEntry[]) =>
+    ipcRenderer.invoke(desktopIpc.setRecallProjects, projects) as Promise<RecallProjectsSaveResult>,
   setEnableTransparency: (enabled: boolean) =>
     ipcRenderer.invoke(desktopIpc.setEnableTransparency, enabled) as Promise<DesktopAppState>,
   setThemePresetId: (presetId: ThemePresetId) =>

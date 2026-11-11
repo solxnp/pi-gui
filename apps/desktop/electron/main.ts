@@ -60,6 +60,7 @@ import {
   createCustomInstructionsService,
   customInstructionsFileName,
 } from "./instructions/custom-instructions";
+import { createRecallProjectsService } from "./settings/recall-projects";
 import { getChangedFiles, getFileDiff, stageFile } from "./platform/files/app-store-diff";
 import { listWorkspaceFiles, readWorkspaceFile } from "./platform/files/app-store-files";
 import { resolveExistingWorkspacePath } from "./platform/files/workspace-paths";
@@ -996,6 +997,7 @@ app
     const scheduledTaskRuntimeBridge = createStoreBackedScheduledTaskRuntimeBridge();
     const checkpoints = new TurnCheckpointStore(configuredUserDataDir);
     const customInstructions = createCustomInstructionsService(configuredUserDataDir);
+    const recallProjects = createRecallProjectsService();
     const extensionViews: DesktopExtensionViewOwner = new DesktopExtensionViewOwner({
       frameDocument: extensionFrameDocument,
       hostAssets: {
@@ -1225,6 +1227,7 @@ app
         probeCustomProviderModels,
         notificationPermission: () => notificationPermissionService,
         customInstructions,
+        recallProjects,
         rewind,
         terminal: getTerminalService,
         optionalTerminal: () => terminalService,

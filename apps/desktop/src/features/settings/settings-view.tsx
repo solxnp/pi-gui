@@ -18,6 +18,9 @@ import type {
   CustomInstructionsSnapshot,
   CustomProviderConfig,
   DesktopNotificationPermissionStatus,
+  RecallProjectEntry,
+  RecallProjectsSaveResult,
+  RecallProjectsSnapshot,
 } from "../../../contracts/ipc";
 import { useTranslation } from "../../i18n";
 import { SettingsAppearanceSection } from "./settings-appearance-section";
@@ -28,6 +31,7 @@ import { SettingsModelsSection } from "./settings-models-section";
 import { SettingsNotificationsSection } from "./settings-notifications-section";
 import { SettingsPermissionsSection } from "./settings-permissions-section";
 import { SettingsProvidersSection } from "./settings-providers-section";
+import { SettingsRecallProjectsSection } from "./settings-recall-projects-section";
 import { type SettingsSection, settingsSectionDefinition } from "./settings-sections";
 import { SettingsShortcutsSection } from "./settings-shortcuts-section";
 
@@ -70,6 +74,10 @@ interface SettingsViewProps {
   readonly onSetIntegratedTerminalShell: (shellPath: string) => void;
   readonly onReadCustomInstructions: () => Promise<CustomInstructionsSnapshot>;
   readonly onSaveCustomInstructions: (content: string) => Promise<CustomInstructionsSnapshot>;
+  readonly onReadRecallProjects: () => Promise<RecallProjectsSnapshot>;
+  readonly onSaveRecallProjects: (
+    projects: readonly RecallProjectEntry[],
+  ) => Promise<RecallProjectsSaveResult>;
   readonly onRequestNotificationPermission: () => void;
   readonly onOpenSystemNotificationSettings: () => void;
   readonly onSetThemeMode: (mode: "system" | "light" | "dark") => void;
@@ -112,6 +120,8 @@ export function SettingsView({
   onSetIntegratedTerminalShell,
   onReadCustomInstructions,
   onSaveCustomInstructions,
+  onReadRecallProjects,
+  onSaveRecallProjects,
   onRequestNotificationPermission,
   onOpenSystemNotificationSettings,
   onSetThemeMode,
@@ -187,6 +197,13 @@ export function SettingsView({
             <SettingsInstructionsSection
               onRead={onReadCustomInstructions}
               onSave={onSaveCustomInstructions}
+            />
+          ) : null}
+
+          {section === "recallProjects" ? (
+            <SettingsRecallProjectsSection
+              onRead={onReadRecallProjects}
+              onSave={onSaveRecallProjects}
             />
           ) : null}
 

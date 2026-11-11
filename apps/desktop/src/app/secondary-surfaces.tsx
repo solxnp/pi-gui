@@ -505,6 +505,8 @@ export function SecondarySurfaces({
           onToggleSkillCommands={handleToggleSkillCommands}
           onReadCustomInstructions={() => api.getCustomInstructions()}
           onSaveCustomInstructions={(content) => api.setCustomInstructions(content)}
+          onReadRecallProjects={() => api.getRecallProjects()}
+          onSaveRecallProjects={(projects) => api.setRecallProjects(projects)}
           mcpActions={mcpActions}
           onSetEnableTransparency={(enabled) => {
             void updateSnapshot(setSnapshot, () => api.setEnableTransparency(enabled)).catch(

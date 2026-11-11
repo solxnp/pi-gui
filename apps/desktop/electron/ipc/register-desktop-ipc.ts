@@ -18,6 +18,7 @@ import {
 } from "../../contracts/ipc";
 import type { DesktopAppStore } from "../application/app-store";
 import type { CustomInstructionsService } from "../instructions/custom-instructions";
+import { RecallProjectsRejected, type RecallProjectsService } from "../settings/recall-projects";
 import type { RewindService } from "../workbench/checkpoint-rewind-service";
 import type { NotificationPermissionService } from "../platform/notification-permission";
 import type { EditorService } from "../platform/editors/editor-service";
@@ -201,6 +202,7 @@ export interface DesktopIpcCapabilities {
   ) => Promise<CustomProviderProbeResult>;
   readonly notificationPermission: () => NotificationPermissionService | undefined;
   readonly customInstructions: CustomInstructionsService;
+  readonly recallProjects: RecallProjectsService;
   readonly rewind: RewindService;
   readonly terminal: () => TerminalService;
   readonly optionalTerminal: () => TerminalService | undefined;
@@ -769,6 +771,22 @@ export function registerDesktopIpc({
       path: capabilities.customInstructions.path,
       content: capabilities.customInstructions.read(),
     };
+  });
+  ipcMain.handle(desktopIpc.getRecallProjects, (event) => {
+    windows.windowForSender(event.sender);
+    return capabilities.recallProjects.read();
+  });
+  ipcMain.handle(desktopIpc.setRecallProjects, async (event, rawProjects: unknown) => {
+    windows.windowForSender(event.sender);
+    try {
+      return { ok: true, snapshot: await capabilities.recallProjects.save(rawProjects) };
+    } catch (error) {
+      // A rejected list is a normal answer, not a crash: the page shows the reasons per entry.
+      if (error instanceof RecallProjectsRejected) {
+        return { ok: false, problems: error.problems };
+      }
+      throw error;
+    }
   });
   ipcMain.handle(desktopIpc.setIntegratedTerminalShell, (event, rawShellPath: unknown) =>
     run(event, () =>
