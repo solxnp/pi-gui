@@ -404,10 +404,13 @@ export function expectHostUiResponse(value: unknown): HostUiResponse {
   const variants = [
     typeof record.value === "string",
     typeof record.confirmed === "boolean",
+    isAnswerRecord(record.values),
     record.cancelled === true,
   ].filter(Boolean).length;
   if (variants !== 1) {
-    throw new TypeError("response must contain exactly one of value, confirmed, or cancelled");
+    throw new TypeError(
+      "response must contain exactly one of value, confirmed, values, or cancelled",
+    );
   }
   if (typeof record.value === "string") {
     return { requestId, value: record.value };
@@ -415,7 +418,25 @@ export function expectHostUiResponse(value: unknown): HostUiResponse {
   if (typeof record.confirmed === "boolean") {
     return { requestId, confirmed: record.confirmed };
   }
+  if (isAnswerRecord(record.values)) {
+    const values: Record<string, string | string[]> = {};
+    for (const [fieldId, answer] of Object.entries(record.values)) {
+      if (typeof answer === "string") {
+        values[fieldId] = answer;
+        continue;
+      }
+      if (!Array.isArray(answer) || answer.some((item) => typeof item !== "string")) {
+        throw new TypeError(`response.values.${fieldId} must be a string or an array of strings`);
+      }
+      values[fieldId] = answer.filter((item): item is string => typeof item === "string");
+    }
+    return { requestId, values };
+  }
   return { requestId, cancelled: true };
+}
+
+function isAnswerRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 export function expectNavigateSessionTreeOptions(value: unknown): NavigateSessionTreeOptions {

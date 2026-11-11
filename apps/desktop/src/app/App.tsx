@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { HostUiResponse } from "@pi-gui/session-driver";
 import type { RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
 import {
   getSelectedSession,
@@ -21,6 +22,7 @@ import { buildDisplayTimelineItems } from "../features/conversation/timeline-tur
 import { useTurnChanges } from "../features/conversation/hooks/use-turn-changes";
 import { restoreTopmostDialogFocus } from "../ui/dialog-focus";
 import { ComposerPanel } from "../features/conversation/composer-panel";
+
 import { DiffPanel } from "../features/workbench/diff-panel";
 import type { DiffPanelFileRequest } from "../features/workbench/diff-panel-types";
 import { FileWorkbench } from "../features/workbench/file-workbench";
@@ -352,6 +354,12 @@ export default function App() {
   );
   const displayedSessionTitle = selectedExtensionUi?.title ?? selectedSession?.title ?? "";
   const activeExtensionDialog = selectedExtensionUi?.pendingDialogs[0];
+  // A form is not a dialog: the timeline draws it at the end of the conversation.
+  const pendingForm = selectedExtensionUi?.pendingDialogs.find(
+    (dialog) => dialog.kind === "form",
+  );
+  const activeExtensionForm = pendingForm?.kind === "form" ? pendingForm : undefined;
+
   const selectedExtensionUiInstance =
     snapshot?.sessionExtensionUiBySession[selectedSessionKey]?.instanceId;
   const isSelectedExtensionDockExpanded =
@@ -840,12 +848,7 @@ export default function App() {
   };
   selectThreadRef.current = handleSelectSession;
 
-  const handleRespondToExtensionDialog = (
-    response:
-      | { readonly requestId: string; readonly value: string }
-      | { readonly requestId: string; readonly confirmed: boolean }
-      | { readonly requestId: string; readonly cancelled: true },
-  ) => {
+  const handleRespondToExtensionDialog = (response: HostUiResponse) => {
     if (!selectedWorkspace || !selectedSession) {
       return;
     }
@@ -1183,6 +1186,8 @@ export default function App() {
                     onOpenTurnChange={turnChanges.openTurnChange}
                     onOpenWorkspaceFileLine={handleOpenWorkspaceFileLine}
                     onExtensionAction={runExtensionCardAction}
+                    pendingForm={activeExtensionForm}
+                    onAnswerForm={handleRespondToExtensionDialog}
                     extensionToolLabels={extensionToolLabels}
                     workspacePath={selectedWorkspace.path}
                     onForkFromMessage={

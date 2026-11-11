@@ -11,6 +11,9 @@ export type {
   ExtensionCompatibilityIssue,
   ExtensionCompatibilityIssueEvent,
   HostUiResponse,
+  HostUiFormField,
+  HostUiFormOption,
+  HostUiFormPrompt,
   NavigateSessionTreeOptions,
   NavigateSessionTreeResult,
   HostUiRequest,
@@ -73,6 +76,7 @@ export type {
 
 export type {
   ExtensionCard,
+  ExtensionCardAnsweredForm,
   ExtensionCardRow,
   ExtensionCardTone,
   SessionTranscriptCard,

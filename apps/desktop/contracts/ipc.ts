@@ -13,6 +13,7 @@ import type {
   NavigateSessionTreeResult,
   SessionTreeSnapshot,
 } from "@pi-gui/session-driver/types";
+import type { HostUiResponse } from "@pi-gui/session-driver/types";
 import type { ClipboardImageRead } from "./composer-attachments";
 import type { DesktopEditorList } from "./editors";
 import type { SessionRef } from "@pi-gui/session-driver/types";
@@ -831,10 +832,7 @@ export interface PiDesktopApi {
   respondToHostUiRequest(
     workspaceId: string,
     sessionId: string,
-    response:
-      | { readonly requestId: string; readonly value: string }
-      | { readonly requestId: string; readonly confirmed: boolean }
-      | { readonly requestId: string; readonly cancelled: true },
+    response: HostUiResponse,
   ): Promise<DesktopAppState>;
   setNotificationPreferences(
     preferences: Partial<NotificationPreferences>,

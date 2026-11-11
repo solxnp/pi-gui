@@ -27,9 +27,13 @@ import type {
 } from "@pi-gui/session-driver/types";
 import type {
   CreateSessionOptions,
+  ExtensionCard,
+  ExtensionCardRow,
   ExtensionFlagValues,
   ForkSessionOptions,
   ForkSessionResult,
+  HostUiFormOption,
+  HostUiFormPrompt,
   HostUiRequest,
   HostUiResponse,
   SessionConfig,
@@ -53,7 +57,7 @@ import type {
 import type { RuntimeCommandRecord } from "@pi-gui/session-driver/runtime-types";
 import { isMissingFileError, JsonCatalogStore } from "@pi-gui/catalogs/node";
 import type { SessionFileCatalogStorage } from "@pi-gui/catalogs";
-import { sessionKey } from "@pi-gui/session-driver";
+import { EXTENSION_CARD_CUSTOM_TYPE, sessionKey } from "@pi-gui/session-driver";
 import { buildSessionSchemaInfo, readSessionFileSchemaVersion } from "./session-schema.js";
 import {
   gatedBuiltinExtensions,
@@ -291,6 +295,17 @@ type NotifyHostUiRequest = Extract<
   Extract<SessionDriverEvent, { type: "hostUiRequest" }>["request"],
   { kind: "notify" }
 >;
+
+/**
+ * pi's context plus `form`, which pi does not declare. pi spreads the host context it is given
+ * onto `ctx.ui`, so pi-gui can offer a blocking multi-question prompt without forking pi.
+ */
+interface PiGuiExtensionUiContext extends ExtensionUIContext {
+  readonly form?: (
+    prompt: HostUiFormPrompt,
+    opts?: ExtensionUIDialogOptions,
+  ) => Promise<Readonly<Record<string, string | readonly string[]>> | undefined>;
+}
 
 interface RegisteredCommandAdapter {
   readonly name: string;
@@ -2249,7 +2264,31 @@ export class SessionSupervisor {
       });
     };
 
-    return {
+    const uiContext: PiGuiExtensionUiContext = {
+      // `form` is pi-gui's own addition: pi spreads the host context it is given onto `ctx.ui`
+      // (`pi-coding-agent/dist/core/extensions/runner.js`), so extensions can ask several
+      // questions in one blocking call without a change to pi.
+      form: (prompt, opts) =>
+        createDialogPromise(
+          opts,
+          undefined,
+          (requestId) => ({
+            kind: "form",
+            requestId,
+            title: prompt.title,
+            ...(prompt.description ? { description: prompt.description } : {}),
+            fields: prompt.fields,
+            ...(prompt.allowOther ? { allowOther: true } : {}),
+            ...(prompt.submitLabel ? { submitLabel: prompt.submitLabel } : {}),
+            ...(opts?.timeout ? { timeoutMs: opts.timeout } : {}),
+          }),
+          (response) => {
+            if ("cancelled" in response && response.cancelled) return undefined;
+            if (!("values" in response)) return undefined;
+            this.recordFormAnswer(record, prompt, response.values);
+            return response.values;
+          },
+        ),
       select: (title, options, opts) =>
         createDialogPromise(
           opts,
@@ -2400,6 +2439,7 @@ export class SessionSupervisor {
       getToolsExpanded: () => false,
       setToolsExpanded: () => {},
     };
+    return uiContext;
   }
 
   private isExtensionCommand(session: AgentSession, text: string): boolean {
@@ -2461,6 +2501,61 @@ export class SessionSupervisor {
       return;
     }
     await emitModelSelect.call(session, model, previousModel, "set");
+  }
+
+  /**
+   * Leaves the answered question in the transcript as a card, so the thread still shows what was
+   * asked and answered after the extension resumed. Without it the answer would only exist inside
+   * the tool result, which draws as one collapsed row.
+   */
+  private recordFormAnswer(
+    record: ManagedSessionRecord,
+    prompt: HostUiFormPrompt,
+    values: Readonly<Record<string, string | readonly string[]>>,
+  ): void {
+    const sessionManager = record.session?.sessionManager;
+    if (!sessionManager) return;
+    const rows = prompt.fields.flatMap((field): ExtensionCardRow[] => {
+      const answer = values[field.id];
+      if (answer === undefined) return [];
+      const entries: readonly string[] = Array.isArray(answer) ? answer : [answer];
+      const labels = entries.map(
+        (entry: string) =>
+          field.options?.find((option: HostUiFormOption) => option.value === entry)?.label ?? entry,
+      );
+      const value = labels.join("、").trim();
+      return value ? [{ label: field.title, value }] : [];
+    });
+    if (rows.length === 0) return;
+
+    const card: ExtensionCard = {
+      title: prompt.title,
+      tone: "neutral",
+      rows,
+      actions: [],
+      // The question itself, so the thread shows the whole board with the answers marked. `rows`
+      // stays as the fallback for a client that does not know this field.
+      answeredForm: {
+        fields: prompt.fields,
+        values,
+        ...(prompt.allowOther ? { allowOther: true } : {}),
+      },
+    };
+    const entryId = sessionManager.appendCustomEntry(EXTENSION_CARD_CUSTOM_TYPE, {
+      title: card.title,
+      tone: card.tone,
+      rows: [...card.rows],
+      answeredForm: card.answeredForm,
+    });
+    const createdAt = new Date().toISOString();
+    this.queueDriverEvents(record, [
+      {
+        type: "transcriptItemAppended",
+        sessionRef: record.ref,
+        timestamp: createdAt,
+        item: { kind: "card", id: entryId, createdAt, card },
+      },
+    ]);
   }
 
   private emitHostUiRequest(

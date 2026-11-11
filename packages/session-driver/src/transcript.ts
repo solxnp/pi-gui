@@ -1,4 +1,5 @@
 import type { ExtensionAction } from "./extension-actions.js";
+import type { HostUiFormField } from "./types.js";
 
 export interface SessionTranscriptImageAttachment {
   readonly kind: "image";
@@ -82,6 +83,19 @@ export interface ExtensionCard {
   readonly tone: ExtensionCardTone;
   readonly rows: readonly ExtensionCardRow[];
   readonly actions: readonly ExtensionAction[];
+  /**
+   * A question that was asked and answered, with its question and every option kept: the thread
+   * shows the whole board afterwards, with the chosen options marked. `rows` still carries the
+   * answer lines, so a client that does not know this field shows the summary instead.
+   */
+  readonly answeredForm?: ExtensionCardAnsweredForm;
+}
+
+/** A `form` request plus the answers it got, as the transcript keeps them. */
+export interface ExtensionCardAnsweredForm {
+  readonly fields: readonly HostUiFormField[];
+  readonly values: Readonly<Record<string, string | readonly string[]>>;
+  readonly allowOther?: boolean;
 }
 
 export interface SessionTranscriptCard {

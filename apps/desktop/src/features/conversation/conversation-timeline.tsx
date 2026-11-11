@@ -11,6 +11,7 @@ import type {
   DisplayTimelineItem,
   TimelineTranscriptItem,
 } from "../../../contracts/timeline-types";
+import type { HostUiResponse } from "@pi-gui/session-driver";
 import type { ScheduledTaskOrigin } from "../../../contracts/scheduled-tasks";
 import type { ExtensionToolLabels } from "../../../contracts/tool-labels";
 import { ExtensionToolLabelsContext } from "../extensions/extension-tool-labels";
@@ -20,7 +21,9 @@ import { useAnnotationSelection } from "./annotations/annotation-selection";
 import type { TranscriptAnnotations } from "./annotations/use-transcript-annotations";
 import { ThreadSearchBar } from "./thread-search";
 import type { RunExtensionAction } from "./extension-card";
+import { ExtensionFormCard, type PendingExtensionForm } from "./extension-form-card";
 import { TimelineItem } from "./timeline-item";
+import { TimelineRail } from "./timeline-rail";
 import { sameRowContent, type TimelineRow } from "./timeline-layout";
 import type { OpenTurnChange } from "./turn-changes-card";
 import type { WorkspaceFileLine } from "./workspace-file-line";
@@ -50,6 +53,9 @@ interface ConversationTimelineProps {
   readonly onForkFromMessage?: (messageIndex: number, preview?: string) => void;
   readonly onOpenWorkspaceFileLine?: (target: WorkspaceFileLine) => void;
   readonly onExtensionAction?: RunExtensionAction;
+  /** A question an extension is blocking on: drawn at the end of the conversation, not in a dialog. */
+  readonly pendingForm?: PendingExtensionForm;
+  readonly onAnswerForm?: (response: HostUiResponse) => void;
   readonly extensionToolLabels: ExtensionToolLabels;
   readonly scheduledOrigins?: ReadonlyMap<string, ScheduledTaskOrigin>;
   readonly workspacePath?: string;
@@ -70,6 +76,8 @@ export function ConversationTimeline({
   onForkFromMessage,
   onOpenWorkspaceFileLine,
   onExtensionAction,
+  pendingForm,
+  onAnswerForm,
   extensionToolLabels,
   scheduledOrigins,
   workspacePath,
@@ -197,6 +205,16 @@ export function ConversationTimeline({
                 ))}
               </div>
             )}
+            {!transcriptFailed && pendingForm ? (
+              <div className="timeline-pending-form">
+                <ExtensionFormCard
+                  form={pendingForm}
+                  onSubmit={(values) =>
+                    onAnswerForm?.({ requestId: pendingForm.requestId, values })
+                  }
+                />
+              </div>
+            ) : null}
             {!transcriptFailed && viewport.showJumpToLatest ? (
               <button
                 className="timeline-jump"
@@ -209,6 +227,12 @@ export function ConversationTimeline({
             ) : null}
           </div>
         </div>
+        <TimelineRail
+          ticks={viewport.railTicks}
+          active={viewport.railScrolling}
+          onJump={viewport.jumpToRow}
+          onScrollBy={viewport.scrollByDelta}
+        />
         {annotationSelection.layer}
       </div>
     </ExtensionToolLabelsContext.Provider>

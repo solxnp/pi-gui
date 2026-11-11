@@ -2797,6 +2797,172 @@
   overflow-y: auto;
 }
 
+/* A form an extension blocks on: drawn in the conversation, above the composer. */
+.extension-form {
+  display: flex;
+  flex-direction: column;
+  /* A tall question must never push the composer off screen: the body scrolls instead. */
+  max-height: min(58vh, 520px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2xl);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.extension-form__body {
+  display: grid;
+  gap: 12px;
+  padding: 4px 16px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.extension-form__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px 8px;
+}
+
+.extension-form__glyph {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  color: var(--muted-strong);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.extension-form__title {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.extension-form__answered {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.extension-form__description,
+.extension-form__field-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.extension-form__field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.extension-form__legend {
+  padding: 0;
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.extension-form__options {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.extension-form__option {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface-muted);
+  cursor: pointer;
+}
+
+.extension-form__option:hover {
+  border-color: var(--line-strong);
+  background: var(--overlay-hover);
+}
+
+.extension-form__option--picked {
+  border-color: var(--accent);
+}
+
+.extension-form__option input[type="radio"] {
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+
+.extension-form__option-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.extension-form__option-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.extension-form__badge {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.extension-form__option-description {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.extension-form__text-input {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface-muted);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.extension-form__other-input {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 13px;
+}
+
+/* The submit button stays reachable while the questions above it scroll. */
+.extension-form__footer {
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
 .pinned-cards .turn-changes {
   border-radius: var(--radius-xl);
 }
@@ -2970,6 +3136,8 @@
 }
 
 .extension-dialog__option {
+  display: grid;
+  gap: 3px;
   padding: 11px 12px;
   border-radius: var(--radius-xl);
   border: 1px solid var(--line);
@@ -2977,6 +3145,24 @@
   text-align: left;
   color: var(--text-strong);
   font: inherit;
+}
+
+.extension-dialog__option-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.extension-dialog__option-badge {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.extension-dialog__option-description {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .extension-dialog__option:hover {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { HostUiResponse } from "@pi-gui/session-driver";
+import { useTranslation } from "../../i18n";
 import { trapDialogFocus } from "../../ui/dialog-focus";
 import { focusComposerAfter } from "./focus-composer";
 import { ChevronDownIcon, ChevronRightIcon, CloseIcon } from "../../ui/icons";
@@ -156,34 +157,38 @@ export function ExtensionDialog({
   readonly dialog: SessionExtensionDialogRecord;
   readonly onRespond: (response: HostUiResponse) => void;
 }) {
-  const [draft, setDraft] = useState("");
+  // A form asks several questions at once and belongs in the conversation, not in a dialog.
+  if (dialog.kind === "form") return null;
+
+  const [draft, setDraft] = useState(() => initialDraft(dialog));
+  const { t } = useTranslation();
   const titleId = useId();
   const bodyId = useId();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const firstOptionButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    if (dialog.kind === "input") {
-      setDraft(dialog.initialValue ?? "");
-      return;
-    }
-    if (dialog.kind === "editor") {
-      setDraft(dialog.initialValue ?? "");
-      return;
-    }
-    setDraft("");
-  }, [dialog]);
+  // The same request arrives again in every state snapshot, as a fresh object each time. Only a
+  // new request id may reset what the user has already typed.
+  const draftSeedRef = useRef(initialDraft(dialog));
+  draftSeedRef.current = initialDraft(dialog);
+  const dialogKindRef = useRef(dialog.kind);
+  dialogKindRef.current = dialog.kind;
+  const { requestId } = dialog;
 
   useEffect(() => {
-    if (dialog.kind === "confirm") {
+    setDraft(draftSeedRef.current);
+  }, [requestId]);
+
+  useEffect(() => {
+    if (dialogKindRef.current === "confirm") {
       cancelButtonRef.current?.focus();
       return;
     }
-    if (dialog.kind === "select") {
+    if (dialogKindRef.current === "select") {
       firstOptionButtonRef.current?.focus();
     }
-  }, [dialog]);
+  }, [requestId]);
 
   const respondWithCancel = () => onRespond({ requestId: dialog.requestId, cancelled: true });
   const respondWithSubmit = () => {
@@ -236,17 +241,35 @@ export function ExtensionDialog({
 
         {dialog.kind === "select" ? (
           <div className="extension-dialog__options">
-            {dialog.options.map((option, index) => (
-              <button
-                className="extension-dialog__option"
-                key={option}
-                ref={index === 0 ? firstOptionButtonRef : undefined}
-                type="button"
-                onClick={() => onRespond({ requestId: dialog.requestId, value: option })}
-              >
-                {option}
-              </button>
-            ))}
+            {dialog.options.map((option, index) => {
+              const described = describeExtensionOption(option);
+              return (
+                <button
+                  className="extension-dialog__option"
+                  key={option}
+                  ref={index === 0 ? firstOptionButtonRef : undefined}
+                  type="button"
+                  onClick={() => onRespond({ requestId: dialog.requestId, value: option })}
+                >
+                  <span className="extension-dialog__option-title">
+                    {described.title}
+                    {described.recommended ? (
+                      <span
+                        className="extension-dialog__option-badge"
+                        data-testid="extension-dialog-option-badge"
+                      >
+                        {t("extensionDialog.recommended")}
+                      </span>
+                    ) : null}
+                  </span>
+                  {described.description ? (
+                    <span className="extension-dialog__option-description">
+                      {described.description}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
         ) : null}
 
@@ -303,6 +326,51 @@ export function ExtensionDialog({
       </div>
     </div>
   );
+}
+
+/** What to show in a new dialog's text field before the user types into it. */
+function initialDraft(dialog: SessionExtensionDialogRecord): string {
+  return dialog.kind === "input" || dialog.kind === "editor" ? (dialog.initialValue ?? "") : "";
+}
+
+/** The separator an extension uses inside one option string: title, then explanation. */
+const OPTION_DESCRIPTION_SEPARATOR = " —— ";
+
+/** Trailing markers an extension appends to a recommended option; the badge replaces them. */
+const RECOMMENDED_MARKERS = ["（推荐）", "(推荐)", "(recommended)", "（recommended）"];
+
+export interface DescribedExtensionOption {
+  readonly title: string;
+  readonly description?: string;
+  readonly recommended: boolean;
+}
+
+/**
+ * One option string, drawn as a title and an optional explanation. `ctx.ui.select` only takes
+ * strings, so an extension writes `title —— description（推荐）`; the pieces are only for display,
+ * and the whole original string stays the value that is answered.
+ */
+export function describeExtensionOption(option: string): DescribedExtensionOption {
+  const [head = "", ...tail] = option.replace(/\r\n/g, "\n").split("\n");
+  const [headTitle = "", ...headDescription] = head.split(OPTION_DESCRIPTION_SEPARATOR);
+  // The marker may end the title or the explanation; either way it is drawn as a badge.
+  const separatedTitle = splitRecommendedMarker(headTitle);
+  const separatedDescription = splitRecommendedMarker([...headDescription, ...tail].join(" "));
+  return {
+    title: separatedTitle.title,
+    ...(separatedDescription.title ? { description: separatedDescription.title } : {}),
+    recommended: separatedTitle.recommended || separatedDescription.recommended,
+  };
+}
+
+function splitRecommendedMarker(title: string): { title: string; recommended: boolean } {
+  const trimmed = title.trim();
+  const lowered = trimmed.toLowerCase();
+  for (const marker of RECOMMENDED_MARKERS) {
+    if (!lowered.endsWith(marker.toLowerCase())) continue;
+    return { title: trimmed.slice(0, trimmed.length - marker.length).trim(), recommended: true };
+  }
+  return { title: trimmed, recommended: false };
 }
 
 function buildWidgetBlocks(

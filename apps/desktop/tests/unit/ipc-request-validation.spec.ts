@@ -121,7 +121,20 @@ test("IPC request validation checks discriminated command records", () => {
   });
   expect(() =>
     expectHostUiResponse({ requestId: "request-a", confirmed: true, cancelled: true }),
-  ).toThrow("response must contain exactly one of value, confirmed, or cancelled");
+  ).toThrow("response must contain exactly one of value, confirmed, values, or cancelled");
+  // A form's answers are one entry per answered question.
+  expect(
+    expectHostUiResponse({
+      requestId: "request-b",
+      values: { q1: "keep", q2: "written answer" },
+    }),
+  ).toEqual({ requestId: "request-b", values: { q1: "keep", q2: "written answer" } });
+  expect(() =>
+    expectHostUiResponse({ requestId: "request-b", values: { q1: "keep" }, cancelled: true }),
+  ).toThrow("response must contain exactly one of value, confirmed, values, or cancelled");
+  expect(() => expectHostUiResponse({ requestId: "request-b", values: { q1: 1 } })).toThrow(
+    "response.values.q1 must be a string",
+  );
 
   expect(
     expectForkThreadInput({

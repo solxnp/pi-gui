@@ -9,6 +9,8 @@ import {
 import type {
   ExtensionAction,
   ExtensionCard,
+  ExtensionCardAnsweredForm,
+  HostUiFormOption,
   ExtensionCardRow,
   SessionAttachment,
   SessionConfig,
@@ -17,6 +19,7 @@ import type {
   SessionSnapshot,
   SessionStatus,
   SessionTranscriptAttachment,
+  HostUiFormField,
   SessionTranscriptCard,
   SessionTranscriptCustomMessage,
   SessionTranscriptItem,
@@ -619,7 +622,89 @@ function parseExtensionCard(data: unknown): ExtensionCard | string {
         })
         .slice(0, MAX_CARD_ACTIONS)
     : [];
-  return { ...(key ? { key } : {}), title, ...(subtitle ? { subtitle } : {}), tone, rows, actions };
+  const answeredForm =
+    data.answeredForm === undefined
+      ? undefined
+      : parseExtensionCardAnsweredForm(data.answeredForm);
+  return {
+    ...(key ? { key } : {}),
+    title,
+    ...(subtitle ? { subtitle } : {}),
+    tone,
+    rows,
+    actions,
+    ...(answeredForm ? { answeredForm } : {}),
+  };
+}
+
+/** Card rows and options per card are bounded, so one entry cannot draw thousands of lines. */
+const MAX_CARD_BOARD_ITEMS = 40;
+
+/**
+ * The question an answered card keeps. A malformed board is dropped rather than the card: `rows`
+ * still says what was answered, so the entry stays readable.
+ */
+function parseExtensionCardAnsweredForm(data: unknown): ExtensionCardAnsweredForm | undefined {
+  if (!isRecord(data)) return undefined;
+  if (!Array.isArray(data.fields) || data.fields.length === 0) return undefined;
+  if (!isRecord(data.values)) return undefined;
+  const fields: HostUiFormField[] = [];
+  for (const field of data.fields.slice(0, MAX_CARD_BOARD_ITEMS)) {
+    const parsed = parseAnsweredField(field);
+    if (!parsed) return undefined;
+    fields.push(parsed);
+  }
+  if (new Set(fields.map((field) => field.id)).size !== fields.length) return undefined;
+
+  const values: Record<string, string | readonly string[]> = {};
+  for (const field of fields) {
+    const answer = data.values[field.id];
+    if (typeof answer === "string") {
+      values[field.id] = answer;
+      continue;
+    }
+    if (Array.isArray(answer) && answer.every((item) => typeof item === "string")) {
+      values[field.id] = answer.map(String);
+    }
+  }
+  return { fields, values, ...(data.allowOther === true ? { allowOther: true } : {}) };
+}
+
+function parseAnsweredField(data: unknown): HostUiFormField | undefined {
+  if (!isRecord(data)) return undefined;
+  const id = typeof data.id === "string" ? data.id : "";
+  const title = typeof data.title === "string" ? data.title.trim() : "";
+  if (!CARD_KEY_PATTERN.test(id) || !title) return undefined;
+  const kind =
+    data.kind === "multi" || data.kind === "text" ? (data.kind as "multi" | "text") : "single";
+  const options = Array.isArray(data.options)
+    ? data.options
+        .slice(0, MAX_CARD_BOARD_ITEMS)
+        .flatMap((option): HostUiFormOption[] =>
+          isRecord(option) && nonEmptyString(option.value)
+            ? [
+                {
+                  value: option.value,
+                  label: nonEmptyString(option.label) ? option.label : option.value,
+                  ...(nonEmptyString(option.description)
+                    ? { description: option.description }
+                    : {}),
+                  ...(option.recommended === true ? { recommended: true } : {}),
+                },
+              ]
+            : [],
+        )
+    : [];
+  if (kind !== "text" && options.length === 0) return undefined;
+  return {
+    id,
+    title,
+    kind,
+    ...(nonEmptyString(data.description) ? { description: data.description.trim() } : {}),
+    ...(nonEmptyString(data.placeholder) ? { placeholder: data.placeholder } : {}),
+    ...(data.required === false ? { required: false } : {}),
+    options,
+  };
 }
 
 /** A pin's card, null for `{ key, remove: true }`, or what is wrong with it. */

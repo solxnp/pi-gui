@@ -42,6 +42,28 @@ export default function dialogExtension(pi) {
     },
   });
 
+  pi.registerCommand("dialog-select-described", {
+    description: "Open a select dialog whose options carry a title and an explanation",
+    handler: async (_args, ctx) => {
+      const value = await ctx.ui.select("Keep the audit trail?", [
+        "Keep it —— Every approved change is recorded for later review（推荐）",
+        "Skip it —— Faster to ship, nothing to look at later",
+      ]);
+      ctx.ui.notify(value ? "Selected " + value.split(" —— ")[0] : "Select cancelled", "info");
+    },
+  });
+
+  pi.registerCommand("dialog-input-across-state-push", {
+    description: "Ask for input, then let a full state push happen while it is open",
+    handler: async (_args, ctx) => {
+      // A notice expires 6s later, and its expiry re-sends the whole desktop state: every pending
+      // dialog arrives as a fresh object. The dialog must keep what the user typed across that.
+      ctx.ui.notify("notice before input", "info");
+      const value = await ctx.ui.input("Enter a value across a state push", "type here");
+      ctx.ui.notify(value ? "Input " + value : "Input cancelled", "info");
+    },
+  });
+
   pi.registerCommand("dialog-input", {
     description: "Open an input dialog",
     handler: async (_args, ctx) => {
@@ -194,6 +216,24 @@ test("renders extension dialogs in the Electron surface and routes responses bac
     await expect(dialog).toHaveCount(0);
     await expect(window.getByTestId("extension-notices")).toContainText("Selected Beta");
 
+    // An option string carries a title and an explanation before " —— ", and a trailing
+    // "（推荐）" is drawn as a badge instead of staying in the title.
+    await composer.fill("/dialog-select-described ");
+    await composer.press("Enter");
+    await expect(dialog).toContainText("Keep the audit trail?");
+    const recommended = dialog.getByRole("button", { name: /Keep it/ });
+    await expect(recommended).toContainText("Every approved change is recorded for later review");
+    // The badge is localized: this host renders the Chinese catalog.
+    await expect(recommended.getByTestId("extension-dialog-option-badge")).toHaveText(
+      /^(Recommended|推荐)$/,
+    );
+    await expect(dialog.getByRole("button", { name: /Skip it/ })).toContainText(
+      "Faster to ship, nothing to look at later",
+    );
+    await recommended.click();
+    await expect(dialog).toHaveCount(0);
+    await expect(window.getByTestId("extension-notices")).toContainText("Selected Keep it");
+
     await composer.fill("/dialog-input ");
     await composer.press("Enter");
     await expect(dialog).toContainText("Enter a value");
@@ -201,6 +241,22 @@ test("renders extension dialogs in the Electron surface and routes responses bac
     await dialog.getByRole("button", { name: "Submit", exact: true }).click();
     await expect(dialog).toHaveCount(0);
     await expect(window.getByTestId("extension-notices")).toContainText("Input typed value");
+
+    // A full state push re-sends the pending dialog as a new object; the draft must survive it.
+    await composer.fill("/dialog-input-across-state-push ");
+    await composer.press("Enter");
+    const pushInput = dialog.getByPlaceholder("type here");
+    await expect(pushInput).toBeVisible();
+    const notices = window.getByTestId("extension-notices");
+    await expect(notices).toContainText("notice before input");
+    await pushInput.click();
+    await pushInput.pressSequentially("typed across pushes");
+    // The notice expiring is the app re-sending all of its state.
+    await expect(notices).not.toContainText("notice before input", { timeout: 15_000 });
+    await expect(pushInput).toHaveValue("typed across pushes");
+    await dialog.getByRole("button", { name: "Submit", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(notices).toContainText("Input typed across pushes");
 
     await composer.fill("/dialog-input-aborted ");
     await composer.press("Enter");

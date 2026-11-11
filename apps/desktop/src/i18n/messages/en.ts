@@ -33,6 +33,12 @@ export const en = {
     "Register a local or custom OpenAI-compatible server.",
   "ui.editCustomEndpoint": "Edit custom endpoint",
   "ui.addCustomEndpoint": "Add custom endpoint",
+  "extensionDialog.recommended": "Recommended",
+  "extensionForm.answerLabel": "The user answered:",
+  "extensionForm.answered": "Answered",
+  "extensionForm.submit": "Submit answers",
+  "extensionForm.other": "Other — write my own",
+  "extensionForm.otherPlaceholder": "Type your answer",
   "ui.configureAnOpenAICompatibleServerTheEndpointAndAPIKeyAreStored":
     "Configure an OpenAI-compatible server. The endpoint and API key are stored in plaintext at",
   "ui.providerID": "Provider ID",

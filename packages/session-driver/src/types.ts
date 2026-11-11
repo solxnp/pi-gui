@@ -284,10 +284,60 @@ export type HostUiResponse =
       readonly requestId: string;
       readonly confirmed: boolean;
     }
+  /**
+   * One answer per field id, from a `form` request: a string for a single-choice question, one
+   * entry per picked option for a multi-choice one. A field the user left alone is absent.
+   */
+  | {
+      readonly requestId: string;
+      readonly values: Readonly<Record<string, string | readonly string[]>>;
+    }
   | {
       readonly requestId: string;
       readonly cancelled: true;
     };
+
+/** One choice a `form` request offers. `value` is answered; `label` is drawn. */
+export interface HostUiFormOption {
+  readonly value: string;
+  readonly label: string;
+  /** Drawn under the label: what picking this means. */
+  readonly description?: string;
+  /** Marks the choice the extension suggests, drawn as a badge after the label. */
+  readonly recommended?: boolean;
+}
+
+/** One question in a `form` request. */
+export interface HostUiFormField {
+  readonly id: string;
+  readonly title: string;
+  readonly description?: string;
+  /**
+   * "single" (the default) answers one option, "multi" answers any number of them, "text"
+   * answers with typed text (a note, a URL) and has no options.
+   */
+  readonly kind?: "single" | "multi" | "text";
+  /** A text field draws its hint here. */
+  readonly placeholder?: string;
+  /** False makes the field optional: the form submits without it. Defaults to required. */
+  readonly required?: boolean;
+  /** Empty for a "text" field. */
+  readonly options?: readonly HostUiFormOption[];
+}
+
+/**
+ * What an extension asks for with `ctx.ui.form(...)`: every question at once, one submit, and the
+ * answers come back while the tool call is still running.
+ */
+export interface HostUiFormPrompt {
+  readonly title: string;
+  /** Drawn under the title, e.g. what the choice will change. */
+  readonly description?: string;
+  readonly fields: readonly HostUiFormField[];
+  /** Adds a "write my own" answer under every question. */
+  readonly allowOther?: boolean;
+  readonly submitLabel?: string;
+}
 
 export type HostUiRequest =
   | {
@@ -312,6 +362,21 @@ export type HostUiRequest =
       readonly title: string;
       readonly options: readonly string[];
       readonly allowMultiple?: boolean;
+      readonly timeoutMs?: number;
+    }
+  /**
+   * Several questions asked at once, drawn in the transcript instead of in a dialog. The
+   * extension stays blocked until the user submits; the answers come back as `values`.
+   */
+  | {
+      readonly kind: "form";
+      readonly requestId: string;
+      readonly title: string;
+      readonly description?: string;
+      readonly fields: readonly HostUiFormField[];
+      /** Adds a "write my own" answer under every question. */
+      readonly allowOther?: boolean;
+      readonly submitLabel?: string;
       readonly timeoutMs?: number;
     }
   | {

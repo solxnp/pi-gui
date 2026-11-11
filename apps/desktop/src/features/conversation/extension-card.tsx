@@ -1,5 +1,12 @@
 import type { ReactNode } from "react";
-import type { ExtensionAction, ExtensionCard, ExtensionCardTone } from "@pi-gui/session-driver";
+import type {
+  ExtensionAction,
+  ExtensionCard,
+  ExtensionCardAnsweredForm,
+  ExtensionCardTone,
+  HostUiFormField,
+} from "@pi-gui/session-driver";
+import { useTranslation } from "../../i18n";
 import { ExtensionIcon } from "../../ui/icons";
 
 /** Asks the app to run one of the fixed actions an extension's button can name. */
@@ -21,8 +28,11 @@ export function ExtensionCardItem({
   readonly controls?: ReactNode;
   readonly collapsed?: boolean;
 }) {
+  const { t } = useTranslation();
   const toneLabel = cardToneLabel(card.tone);
-  const hasBody = !collapsed && (card.rows.length > 0 || card.actions.length > 0);
+  const board = card.answeredForm;
+  const hasBody =
+    !collapsed && (board !== undefined || card.rows.length > 0 || card.actions.length > 0);
   return (
     <section
       className={`turn-changes extension-card extension-card--${card.tone}`}
@@ -38,11 +48,20 @@ export function ExtensionCardItem({
           <span className="turn-changes__title">{card.title}</span>
           {card.subtitle ? <span className="extension-card__subtitle">{card.subtitle}</span> : null}
         </div>
+        {board ? (
+          <span className="extension-card__answered" data-testid="extension-card-answered">
+            {t("extensionForm.answered")}
+          </span>
+        ) : null}
         {toneLabel ? <span className="extension-card__tone">{toneLabel}</span> : null}
         {controls}
       </header>
+      {!collapsed && board ? <AnsweredBoard board={board} /> : null}
       {hasBody ? (
-        <ul className="turn-changes__files">
+        <ul className={`turn-changes__files ${board ? "extension-card__answers" : ""}`}>
+          {board ? (
+            <li className="extension-card__answers-label">{t("extensionForm.answerLabel")}</li>
+          ) : null}
           {card.rows.map((row, index) => (
             <li className="extension-card__row" key={`row:${index}`}>
               <span className="extension-card__label">{row.label}</span>
@@ -71,6 +90,77 @@ export function ExtensionCardItem({
       ) : null}
     </section>
   );
+}
+
+/**
+ * The question an answered card keeps: every option stays on screen, the ones the user picked are
+ * marked, and the rest are muted. This is the board the user saw while answering, so the thread
+ * shows what they chose from — not only what they chose.
+ */
+function AnsweredBoard({ board }: { readonly board: ExtensionCardAnsweredForm }) {
+  const { t } = useTranslation();
+  return (
+    <div className="extension-card__board" data-testid="extension-card-board">
+      {board.fields.map((field) => {
+        const answers = answersFor(board, field);
+        return (
+          <div className="extension-card__board-field" key={field.id}>
+            <div className="extension-card__board-title">{field.title}</div>
+            {field.description ? (
+              <p className="extension-card__board-description">{field.description}</p>
+            ) : null}
+            {field.kind === "text" ? (
+              <p className="extension-card__board-answer" data-testid="extension-card-board-note">
+                {answers.join("、") || "—"}
+              </p>
+            ) : (
+              <ul className="extension-card__board-options">
+                {(field.options ?? []).map((option) => {
+                  const picked = answers.includes(option.value);
+                  return (
+                    <li
+                      className={`extension-card__board-option ${
+                        picked ? "extension-card__board-option--picked" : ""
+                      }`}
+                      data-picked={picked ? "true" : "false"}
+                      key={option.value}
+                    >
+                      <span className="extension-card__board-mark" aria-hidden="true">
+                        {picked ? "●" : ""}
+                      </span>
+                      <span className="extension-card__board-option-body">
+                        <span className="extension-card__board-option-title">
+                          {option.label}
+                          {option.recommended ? (
+                            <span className="extension-card__board-badge">
+                              {t("extensionDialog.recommended")}
+                            </span>
+                          ) : null}
+                        </span>
+                        {option.description ? (
+                          <span className="extension-card__board-option-description">
+                            {option.description}
+                          </span>
+                        ) : null}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The answers one field got, as a list: a multi answer is one entry per picked option. */
+function answersFor(board: ExtensionCardAnsweredForm, field: HostUiFormField): readonly string[] {
+  const answer = board.values[field.id];
+  if (answer === undefined) return [];
+  if (typeof answer === "string") return [answer];
+  return answer.filter((entry): entry is string => typeof entry === "string");
 }
 
 /** What a button will touch, shown beside its label so the user knows before clicking. */

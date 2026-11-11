@@ -28,6 +28,12 @@ export const zhCN: Partial<Messages> = {
   "ui.registerALocalOrCustomOpenAICompatibleServer": "注册本地或自定义的 OpenAI 兼容服务。",
   "ui.editCustomEndpoint": "编辑自定义端点",
   "ui.addCustomEndpoint": "添加自定义端点",
+  "extensionDialog.recommended": "推荐",
+  "extensionForm.answerLabel": "用户的回答：",
+  "extensionForm.answered": "已回答",
+  "extensionForm.submit": "提交回答",
+  "extensionForm.other": "其他 —— 我自己写",
+  "extensionForm.otherPlaceholder": "写你的答案",
   "ui.configureAnOpenAICompatibleServerTheEndpointAndAPIKeyAreStored":
     "配置兼容 OpenAI 的服务。端点和 API 密钥将以明文保存在",
   "ui.providerID": "提供方标识",
