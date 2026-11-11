@@ -378,6 +378,7 @@ export const zhCN: Partial<Messages> = {
   "extensions.detail.enabled": "启用",
   "extensions.detail.source": "来源",
   "extensions.detail.sourcePiAddon": "随 pi 一起装；这个开关也作用于终端里的 pi",
+  "extensions.detail.sourcePiGuiBuiltin": "内置于 pi-gui，随应用一起加载",
   "extensions.detail.sourcePackage": "以包的形式安装",
   "extensions.detail.sourceFile": "从文件加载",
   "extensions.detail.location": "位置",

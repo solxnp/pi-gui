@@ -403,6 +403,7 @@ export const en = {
   "extensions.detail.source": "Source",
   "extensions.detail.sourcePiAddon":
     "Ships with pi; this switch also applies to pi in the terminal",
+  "extensions.detail.sourcePiGuiBuiltin": "Ships inside pi-gui and loads with the app",
   "extensions.detail.sourcePackage": "Installed as a package",
   "extensions.detail.sourceFile": "Loaded from a file",
   "extensions.detail.location": "Location",

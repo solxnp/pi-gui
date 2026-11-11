@@ -127,9 +127,11 @@ function ExtensionDetail({
           description={
             isPiAddonExtension(selected)
               ? t("extensions.detail.sourcePiAddon")
-              : selected.sourceInfo.origin === "package"
-                ? t("extensions.detail.sourcePackage")
-                : t("extensions.detail.sourceFile")
+              : isPiGuiBuiltinExtension(selected)
+                ? t("extensions.detail.sourcePiGuiBuiltin")
+                : selected.sourceInfo.origin === "package"
+                  ? t("extensions.detail.sourcePackage")
+                  : t("extensions.detail.sourceFile")
           }
         >
           <span className="settings-row__value">
