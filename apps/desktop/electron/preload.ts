@@ -19,6 +19,9 @@ import {
   type McpServerScope,
   type McpServersSnapshot,
   type CustomInstructionsSnapshot,
+  type RewindPointRecord,
+  type RewindPreviewRecord,
+  type RewindResultRecord,
   type NewMcpServerInput,
   type ChangedFilesResult,
   type DesktopNotificationPermissionStatus,
@@ -454,6 +457,31 @@ contextBridge.exposeInMainWorld("piApp", {
       desktopIpc.setIntegratedTerminalShell,
       shellPath,
     ) as Promise<DesktopAppState>,
+  listRewindPoints: (workspaceId: string, sessionId: string) =>
+    ipcRenderer.invoke(desktopIpc.listRewindPoints, workspaceId, sessionId) as Promise<
+      readonly RewindPointRecord[]
+    >,
+  previewRewind: (workspaceId: string, sessionId: string, checkpointId: string) =>
+    ipcRenderer.invoke(
+      desktopIpc.previewRewind,
+      workspaceId,
+      sessionId,
+      checkpointId,
+    ) as Promise<RewindPreviewRecord>,
+  applyRewind: (workspaceId: string, sessionId: string, checkpointId: string) =>
+    ipcRenderer.invoke(
+      desktopIpc.applyRewind,
+      workspaceId,
+      sessionId,
+      checkpointId,
+    ) as Promise<RewindResultRecord>,
+  undoRewind: (workspaceId: string, sessionId: string, checkpointId: string) =>
+    ipcRenderer.invoke(
+      desktopIpc.undoRewind,
+      workspaceId,
+      sessionId,
+      checkpointId,
+    ) as Promise<RewindResultRecord>,
   getCustomInstructions: () =>
     ipcRenderer.invoke(desktopIpc.getCustomInstructions) as Promise<CustomInstructionsSnapshot>,
   setCustomInstructions: (content: string) =>

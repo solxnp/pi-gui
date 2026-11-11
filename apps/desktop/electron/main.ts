@@ -30,6 +30,8 @@ import { WindowOwner } from "./windows/window-owner";
 import { PendingComposerDraftFlusher } from "./windows/pending-draft-flush";
 import { windowChromeArguments, windowChromeOptions } from "./windows/window-chrome";
 import { TurnCheckpointStore } from "./workbench/checkpoint-store";
+import { createRewindService } from "./workbench/checkpoint-rewind-service";
+import { applyTurnRestore, previewTurnRestore } from "./workbench/checkpoint-restore";
 import {
   DesktopExtensionViewOwner,
   DESKTOP_EXTENSION_SCHEME,
@@ -1173,6 +1175,12 @@ app
       stopUpdateChecker = initUpdateChecker();
     }
 
+    const rewind = createRewindService({
+      listTurns: (target) => checkpoints.listTurns(target),
+      resolveCheckoutPath: (checkoutId) => store.getWorkspacePath(checkoutId),
+      preview: (run) => previewTurnRestore(run),
+      restore: (run) => applyTurnRestore(run),
+    });
     registerDesktopIpc({
       windows: windowOwner,
       owners: {
@@ -1212,6 +1220,7 @@ app
         probeCustomProviderModels,
         notificationPermission: () => notificationPermissionService,
         customInstructions,
+        rewind,
         terminal: getTerminalService,
         optionalTerminal: () => terminalService,
         setTerminalFocused: (webContentsId, focused) => {

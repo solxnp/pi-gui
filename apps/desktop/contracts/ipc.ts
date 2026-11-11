@@ -77,6 +77,38 @@ export type CustomProviderProbeResult =
   | { readonly ok: true; readonly models: readonly string[] }
   | { readonly ok: false; readonly error: string };
 
+/** One captured turn a session can rewind to. */
+export interface RewindPointRecord {
+  readonly checkpointId: string;
+  readonly checkoutId: string;
+  readonly capturedAt: string;
+  readonly entryIds: readonly string[];
+}
+
+export interface RewindEntryRecord {
+  readonly path: string;
+  readonly change: "restore" | "remove";
+  readonly additions: number;
+  readonly deletions: number;
+}
+
+export interface RewindFailureRecord {
+  readonly code: string;
+  readonly message: string;
+}
+
+export interface RewindPreviewRecord {
+  readonly entries: readonly RewindEntryRecord[];
+  readonly failure?: RewindFailureRecord;
+}
+
+export interface RewindResultRecord {
+  readonly restored: readonly string[];
+  readonly removed: readonly string[];
+  readonly undoable: boolean;
+  readonly failure?: RewindFailureRecord;
+}
+
 /** The user-level instructions file that the built-in extension appends to every run. */
 export interface CustomInstructionsSnapshot {
   readonly path: string;
@@ -194,6 +226,10 @@ export const desktopIpc = {
   respondToHostUiRequest: "pi-gui:respond-to-host-ui-request",
   setNotificationPreferences: "pi-gui:set-notification-preferences",
   setIntegratedTerminalShell: "pi-gui:set-integrated-terminal-shell",
+  listRewindPoints: "pi-gui:list-rewind-points",
+  previewRewind: "pi-gui:preview-rewind",
+  applyRewind: "pi-gui:apply-rewind",
+  undoRewind: "pi-gui:undo-rewind",
   getCustomInstructions: "pi-gui:get-custom-instructions",
   setCustomInstructions: "pi-gui:set-custom-instructions",
   setEnableTransparency: "pi-gui:set-enable-transparency",
@@ -845,6 +881,22 @@ export interface PiDesktopApi {
     preferences: Partial<NotificationPreferences>,
   ): Promise<DesktopAppState>;
   setIntegratedTerminalShell(shell: string): Promise<DesktopAppState>;
+  listRewindPoints(workspaceId: string, sessionId: string): Promise<readonly RewindPointRecord[]>;
+  previewRewind(
+    workspaceId: string,
+    sessionId: string,
+    checkpointId: string,
+  ): Promise<RewindPreviewRecord>;
+  applyRewind(
+    workspaceId: string,
+    sessionId: string,
+    checkpointId: string,
+  ): Promise<RewindResultRecord>;
+  undoRewind(
+    workspaceId: string,
+    sessionId: string,
+    checkpointId: string,
+  ): Promise<RewindResultRecord>;
   getCustomInstructions(): Promise<CustomInstructionsSnapshot>;
   setCustomInstructions(content: string): Promise<CustomInstructionsSnapshot>;
   setEnableTransparency(enabled: boolean): Promise<DesktopAppState>;

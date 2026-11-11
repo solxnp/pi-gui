@@ -18,6 +18,7 @@ import {
 } from "../../contracts/ipc";
 import type { DesktopAppStore } from "../application/app-store";
 import type { CustomInstructionsService } from "../instructions/custom-instructions";
+import type { RewindService } from "../workbench/checkpoint-rewind-service";
 import type { NotificationPermissionService } from "../platform/notification-permission";
 import type { EditorService } from "../platform/editors/editor-service";
 import type { TerminalService } from "../platform/terminal-service";
@@ -196,6 +197,7 @@ export interface DesktopIpcCapabilities {
   ) => Promise<CustomProviderProbeResult>;
   readonly notificationPermission: () => NotificationPermissionService | undefined;
   readonly customInstructions: CustomInstructionsService;
+  readonly rewind: RewindService;
   readonly terminal: () => TerminalService;
   readonly optionalTerminal: () => TerminalService | undefined;
   readonly setTerminalFocused: (webContentsId: number, focused: boolean) => void;
@@ -668,6 +670,55 @@ export function registerDesktopIpc({
     run(event, () =>
       owners.settings.setNotificationPreferences(expectNotificationPreferences(rawPreferences)),
     ),
+  );
+  ipcMain.handle(
+    desktopIpc.listRewindPoints,
+    (event, rawWorkspaceId: unknown, rawSessionId: unknown) => {
+      windows.windowForSender(event.sender);
+      return capabilities.rewind.list({
+        workspaceId: expectNonEmptyString(rawWorkspaceId, "workspaceId"),
+        sessionId: expectNonEmptyString(rawSessionId, "sessionId"),
+      });
+    },
+  );
+  ipcMain.handle(
+    desktopIpc.previewRewind,
+    (event, rawWorkspaceId: unknown, rawSessionId: unknown, rawCheckpointId: unknown) => {
+      windows.windowForSender(event.sender);
+      return capabilities.rewind.preview(
+        {
+          workspaceId: expectNonEmptyString(rawWorkspaceId, "workspaceId"),
+          sessionId: expectNonEmptyString(rawSessionId, "sessionId"),
+        },
+        expectNonEmptyString(rawCheckpointId, "checkpointId"),
+      );
+    },
+  );
+  ipcMain.handle(
+    desktopIpc.applyRewind,
+    (event, rawWorkspaceId: unknown, rawSessionId: unknown, rawCheckpointId: unknown) => {
+      windows.windowForSender(event.sender);
+      return capabilities.rewind.apply(
+        {
+          workspaceId: expectNonEmptyString(rawWorkspaceId, "workspaceId"),
+          sessionId: expectNonEmptyString(rawSessionId, "sessionId"),
+        },
+        expectNonEmptyString(rawCheckpointId, "checkpointId"),
+      );
+    },
+  );
+  ipcMain.handle(
+    desktopIpc.undoRewind,
+    (event, rawWorkspaceId: unknown, rawSessionId: unknown, rawCheckpointId: unknown) => {
+      windows.windowForSender(event.sender);
+      return capabilities.rewind.undo(
+        {
+          workspaceId: expectNonEmptyString(rawWorkspaceId, "workspaceId"),
+          sessionId: expectNonEmptyString(rawSessionId, "sessionId"),
+        },
+        expectNonEmptyString(rawCheckpointId, "checkpointId"),
+      );
+    },
   );
   ipcMain.handle(desktopIpc.getCustomInstructions, (event) => {
     windows.windowForSender(event.sender);
