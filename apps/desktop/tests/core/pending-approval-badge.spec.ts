@@ -45,6 +45,7 @@ test("a session waiting on a dialog is marked in the sidebar", async ({}, testIn
     // The row is the only place that says a dialog is waiting while another thread is open.
     await expect(badge).toHaveCount(1);
     await expect(badge).toHaveText(/待确认|Awaiting you/);
+
     await window.screenshot({ path: testInfo.outputPath("pending-approval.png"), scale: "css" });
 
     await dialog.getByTestId("extension-dialog-cancel").click();
