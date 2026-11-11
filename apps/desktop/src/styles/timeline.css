@@ -1362,3 +1362,66 @@
 .timeline-tool__image img {
   object-fit: contain;
 }
+.turn-changes__rewound {
+  flex-shrink: 0;
+  color: var(--muted-strong);
+  font-size: var(--text-sm);
+}
+
+.turn-changes__rewind {
+  margin-left: 4px;
+}
+
+.rewind-confirm {
+  width: min(620px, 100%);
+}
+
+.rewind-confirm__files {
+  max-height: 40vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.rewind-confirm__files li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-sm);
+}
+
+.rewind-confirm__files li:last-child {
+  border-bottom: none;
+}
+
+.rewind-confirm__pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rewind-confirm__path {
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rewind-confirm__stat {
+  flex-shrink: 0;
+  color: var(--muted-strong);
+  font-size: var(--text-sm);
+}
+
+.rewind-confirm__hint {
+  margin: 0;
+  color: var(--muted-strong);
+  font-size: var(--text-sm);
+}

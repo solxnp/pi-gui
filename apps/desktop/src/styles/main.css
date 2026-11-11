@@ -3195,12 +3195,18 @@
   flex: 1 1 auto;
   min-width: 0;
   padding: 6px 10px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-ctl);
-  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
   color: var(--muted-strong);
-  font-size: 12px;
+  font-size: var(--text-sm);
   text-overflow: ellipsis;
+}
+
+.settings-error {
+  margin: 8px 0 0;
+  color: var(--error);
+  font-size: var(--text-sm);
 }
 
 .extension-dialog__editor {

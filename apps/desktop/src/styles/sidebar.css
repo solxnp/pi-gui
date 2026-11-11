@@ -713,7 +713,7 @@
   flex: none;
   padding: 1px 6px;
   border-radius: var(--radius-round);
-  background: var(--accent-muted, rgb(0 0 0 / 0.06));
+  background: var(--accent-tint-bg);
   color: var(--text-strong);
   font-size: 11px;
   font-weight: 600;
