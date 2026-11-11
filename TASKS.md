@@ -65,6 +65,21 @@
 
 ---
 
+### P0-04 面板里直接改状态 + 写入乐观锁
+
+| 项 | 内容 |
+|---|---|
+| 状态 | 待验证 |
+| 提交 | — |
+| 验收 | 面板每个 task 右侧有状态下拉（五个取值）；`已完成` 在没有提交号时禁用（要用 `tasks_update` 让 agent 带 sha 标完成）；写入前比对 `modifiedAtMs`，别人改过就拒绝且不动文件 |
+
+- [x] 主进程 `updateTasksBoardTaskStatus`：只改状态行，未知/歧义 task 报错，stale read 抛 `ledger-changed`
+- [x] `WorkspaceFilePreview.modifiedAtMs` + 新增/改状态两个写接口都带 `expectedModifiedAtMs`
+- [x] 面板下拉 + 错误提示；改完自动重读
+- [x] 单测 5 例（只改目标行/未知与歧义/stale 拒绝且文件不变/当前读写入/其余字节不变）
+- [x] core 用例：下拉从 待做 → 进行中，磁盘与分节同步变化，`已完成` 选项禁用
+- [ ] commit + push + 回写本表
+
 ## 二、已完成
 
 ### P0-00 台账面板 + 输入框上方概况条

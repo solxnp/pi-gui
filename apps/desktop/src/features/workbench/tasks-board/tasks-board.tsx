@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { PiDesktopApi } from "../../../../contracts/ipc";
+import type { PiDesktopApi, TasksBoardTaskStatus } from "../../../../contracts/ipc";
 import { useTranslation } from "../../../i18n";
 import { ChevronDownIcon, ChevronRightIcon, RefreshIcon } from "../../../ui/icons";
 import type { TasksBoardGroup, TasksBoardStatus } from "./parse-tasks";
@@ -33,6 +33,25 @@ function needsCommit(group: TasksBoardGroup): boolean {
   return group.status === "done" && group.statusText.length > 0 && !group.commit;
 }
 
+const STATUS_OPTIONS: readonly TasksBoardTaskStatus[] = [
+  "待做",
+  "进行中",
+  "待验证",
+  "已完成",
+  "取消",
+];
+
+/** The status the select shows: the raw cell wins, so 待验证 is not flattened into 待做. */
+function currentStatusText(group: TasksBoardGroup): TasksBoardTaskStatus {
+  const raw = group.statusText;
+  const direct = STATUS_OPTIONS.find((option) => raw.startsWith(option));
+  if (direct) return direct;
+  if (group.status === "doing") return "进行中";
+  if (group.status === "done") return "已完成";
+  if (group.status === "cancelled") return "取消";
+  return "待做";
+}
+
 function statusClassName(status: TasksBoardStatus): string {
   return `tasks-board__badge tasks-board__badge--${status}`;
 }
@@ -62,6 +81,8 @@ export function TasksBoardPanel({
   );
 
   const [draft, setDraft] = useState("");
+  const [statusError, setStatusError] = useState("");
+  const [busyTask, setBusyTask] = useState("");
   const [addError, setAddError] = useState("");
   const [adding, setAdding] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(() => new Set());
@@ -93,13 +114,36 @@ export function TasksBoardPanel({
   };
 
   const askAbout = (label: string) => onInsertPrompt(t("tasksBoard.prompt", { item: label }));
+  const modifiedAtMs = state.kind === "ready" ? state.modifiedAtMs : undefined;
+  const changeStatus = (group: TasksBoardGroup, status: TasksBoardTaskStatus) => {
+    if (!api || busyTask) return;
+    setBusyTask(group.title);
+    setStatusError("");
+    api
+      .updateTasksBoardTaskStatus({
+        workspaceId: selectedWorkspaceId,
+        task: group.title,
+        status,
+        expectedModifiedAtMs: modifiedAtMs,
+      })
+      .then(() => reload())
+      .catch((error: unknown) => {
+        setStatusError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => setBusyTask(""));
+  };
+
   const submitNewTask = () => {
     const title = draft.trim();
     if (!api || adding || title.length === 0) return;
     setAdding(true);
     setAddError("");
     api
-      .createTasksBoardTask({ workspaceId: selectedWorkspaceId, title })
+      .createTasksBoardTask({
+        workspaceId: selectedWorkspaceId,
+        title,
+        expectedModifiedAtMs: modifiedAtMs,
+      })
       .then(() => {
         setDraft("");
         reload();
@@ -189,6 +233,11 @@ export function TasksBoardPanel({
           {t("tasksBoard.add")}
         </button>
       </form>
+      {statusError ? (
+        <p className="tasks-board__notice tasks-board__notice--error" role="alert">
+          {t("tasksBoard.statusFailed", { message: statusError })}
+        </p>
+      ) : null}
       {addError ? (
         <p className="tasks-board__notice tasks-board__notice--error" role="alert">
           {t("tasksBoard.addFailed", { message: addError })}
@@ -243,34 +292,56 @@ export function TasksBoardPanel({
                       const pending = group.items.filter((item) => !item.done).length;
                       return (
                         <div className="tasks-board__group" key={group.id}>
-                          <button
-                            aria-expanded={!isCollapsed}
-                            className="tasks-board__group-toggle"
-                            onClick={() => toggleGroup(group.id)}
-                            type="button"
-                          >
-                            <span className="tasks-board__chevron">
-                              {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
-                            </span>
-                            <span
-                              className="tasks-board__group-title"
-                              title={group.statusText || undefined}
+                          <div className="tasks-board__group-head">
+                            <button
+                              aria-expanded={!isCollapsed}
+                              className="tasks-board__group-toggle"
+                              onClick={() => toggleGroup(group.id)}
+                              type="button"
                             >
-                              {group.title || t("tasksBoard.untitled")}
-                            </span>
-                            {needsCommit(group) ? (
-                              <span
-                                className="tasks-board__warn"
-                                data-testid="tasks-board-missing-commit"
-                                title={t("tasksBoard.missingCommit")}
-                              >
-                                ⚠️
+                              <span className="tasks-board__chevron">
+                                {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
                               </span>
-                            ) : null}
-                            {group.items.length > 0 ? (
-                              <span className="tasks-board__count">{pending}</span>
-                            ) : null}
-                          </button>
+                              <span
+                                className="tasks-board__group-title"
+                                title={group.statusText || undefined}
+                              >
+                                {group.title || t("tasksBoard.untitled")}
+                              </span>
+                              {needsCommit(group) ? (
+                                <span
+                                  className="tasks-board__warn"
+                                  data-testid="tasks-board-missing-commit"
+                                  title={t("tasksBoard.missingCommit")}
+                                >
+                                  ⚠️
+                                </span>
+                              ) : null}
+                              {group.items.length > 0 ? (
+                                <span className="tasks-board__count">{pending}</span>
+                              ) : null}
+                            </button>
+                            <select
+                              aria-label={t("tasksBoard.statusLabel", { task: group.title })}
+                              className="tasks-board__status-select"
+                              data-testid="tasks-board-status"
+                              disabled={busyTask.length > 0}
+                              onChange={(event) =>
+                                changeStatus(group, event.target.value as TasksBoardTaskStatus)
+                              }
+                              value={currentStatusText(group)}
+                            >
+                              {STATUS_OPTIONS.map((option) => (
+                                <option
+                                  disabled={option === "已完成" && !group.commit}
+                                  key={option}
+                                  value={option}
+                                >
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                           {isCollapsed ? null : group.items.length === 0 ? (
                             <button
                               className="tasks-board__ask"

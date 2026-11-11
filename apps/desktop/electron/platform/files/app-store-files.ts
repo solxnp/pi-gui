@@ -56,6 +56,7 @@ export async function readWorkspaceFile(
         truncated: false,
         binary: true,
         sizeBytes: stats.size,
+        modifiedAtMs: stats.mtimeMs,
       };
     }
 
@@ -71,6 +72,7 @@ export async function readWorkspaceFile(
       truncated: bytesRead > MAX_PREVIEW_BYTES || stats.size > MAX_PREVIEW_BYTES,
       binary,
       sizeBytes: stats.size,
+      modifiedAtMs: stats.mtimeMs,
     };
   } finally {
     await handle.close();

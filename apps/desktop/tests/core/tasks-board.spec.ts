@@ -175,6 +175,17 @@ test("reads TASKS.md, ranks in-progress first, and puts a row in the composer", 
     await todo.getByRole("button", { name: /跑 npm run dev/ }).click();
     await expect(window.getByTestId("composer")).toHaveValue(/P0-02 客户端本地验证/);
     await expect(window.getByTestId("composer")).toHaveValue(/跑 npm run dev/);
+
+    // Status is editable from the panel, but 已完成 stays disabled without a commit sha.
+    const status = todo.getByTestId("tasks-board-status").first();
+    await expect(status).toHaveValue("待做");
+    await expect(status.locator('option[value="已完成"]')).toBeDisabled();
+    await status.selectOption("进行中");
+    await expect
+      .poll(async () => readFile(join(fixture.workspacePath, "TASKS.md"), "utf8"))
+      .toContain("| 状态 | 进行中 |");
+    await expect(doing).toContainText("P0-02 客户端本地验证");
+    await expect(todo).not.toContainText("P0-02 客户端本地验证");
   } finally {
     await harness.close();
   }

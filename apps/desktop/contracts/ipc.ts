@@ -341,6 +341,7 @@ export const desktopIpc = {
   listWorkspaceFiles: "pi-gui:list-workspace-files",
   readWorkspaceFile: "pi-gui:read-workspace-file",
   createTasksBoardTask: "pi-gui:create-tasks-board-task",
+  updateTasksBoardTaskStatus: "pi-gui:update-tasks-board-task-status",
   revealWorkspaceFile: "pi-gui:reveal-workspace-file",
   getChangedFiles: "pi-gui:get-changed-files",
   getFileDiff: "pi-gui:get-file-diff",
@@ -540,6 +541,24 @@ export type ChangedFilesResult =
 export interface CreateTasksBoardTaskInput {
   readonly workspaceId: string;
   readonly title: string;
+  /** The `modifiedAtMs` the panel read; a mismatch means someone else edited the ledger. */
+  readonly expectedModifiedAtMs?: number;
+}
+
+export type TasksBoardTaskStatus = "待做" | "进行中" | "待验证" | "已完成" | "取消";
+
+export interface UpdateTasksBoardTaskStatusInput {
+  readonly workspaceId: string;
+  /** Task heading prefix, e.g. "P0-02". */
+  readonly task: string;
+  readonly status: TasksBoardTaskStatus;
+  readonly expectedModifiedAtMs?: number;
+}
+
+export interface UpdateTasksBoardTaskStatusResult {
+  readonly path: string;
+  readonly title: string;
+  readonly status: TasksBoardTaskStatus;
 }
 
 export interface CreateTasksBoardTaskResult {
@@ -554,6 +573,8 @@ export interface WorkspaceFilePreview {
   readonly truncated: boolean;
   readonly binary: boolean;
   readonly sizeBytes: number;
+  /** Modification time in ms, for optimistic-lock writes; absent when the platform omits it. */
+  readonly modifiedAtMs?: number;
 }
 
 export interface TerminalSize {
@@ -1062,6 +1083,10 @@ export interface PiDesktopApi {
   readWorkspaceFile(workspaceId: string, filePath: string): Promise<WorkspaceFilePreview>;
   /** Appends one to-do row to the workspace ledger; never writes other files. */
   createTasksBoardTask(input: CreateTasksBoardTaskInput): Promise<CreateTasksBoardTaskResult>;
+  /** Rewrites one task's status row; refuses 已完成 without a commit. */
+  updateTasksBoardTaskStatus(
+    input: UpdateTasksBoardTaskStatusInput,
+  ): Promise<UpdateTasksBoardTaskStatusResult>;
   revealWorkspaceFile(workspaceId: string, filePath: string): Promise<void>;
   getChangedFiles(workspaceId: string): Promise<ChangedFilesResult>;
   getFileDiff(workspaceId: string, filePath: string): Promise<string>;

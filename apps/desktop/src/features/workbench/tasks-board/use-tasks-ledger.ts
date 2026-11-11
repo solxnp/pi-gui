@@ -22,6 +22,8 @@ export type TasksLedgerState =
       readonly path: string;
       readonly board: TasksBoard;
       readonly truncated: boolean;
+      /** Lets a write refuse to clobber an edit that landed after this read. */
+      readonly modifiedAtMs?: number;
     };
 
 const MISSING_FILE = /ENOENT|no such file|not found/i;
@@ -60,6 +62,7 @@ export function useTasksLedger(
             path,
             board: parseTasksBoard(preview.content),
             truncated: preview.truncated,
+            modifiedAtMs: preview.modifiedAtMs,
           });
           return;
         } catch (error) {

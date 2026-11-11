@@ -321,3 +321,29 @@
   font-size: var(--text-xs);
   line-height: 1;
 }
+
+.tasks-board__group-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+}
+
+.tasks-board__group-head .tasks-board__group-toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tasks-board__status-select {
+  flex: 0 0 auto;
+  padding: 2px 4px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted-strong);
+  font-size: var(--text-xs);
+}
+
+.tasks-board__status-select:disabled {
+  opacity: 0.6;
+}

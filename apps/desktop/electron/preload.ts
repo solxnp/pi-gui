@@ -32,6 +32,8 @@ import {
   type WorkspaceFilePreview,
   type CreateTasksBoardTaskInput,
   type CreateTasksBoardTaskResult,
+  type UpdateTasksBoardTaskStatusInput,
+  type UpdateTasksBoardTaskStatusResult,
   type PiDesktopCommand,
   type PiDesktopStateListener,
   type PiDesktopStatePush,
@@ -666,6 +668,11 @@ contextBridge.exposeInMainWorld("piApp", {
       desktopIpc.createTasksBoardTask,
       input,
     ) as Promise<CreateTasksBoardTaskResult>,
+  updateTasksBoardTaskStatus: (input: UpdateTasksBoardTaskStatusInput) =>
+    ipcRenderer.invoke(
+      desktopIpc.updateTasksBoardTaskStatus,
+      input,
+    ) as Promise<UpdateTasksBoardTaskStatusResult>,
   readWorkspaceFile: (workspaceId: string, filePath: string) =>
     ipcRenderer.invoke(
       desktopIpc.readWorkspaceFile,

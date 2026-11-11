@@ -241,6 +241,8 @@ export const en = {
   "tasksBoard.status.todo": "To do",
   "tasksBoard.status.done": "Done",
   "tasksBoard.status.cancelled": "Cancelled",
+  "tasksBoard.statusLabel": "Status of {task}",
+  "tasksBoard.statusFailed": "Couldn't change the status: {message}",
   "tasksBoard.missingCommit": "Marked done but no commit sha — not verified",
   "tasksBoard.add": "Add",
   "tasksBoard.addPlaceholder": "New to-do item",
