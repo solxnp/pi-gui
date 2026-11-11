@@ -50,6 +50,7 @@ function createGate(options: {
   choice: string | undefined;
   hasUI?: boolean;
   sessionId?: string;
+  intent?: string;
 }): GateHarness {
   let handler: ToolCallHandler | undefined;
   const pi = {
@@ -72,7 +73,24 @@ function createGate(options: {
         return options.choice && choices.includes(options.choice) ? options.choice : undefined;
       },
     },
-    sessionManager: { getSessionId: () => options.sessionId ?? "session-1" },
+    sessionManager: {
+      getSessionId: () => options.sessionId ?? "session-1",
+      getEntries: () =>
+        options.intent
+          ? [
+              {
+                type: "message",
+                message: {
+                  role: "assistant",
+                  content: [
+                    { type: "text", text: options.intent },
+                    { type: "toolCall", id: "call-1", name: "bash", arguments: {} },
+                  ],
+                },
+              },
+            ]
+          : [],
+    },
   } as unknown as ExtensionContext;
 
   return {
@@ -171,11 +189,25 @@ test("the dialog shows a short command preview and a readable layout", async () 
   const prompt = gate.prompts[0] ?? "";
   expect(prompt).toContain("要执行这条命令，怎么处理？");
   expect(prompt).toContain("【要执行的命令】");
-  expect(prompt).toContain("【为什么先问你】");
+  expect(prompt).toContain("【为什么拦下来】");
   expect(prompt).toContain("· 递归强制删除文件或目录");
   expect(prompt).toContain("本次会话都允许");
+  expect(prompt).toContain("【它给的理由】");
+  expect(prompt).toContain("【拒绝了会怎样】");
+  expect(prompt).toContain("模型这次没有说明原因");
   expect(prompt).toContain("共");
   expect(prompt).not.toContain("line five");
+});
+
+test("the dialog quotes the reason the model gave", async () => {
+  const gate = createGate({
+    choice: "取消",
+    intent: "先清理构建产物，确认 dist 是上一次的临时输出。",
+  });
+  await gate.run(bashEvent("rm -rf dist"));
+
+  expect(gate.prompts[0]).toContain("先清理构建产物");
+  expect(gate.prompts[0]).not.toContain("模型这次没有说明原因");
 });
 
 test("a denied command blocks the tool call with the matched rule ids", async () => {

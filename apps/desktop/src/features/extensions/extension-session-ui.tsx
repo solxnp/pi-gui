@@ -293,15 +293,18 @@ export function ExtensionDialog({
         ) : null}
 
         <div className="extension-dialog__actions">
-          <button
-            ref={cancelButtonRef}
-            className="button button--secondary"
-            data-testid="extension-dialog-cancel"
-            type="button"
-            onClick={respondWithCancel}
-          >
-            Cancel
-          </button>
+          {/* A select carries its own dismiss option, so a second Cancel would repeat it. */}
+          {dialog.kind === "select" ? null : (
+            <button
+              ref={cancelButtonRef}
+              className="button button--secondary"
+              data-testid="extension-dialog-cancel"
+              type="button"
+              onClick={respondWithCancel}
+            >
+              Cancel
+            </button>
+          )}
           {dialog.kind === "confirm" ? (
             <button
               className="button button--primary"

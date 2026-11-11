@@ -40,6 +40,10 @@ test("a dangerous bash command asks first and the denial reaches the tool result
     await expect(dialog).toContainText("递归强制删除文件或目录");
     await expect(dialog).toContainText("rm -rf permission-gate-probe-dir");
     await expect(dialog).toContainText("本次会话都允许");
+    await expect(dialog).toContainText("【它给的理由】");
+    await expect(dialog).toContainText("【拒绝了会怎样】");
+    // A select carries its own dismiss option; the shared footer Cancel must not appear twice.
+    await expect(window.getByTestId("extension-dialog-cancel")).toHaveCount(0);
     // CSS scale keeps the attachment at window size instead of the Retina pixel count.
     await window.screenshot({
       path: testInfo.outputPath("permission-dialog.png"),

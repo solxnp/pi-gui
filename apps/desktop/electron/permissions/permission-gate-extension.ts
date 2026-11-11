@@ -21,6 +21,8 @@ export const permissionGateExtensionName = "pi-gui-permission-gate";
 
 /** A dialog shows the first lines of the command; the full text stays in the transcript's tool card. */
 const COMMAND_PREVIEW_LINES = 4;
+/** How much of the model's own sentence the dialog quotes; a whole paragraph buries the command. */
+const INTENT_LIMIT = 180;
 const COMMAND_PREVIEW_CHARS = 320;
 
 const DECISION_ALLOW = "确认执行";
@@ -57,6 +59,36 @@ function previewCommand(command: string): string {
 function stringInput(event: ToolCallEvent, key: "command" | "path"): string | undefined {
   const value = (event.input as Record<string, unknown>)[key];
   return typeof value === "string" ? value : undefined;
+}
+
+/**
+ * The reason the model gave for this call: its own text in the same assistant message that carries
+ * the tool call, or the message right before it. Nothing else in the session records one.
+ */
+function readIntent(ctx: ExtensionContext): string | undefined {
+  try {
+    const entries = ctx.sessionManager.getEntries();
+    for (let index = entries.length - 1; index >= 0; index -= 1) {
+      const entry = entries[index];
+      if (!entry || entry.type !== "message" || entry.message.role !== "assistant") {
+        continue;
+      }
+      const parts: string[] = [];
+      for (const part of entry.message.content) {
+        if (part.type === "text") {
+          parts.push(part.text);
+        }
+      }
+      const text = parts.join(" ").replace(/\s+/g, " ").trim();
+      if (text.length === 0) {
+        return undefined;
+      }
+      return text.length <= INTENT_LIMIT ? text : `${text.slice(0, INTENT_LIMIT)}…`;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function sessionIdOf(ctx: ExtensionContext): string {
@@ -111,8 +143,14 @@ async function gateBashCommand(
     "【要执行的命令】",
     previewCommand(command),
     "",
-    "【为什么先问你】",
+    "【它给的理由】",
+    readIntent(ctx) ?? "（模型这次没有说明原因，只发起了这个动作）",
+    "",
+    "【为什么拦下来】",
     ...matches.map((match) => `· ${match.reason}`),
+    "",
+    "【拒绝了会怎样】",
+    "这条命令不会执行，模型会收到你的拒绝，通常会换个做法或者直接来问你。",
     "",
     `「${DECISION_ALLOW}」只放行这一次；「${DECISION_ALLOW_SESSION}」之后这个会话不再弹窗。`,
   ].join("\n");
@@ -158,8 +196,14 @@ async function gateFilePath(
     `【要做的事】${label}这个文件`,
     path,
     "",
-    "【为什么先问你】",
+    "【它给的理由】",
+    readIntent(ctx) ?? "（模型这次没有说明原因，只发起了这个动作）",
+    "",
+    "【为什么拦下来】",
     ...matches.map((match) => `· ${match.reason}`),
+    "",
+    "【拒绝了会怎样】",
+    `这次${label}不会发生；如果模型确实需要这个文件，它会停下来问你。`,
     "",
     `「${DECISION_ALLOW}」只放行这一次；「${DECISION_ALLOW_SESSION}」之后这个会话不再弹窗。`,
   ].join("\n");
