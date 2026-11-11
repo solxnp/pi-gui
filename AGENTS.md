@@ -6,6 +6,7 @@ These rules apply for the full session.
 
 - Define success criteria before coding; if unclear, stop and clarify.
 - For non-trivial work, plan verification before editing: name the affected user flow, observable result, failure cases, and existing commands that prove them. Start with the checked-in [desktop verification skill](.agents/skills/verify-pi-gui/SKILL.md) for desktop flows and [baseline checks](docs/ci-baseline.md) for repository checks.
+- Requirement-sized work keeps one plan card at `plans/<slug>/plan.md`: goal, exclusions, success criteria, decisions, task plan, progress and handoff in the same file, updated in place. Small fixes stay out of it. `plans/` is git-ignored, so anything that has to survive a clone — an ADR, a glossary entry, a finished audit — belongs under `docs/`.
 - Do not create or switch to new branches to start work unless the user explicitly asks; respect the current branch or worktree as intentional.
 - Commit in small focused checkpoints; don’t batch unrelated changes.
 - Before closing non-trivial implementation work, review the diff for unnecessary abstractions, duplicate paths, unsafe escapes, and obsolete code; simplify within scope and rerun affected checks.
