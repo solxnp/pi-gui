@@ -48,6 +48,12 @@ import {
   createScheduledTaskRuntimeTools,
   type ScheduledTaskRuntimeBridge,
 } from "./scheduled-tasks/scheduled-task-runtime";
+import {
+  createCustomInstructionsExtension,
+  customInstructionsFileName,
+  customInstructionsPath,
+  readCustomInstructions,
+} from "./instructions/custom-instructions";
 import { getChangedFiles, getFileDiff, stageFile } from "./platform/files/app-store-diff";
 import { listWorkspaceFiles, readWorkspaceFile } from "./platform/files/app-store-files";
 import { resolveExistingWorkspacePath } from "./platform/files/workspace-paths";
@@ -1043,6 +1049,14 @@ app
               return undefined;
             }
           }),
+        },
+        {
+          name: "pi-gui-custom-instructions",
+          displayName: "Custom instructions",
+          description: `Adds ${customInstructionsFileName} from the app's data folder to every run`,
+          factory: createCustomInstructionsExtension(() =>
+            readCustomInstructions(customInstructionsPath(configuredUserDataDir)),
+          ),
         },
       ],
     };
