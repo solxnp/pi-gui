@@ -47,6 +47,7 @@ import {
   expectNavigateSessionTreeOptions,
   expectNonEmptyString,
   expectNotificationPreferences,
+  expectPermissionPreferencesPatch,
   expectOptionalDeliverOptions,
   expectOptionalString,
   expectOptionalThinkingLevel,
@@ -164,6 +165,9 @@ type SettingsOwner = Pick<
   | "setMcpServerEnabled"
   | "setCodemodeAlwaysOn"
   | "setNotificationPreferences"
+  | "setPermissionPreferences"
+  | "setPermissionGateEnabled"
+  | "listPermissionRules"
   | "setIntegratedTerminalShell"
   | "setEnableTransparency"
   | "getSkillFilePath"
@@ -669,6 +673,20 @@ export function registerDesktopIpc({
   ipcMain.handle(desktopIpc.setNotificationPreferences, (event, rawPreferences: unknown) =>
     run(event, () =>
       owners.settings.setNotificationPreferences(expectNotificationPreferences(rawPreferences)),
+    ),
+  );
+  ipcMain.handle(desktopIpc.listPermissionRules, (event) => {
+    windows.windowForSender(event.sender);
+    return owners.settings.listPermissionRules();
+  });
+  ipcMain.handle(desktopIpc.setPermissionPreferences, (event, rawPatch: unknown) =>
+    run(event, () =>
+      owners.settings.setPermissionPreferences(expectPermissionPreferencesPatch(rawPatch)),
+    ),
+  );
+  ipcMain.handle(desktopIpc.setPermissionGateEnabled, (event, rawEnabled: unknown) =>
+    run(event, () =>
+      owners.settings.setPermissionGateEnabled(expectBoolean(rawEnabled, "enabled")),
     ),
   );
   ipcMain.handle(

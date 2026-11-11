@@ -18,6 +18,7 @@ import type { ClipboardImageRead } from "./composer-attachments";
 import type { DesktopEditorList } from "./editors";
 import type { SessionRef } from "@pi-gui/session-driver/types";
 import type { SaveTaskWorkbenchTemplateInput, TaskWorkbenchTemplate } from "./workbench";
+import type { PermissionCategoryId, PermissionPreferencesPatch } from "./permission-preferences";
 import type {
   TurnChangesInput,
   TurnChangesResult,
@@ -119,6 +120,15 @@ export interface RewindResultRecord {
 export interface CustomInstructionsSnapshot {
   readonly path: string;
   readonly content: string;
+}
+
+/** One rule the permission gate can fire, as the Settings page lists it. */
+export interface PermissionRuleRecord {
+  readonly id: string;
+  readonly category: PermissionCategoryId;
+  /** The sentence the dialog shows; kept in main so both views read one copy. */
+  readonly reason: string;
+  readonly source: "command" | "path";
 }
 export type McpServerScope = "global" | "project";
 
@@ -231,6 +241,9 @@ export const desktopIpc = {
   setCodemodeAlwaysOn: "pi-gui:set-codemode-always-on",
   respondToHostUiRequest: "pi-gui:respond-to-host-ui-request",
   setNotificationPreferences: "pi-gui:set-notification-preferences",
+  setPermissionPreferences: "pi-gui:set-permission-preferences",
+  setPermissionGateEnabled: "pi-gui:set-permission-gate-enabled",
+  listPermissionRules: "pi-gui:list-permission-rules",
   setIntegratedTerminalShell: "pi-gui:set-integrated-terminal-shell",
   listRewindPoints: "pi-gui:list-rewind-points",
   previewRewind: "pi-gui:preview-rewind",
@@ -887,6 +900,11 @@ export interface PiDesktopApi {
   setNotificationPreferences(
     preferences: Partial<NotificationPreferences>,
   ): Promise<DesktopAppState>;
+  /** Category switches; takes effect on the next tool call without a restart. */
+  setPermissionPreferences(patch: PermissionPreferencesPatch): Promise<DesktopAppState>;
+  /** The master switch; reloads open threads so the gate is wired the same way everywhere. */
+  setPermissionGateEnabled(enabled: boolean): Promise<DesktopAppState>;
+  listPermissionRules(): Promise<readonly PermissionRuleRecord[]>;
   setIntegratedTerminalShell(shell: string): Promise<DesktopAppState>;
   listRewindPoints(workspaceId: string, sessionId: string): Promise<readonly RewindPointRecord[]>;
   previewRewind(

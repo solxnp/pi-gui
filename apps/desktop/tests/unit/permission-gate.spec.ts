@@ -5,9 +5,21 @@ import type {
   ToolCallEvent,
   ToolCallEventResult,
 } from "@earendil-works/pi-coding-agent";
-import { findDangerousCommandMatches } from "../../electron/permissions/dangerous-bash";
-import { findSensitivePathMatches } from "../../electron/permissions/sensitive-path";
+import {
+  listCommandRules,
+  findDangerousCommandMatches,
+} from "../../electron/permissions/dangerous-bash";
+import { findSensitivePathMatches, listPathRules } from "../../electron/permissions/sensitive-path";
+import { listPermissionRules } from "../../electron/permissions/rule-catalog";
 import { createPermissionGateExtension } from "../../electron/permissions/permission-gate-extension";
+import {
+  createDefaultPermissionPreferences,
+  createStrictPermissionPreferences,
+  permissionCategoryIds,
+  applyPermissionPreferencesPatch,
+  type PermissionPreferences,
+  type PermissionPreferencesPatch,
+} from "../../contracts/permission-preferences";
 
 type ToolCallHandler = (
   event: ToolCallEvent,
@@ -51,6 +63,8 @@ function createGate(options: {
   hasUI?: boolean;
   sessionId?: string;
   intent?: string;
+  /** Starts from "ask about everything"; each case turns one category off deliberately. */
+  preferences?: PermissionPreferencesPatch;
 }): GateHarness {
   let handler: ToolCallHandler | undefined;
   const pi = {
@@ -60,7 +74,13 @@ function createGate(options: {
     },
   } as unknown as ExtensionAPI;
 
-  const factoryResult = createPermissionGateExtension()(pi);
+  const preferences: PermissionPreferences = applyPermissionPreferencesPatch(
+    createStrictPermissionPreferences(),
+    options.preferences ?? {},
+  );
+  const factoryResult = createPermissionGateExtension({
+    getPreferences: () => preferences,
+  })(pi);
   expect(factoryResult).toBeUndefined();
 
   const prompts: string[] = [];
@@ -284,7 +304,9 @@ test("a dialog that throws counts as a refusal", async () => {
       return () => {};
     },
   } as unknown as ExtensionAPI;
-  await createPermissionGateExtension()(pi);
+  await createPermissionGateExtension({
+    getPreferences: () => createStrictPermissionPreferences(),
+  })(pi);
 
   const ctx = {
     hasUI: true,
@@ -301,4 +323,101 @@ test("a dialog that throws counts as a refusal", async () => {
   }
   const result = await handler(bashEvent("rm -rf dist"), ctx);
   expect(result?.block).toBe(true);
+});
+
+test("a switched-off category runs without a dialog, the others still ask", async () => {
+  const gate = createGate({
+    choice: "取消",
+    preferences: { categories: { "credential-commands": false } },
+  });
+
+  // The user's own case: the command line names a token file, the category is off.
+  expect(await gate.run(bashEvent("cat tokens.json"))).toBeUndefined();
+  expect(gate.prompts).toHaveLength(0);
+
+  // Same rule set, still on: the file tool's own check is a different category.
+  expect((await gate.run(fileEvent("read", "/repo/tokens.json")))?.block).toBe(true);
+  expect(gate.prompts).toHaveLength(1);
+});
+
+test("a switched-off category does not silence another rule that hits the same call", async () => {
+  const gate = createGate({
+    choice: "取消",
+    preferences: { categories: { "delete-disk": false } },
+  });
+
+  // Deleting a system path is delete-disk; the sudo rule still owns this call.
+  const result = await gate.run(bashEvent("sudo rm -rf /var/lib/app"));
+  expect(result?.block).toBe(true);
+  expect(result?.reason).toContain("sudo-command");
+  expect(result?.reason).not.toContain("rm-system-path");
+});
+
+test("switching the master off stops every dialog", async () => {
+  const gate = createGate({ choice: "取消", preferences: { enabled: false } });
+
+  expect(await gate.run(bashEvent("rm -rf /"))).toBeUndefined();
+  expect(await gate.run(fileEvent("write", "/repo/.env"))).toBeUndefined();
+  expect(gate.prompts).toHaveLength(0);
+});
+
+test("category settings are read on every tool call, so a change applies at once", async () => {
+  let preferences = createStrictPermissionPreferences();
+  let handler: ToolCallHandler | undefined;
+  const pi = {
+    on: (_event: string, next: ToolCallHandler) => {
+      handler = next;
+      return () => {};
+    },
+  } as unknown as ExtensionAPI;
+  const factoryResult = createPermissionGateExtension({ getPreferences: () => preferences })(pi);
+  expect(factoryResult).toBeUndefined();
+
+  const prompts: string[] = [];
+  const ctx = {
+    hasUI: true,
+    ui: {
+      select: async (prompt: string) => {
+        prompts.push(prompt);
+        return "取消";
+      },
+    },
+    sessionManager: { getSessionId: () => "session-1" },
+  } as unknown as ExtensionContext;
+
+  if (!handler) throw new Error("The permission gate did not register a tool_call handler.");
+  expect((await handler(bashEvent("cat tokens.json"), ctx))?.block).toBe(true);
+  preferences = applyPermissionPreferencesPatch(preferences, {
+    categories: { "credential-commands": false },
+  });
+  expect(await handler(bashEvent("cat tokens.json"), ctx)).toBeUndefined();
+  expect(prompts).toHaveLength(1);
+});
+
+test("defaults keep every category on except command-line credentials files", () => {
+  const defaults = createDefaultPermissionPreferences();
+  expect(defaults.enabled).toBe(true);
+  for (const category of permissionCategoryIds) {
+    expect(defaults.categories[category]).toBe(category !== "credential-commands");
+  }
+});
+
+test("the rule catalog lists every rule exactly once per table, all categorised", () => {
+  const rules = listPermissionRules();
+  expect(rules.filter((rule) => rule.source === "command")).toHaveLength(listCommandRules().length);
+  expect(rules.filter((rule) => rule.source === "path")).toHaveLength(listPathRules().length);
+  expect(rules).toHaveLength(39);
+  for (const rule of rules) {
+    expect(permissionCategoryIds).toContain(rule.category);
+    expect(rule.reason.length).toBeGreaterThan(0);
+  }
+  // Every category is reachable from at least one rule.
+  for (const category of permissionCategoryIds) {
+    expect(rules.some((rule) => rule.category === category)).toBe(true);
+  }
+  // The noisy rule the Settings page promises to silence is the one behind that category.
+  expect(rules.find((rule) => rule.id === "sensitive-secret-file")?.category).toBe(
+    "credential-commands",
+  );
+  expect(rules.find((rule) => rule.id === "env-file")?.category).toBe("credential-files");
 });

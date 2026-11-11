@@ -276,6 +276,60 @@ export const en = {
   "settings.section.appearance.description":
     "Choose light, dark or system mode and a color preset.",
   "settings.section.notifications.description": "Choose which background events alert you.",
+  "settings.nav.permissions": "Permissions",
+  "settings.section.permissions.description":
+    "Decide which tool calls ask before they run, and which run straight through.",
+  "settings.permissions.groupMaster": "Master switch",
+  "settings.permissions.groupMaster.description":
+    "One switch for the whole gate. The Skills and extensions page flips the same setting.",
+  "settings.permissions.enabled.title": "Ask before dangerous actions",
+  "settings.permissions.enabled.description":
+    "Off means no category below asks; pi runs the tool call and the agent carries on.",
+  "settings.permissions.groupCommands": "Commands",
+  "settings.permissions.groupCommands.description": "Checked before pi runs a bash command.",
+  "settings.permissions.groupFiles": "Files",
+  "settings.permissions.groupFiles.description":
+    "Checked before pi reads or writes a file, and for file names inside a command.",
+  "settings.permissions.category.deleteDisk.title": "Deleting and disks",
+  "settings.permissions.category.deleteDisk.description":
+    "rm -rf, dd onto a device, mkfs, partition tables.",
+  "settings.permissions.category.sudo.title": "Elevated privileges",
+  "settings.permissions.category.sudo.description": "Any sudo command.",
+  "settings.permissions.category.fileMode.title": "File mode and owner",
+  "settings.permissions.category.fileMode.description": "chmod 777, chmod -R, chown -R.",
+  "settings.permissions.category.git.title": "Destructive git",
+  "settings.permissions.category.git.description":
+    "git reset --hard, git clean -f, git push --force.",
+  "settings.permissions.category.remoteScript.title": "Remote scripts",
+  "settings.permissions.category.remoteScript.description": "curl … | bash, bash <(curl …).",
+  "settings.permissions.category.containers.title": "Containers and clusters",
+  "settings.permissions.category.containers.description":
+    "docker prune -f, docker rm -f, kubectl delete.",
+  "settings.permissions.category.systemServices.title": "Services, processes and shutdown",
+  "settings.permissions.category.systemServices.description":
+    "systemctl stop sshd, killall node, shutdown / reboot.",
+  "settings.permissions.category.credentialFiles.title": "Reading and writing credentials files",
+  "settings.permissions.category.credentialFiles.description":
+    ".env, id_rsa, auth.json, tokens.json, secrets.yaml, .npmrc, *.pem.",
+  "settings.permissions.category.credentialCommands.title":
+    "Reaching credentials files from a command",
+  "settings.permissions.category.credentialCommands.description":
+    "Asks when a command names .env, token, secret or *.pem. This is the noisiest rule set: reading tokens.json or grepping a file called secret also matches.",
+  "settings.permissions.notice":
+    "This is a reminder, not a security boundary: xargs rm, $(printf rm) -rf / and a base64 pipeline all get past it. Switching a category off only stops the dialog; the tool card in the transcript stays.",
+  "settings.permissions.rules.title": "Rule details",
+  "settings.permissions.rules.description":
+    "Every rule each category covers. Any single match opens the dialog.",
+  "settings.permissions.rules.rowTitle": "All rules",
+  "settings.permissions.rules.count":
+    "{rules} rules across {categories} categories, listed one category at a time.",
+  "settings.permissions.rules.countUnknown": "Rules load when you expand this row.",
+  "settings.permissions.rules.expand": "Expand",
+  "settings.permissions.rules.collapse": "Collapse",
+  "settings.permissions.rules.loadFailed":
+    "Could not load the rules from the app. Try expanding again.",
+  "settings.permissions.offSummary":
+    "{count} categories will not ask. Turn the master switch back on to restore all of them.",
   "settings.section.shortcuts.description": "Shortcuts available across the app.",
   "settings.section.providers.description": "Connect providers and manage auth for {workspace}.",
   "settings.section.models.description":

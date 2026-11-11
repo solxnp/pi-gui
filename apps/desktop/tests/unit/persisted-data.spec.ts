@@ -21,6 +21,8 @@ for (const invalid of [
   { version: 19, extensionFlagsByWorkspace: { ws: { retries: 3 } } },
   { version: 19, extensionFlagsBySession: { "ws:sess": ["plan"] } },
   { version: 19, collapsedWorkspaceIds: ["alpha", 42] },
+  { version: 19, permissionPreferences: { categories: { futureCategory: true } } },
+  { version: 19, permissionPreferences: { enabled: "yes" } },
   [],
 ]) {
   test(`preserves invalid UI state ${JSON.stringify(invalid)}`, async () => {
@@ -162,4 +164,31 @@ test("unknown attachment fields survive rejected replacement and pruning", async
   await expect(store.write("session", [])).rejects.toThrow(/unsupported field/);
   await expect(store.remove("session")).rejects.toThrow(/unsupported field/);
   expect(await readFile(path, "utf8")).toBe(original);
+});
+
+test("permission category switches round-trip and default missing keys", async () => {
+  const path = join(await mkdtemp(join(tmpdir(), "ui-state-permissions-")), "ui-state.json");
+  await writePersistedUiState(path, {
+    permissionPreferences: {
+      enabled: true,
+      categories: {
+        "delete-disk": true,
+        sudo: true,
+        "file-mode": true,
+        git: true,
+        "remote-script": true,
+        containers: true,
+        "system-services": true,
+        "credential-files": true,
+        "credential-commands": true,
+      },
+    },
+  });
+  const decoded = await readPersistedUiState(path);
+  expect(decoded.permissionPreferences?.categories["credential-commands"]).toBe(true);
+
+  // An older file with no permission settings reads as the defaults.
+  await writePersistedUiState(path, { composerDraft: "kept" });
+  const legacy = await readPersistedUiState(path);
+  expect(legacy.permissionPreferences).toBeUndefined();
 });

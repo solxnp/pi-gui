@@ -36,7 +36,9 @@ import {
   type TerminalExitEvent,
   type TerminalPanelSnapshot,
   type TerminalSize,
+  type PermissionRuleRecord,
 } from "../contracts/ipc";
+import type { PermissionPreferencesPatch } from "../contracts/permission-preferences";
 import type { ExtensionActionEffect, ExtensionActionRequest } from "../contracts/extension-actions";
 import type { ClipboardImageRead } from "../contracts/composer-attachments";
 import type { DesktopEditorList } from "../contracts/editors";
@@ -453,6 +455,12 @@ contextBridge.exposeInMainWorld("piApp", {
       desktopIpc.setNotificationPreferences,
       preferences,
     ) as Promise<DesktopAppState>,
+  setPermissionPreferences: (patch: PermissionPreferencesPatch) =>
+    ipcRenderer.invoke(desktopIpc.setPermissionPreferences, patch) as Promise<DesktopAppState>,
+  setPermissionGateEnabled: (enabled: boolean) =>
+    ipcRenderer.invoke(desktopIpc.setPermissionGateEnabled, enabled) as Promise<DesktopAppState>,
+  listPermissionRules: () =>
+    ipcRenderer.invoke(desktopIpc.listPermissionRules) as Promise<readonly PermissionRuleRecord[]>,
   setIntegratedTerminalShell: (shellPath: string) =>
     ipcRenderer.invoke(
       desktopIpc.setIntegratedTerminalShell,

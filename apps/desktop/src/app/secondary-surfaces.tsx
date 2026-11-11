@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
 import type { AppView, DesktopAppState, WorkspaceRecord } from "../../contracts/desktop-state";
+import type { PermissionPreferencesPatch } from "../../contracts/permission-preferences";
 import { updateSnapshot } from "./desktop-app-state";
 import { getEffectiveModelRuntime } from "../features/settings/model-settings";
 import {
@@ -321,6 +322,24 @@ export function SecondarySurfaces({
     );
   };
 
+  const handleSetPermissionPreferences = (patch: PermissionPreferencesPatch) => {
+    void updateSnapshot(setSnapshot, () => api.setPermissionPreferences(patch)).catch(
+      (error: unknown) => {
+        console.error("[renderer] setPermissionPreferences failed", error);
+      },
+    );
+  };
+
+  const handleSetPermissionGateEnabled = (enabled: boolean) => {
+    void updateSnapshot(setSnapshot, () => api.setPermissionGateEnabled(enabled)).catch(
+      (error: unknown) => {
+        console.error("[renderer] setPermissionGateEnabled failed", error);
+      },
+    );
+  };
+
+  const handleListPermissionRules = useCallback(() => api.listPermissionRules(), [api]);
+
   const handleSetNotificationPreferences = (
     preferences: Partial<DesktopAppState["notificationPreferences"]>,
   ) => {
@@ -472,6 +491,10 @@ export function SecondarySurfaces({
           onSetModelSettingsScopeMode={handleSetModelSettingsScopeMode}
           onSetDefaultModel={handleSetDefaultModel}
           onSetNotificationPreferences={handleSetNotificationPreferences}
+          permissionPreferences={snapshot.permissionPreferences}
+          onSetPermissionPreferences={handleSetPermissionPreferences}
+          onSetPermissionGateEnabled={handleSetPermissionGateEnabled}
+          onListPermissionRules={handleListPermissionRules}
           onSetIntegratedTerminalShell={handleSetIntegratedTerminalShell}
           onRequestNotificationPermission={handleRequestNotificationPermission}
           onOpenSystemNotificationSettings={handleOpenSystemNotificationSettings}

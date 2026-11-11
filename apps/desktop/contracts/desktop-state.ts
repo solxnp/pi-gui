@@ -15,6 +15,10 @@ export type SessionStatus = "idle" | "running" | "failed";
 export type { SessionRole, TimelineToolCall, TranscriptMessage } from "./timeline-types";
 import type { TranscriptMessage } from "./timeline-types";
 import type { ScheduledTaskRecord } from "./scheduled-tasks";
+import {
+  createDefaultPermissionPreferences,
+  type PermissionPreferences,
+} from "./permission-preferences";
 export type {
   CreateScheduledTaskInput,
   ScheduledTaskFilter,
@@ -499,6 +503,8 @@ export interface DesktopAppState {
   readonly childThreadLinks: readonly ChildThreadLink[];
   readonly scheduledTasks: readonly ScheduledTaskRecord[];
   readonly notificationPreferences: NotificationPreferences;
+  /** Which tool calls ask before running; app-wide, like the notification switches. */
+  readonly permissionPreferences: PermissionPreferences;
   readonly integratedTerminalShell: string;
   readonly lastViewedAtBySession: Readonly<Record<string, string>>;
   readonly lastInteractedAtBySession: Readonly<Record<string, string>>;
@@ -556,6 +562,7 @@ export function createEmptyDesktopAppState(): DesktopAppState {
       backgroundFailure: true,
       attentionNeeded: true,
     },
+    permissionPreferences: createDefaultPermissionPreferences(),
     integratedTerminalShell: "",
     lastViewedAtBySession: {},
     lastInteractedAtBySession: {},

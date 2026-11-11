@@ -61,3 +61,57 @@ test("a dangerous bash command asks first and the denial reaches the tool result
     await harness.close();
   }
 });
+
+/**
+ * The category switch has to reach the running gate, not only `ui-state.json`: with the
+ * credentials-file command rule off, the command runs without a dialog; switching the category on
+ * brings the dialog back in the same session, without a restart.
+ */
+test("a switched-off category lets the command run, and switching it back asks", async ({}, testInfo) => {
+  test.setTimeout(300_000);
+  const realAuth = getRealAuthConfig();
+  test.skip(!realAuth.enabled, realAuth.skipReason);
+
+  const userDataDir = await makeUserDataDir();
+  const workspacePath = await makeWorkspace("permission-gate-category-workspace");
+  const harness = await launchDesktop(userDataDir, {
+    initialWorkspaces: [workspacePath],
+    testMode: "background",
+    realAuthSourceDir: realAuth.sourceDir,
+  });
+
+  const command =
+    "Use the bash tool to run exactly this command in one call: cat tokens.json. Do not change it. After the tool result, reply with one short sentence.";
+
+  try {
+    const window = await harness.firstWindow();
+    await createNamedThread(window, "Permission categories");
+    const dialog = window.getByTestId("extension-dialog");
+
+    // The shipped default already leaves the command-line credentials category off.
+    await window.getByTestId("composer").fill(command);
+    await window.getByTestId("composer").press("Enter");
+    await expect(window.locator(".timeline-tool").first()).toBeVisible({ timeout: 180_000 });
+    expect(await dialog.count()).toBe(0);
+
+    // The same switch the Settings page flips, without navigating away from the transcript.
+    await window.evaluate(async () => {
+      await globalThis.window.piApp?.setPermissionPreferences({
+        categories: { "credential-commands": true },
+      });
+    });
+
+    await window.getByTestId("composer").fill(command);
+    await window.getByTestId("composer").press("Enter");
+    await expect(dialog).toBeVisible({ timeout: 180_000 });
+    await expect(dialog).toContainText("通过命令访问文件名像密钥 / token 的文件");
+    await window.screenshot({
+      path: testInfo.outputPath("permission-category-dialog.png"),
+      scale: "css",
+    });
+    await dialog.getByRole("button", { name: "取消", exact: true }).click();
+    await expect(dialog).toBeHidden();
+  } finally {
+    await harness.close();
+  }
+});

@@ -12,6 +12,13 @@ import type {
   ThreadGrouping,
 } from "../../contracts/desktop-state";
 import { isThemeMode, isThemePresetId, isThreadGrouping } from "../../contracts/desktop-state";
+import {
+  applyPermissionPreferencesPatch,
+  createDefaultPermissionPreferences,
+  permissionCategoryIds,
+  type PermissionCategoryId,
+  type PermissionPreferences,
+} from "../../contracts/permission-preferences";
 import type { ExtensionFlagValues } from "@pi-gui/session-driver";
 import type { ModelSettingsSnapshot } from "@pi-gui/session-driver/runtime-types";
 import { readJsonWithBackup, writeFileAtomicQueued } from "./atomic-file-write";
@@ -38,6 +45,8 @@ export interface PersistedUiState {
   /** Flag values each thread's pi session started with, by session key. */
   readonly extensionFlagsBySession?: Record<string, ExtensionFlagValues>;
   readonly notificationPreferences?: Partial<NotificationPreferences>;
+  /** Which tool calls still ask before running, and the master switch. */
+  readonly permissionPreferences?: PermissionPreferences;
   /** Names of pi-gui built-in extensions the user switched off. */
   readonly disabledBuiltinExtensions?: readonly string[];
   readonly integratedTerminalShell?: string;
@@ -105,6 +114,7 @@ export function decodePersistedUiState(parsed: unknown): LegacyPersistedUiState 
     extensionFlagsByWorkspace: toExtensionFlagRecords(candidate.extensionFlagsByWorkspace),
     extensionFlagsBySession: toExtensionFlagRecords(candidate.extensionFlagsBySession),
     notificationPreferences: toNotificationPreferences(candidate.notificationPreferences),
+    permissionPreferences: toPermissionPreferences(candidate.permissionPreferences),
     disabledBuiltinExtensions: toStringArray(candidate.disabledBuiltinExtensions),
     integratedTerminalShell:
       typeof candidate.integratedTerminalShell === "string"
@@ -211,6 +221,7 @@ function validateUiState(value: unknown): Record<string, unknown> {
       "extensionFlagsByWorkspace",
       "extensionFlagsBySession",
       "notificationPreferences",
+      "permissionPreferences",
       "disabledBuiltinExtensions",
       "integratedTerminalShell",
       "lastViewedAtBySession",
@@ -293,6 +304,18 @@ function validateUiState(value: unknown): Record<string, unknown> {
     );
     for (const key of ["backgroundCompletion", "backgroundFailure", "attentionNeeded"])
       optional(preferences, key, boolean, `notificationPreferences.${key}`);
+  }
+  if (root.permissionPreferences !== undefined) {
+    const preferences = objectRecord(root.permissionPreferences) ?? fail("permissionPreferences");
+    knownKeys(preferences, ["enabled", "categories"], "permissionPreferences");
+    optional(preferences, "enabled", boolean, "permissionPreferences.enabled");
+    if (preferences.categories !== undefined) {
+      const categories =
+        objectRecord(preferences.categories) ?? fail("permissionPreferences.categories");
+      knownKeys(categories, [...permissionCategoryIds], "permissionPreferences.categories");
+      for (const key of permissionCategoryIds)
+        optional(categories, key, boolean, `permissionPreferences.categories.${key}`);
+    }
   }
   if (root.appGlobalModelSettings !== undefined) {
     const settings = objectRecord(root.appGlobalModelSettings) ?? fail("appGlobalModelSettings");
@@ -787,6 +810,19 @@ function numberValue(value: unknown): number | undefined {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+/** Missing keys fall back to the defaults; `validateUiState` already rejected unknown ones. */
+function toPermissionPreferences(value: unknown): PermissionPreferences | undefined {
+  const candidate = objectRecord(value);
+  if (!candidate) {
+    return undefined;
+  }
+  return applyPermissionPreferencesPatch(createDefaultPermissionPreferences(), {
+    ...(typeof candidate.enabled === "boolean" ? { enabled: candidate.enabled } : {}),
+    categories: objectRecord(candidate.categories) as
+      Partial<Record<PermissionCategoryId, boolean>> | undefined,
+  });
 }
 
 function toNotificationPreferences(value: unknown): Partial<NotificationPreferences> | undefined {

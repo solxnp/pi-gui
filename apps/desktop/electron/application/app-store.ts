@@ -125,6 +125,14 @@ import { resolveRepoWorkspaceId } from "../../contracts/workspace-roots";
 import { decodeTaskWorkbenchTemplate, type TaskWorkbenchTemplate } from "../../contracts/workbench";
 import { composerImageSavedSkipMessage } from "../../contracts/composer-attachments";
 import { extensionToolLabels } from "../../contracts/tool-labels";
+import {
+  applyPermissionPreferencesPatch,
+  type PermissionPreferences,
+  type PermissionPreferencesPatch,
+} from "../../contracts/permission-preferences";
+import { permissionGateExtensionName } from "../permissions/permission-gate-extension";
+import { listPermissionRules } from "../permissions/rule-catalog";
+import type { PermissionRuleRecord } from "../../contracts/ipc";
 import { quarantinePersistedComposerAttachments } from "../ipc/composer-attachment-pixels";
 import { SessionStateMap, type QueuedComposerEditState } from "../conversation/session-state-map";
 import {
@@ -304,7 +312,7 @@ export class DesktopAppStore {
     const driverOptions: PiSdkDriverConfig = {
       catalogStorage: this.catalogStore,
       ...(options.driverOptions ?? {}),
-      isBuiltinExtensionEnabled: (name) => !this.disabledBuiltinExtensions.has(name),
+      isBuiltinExtensionEnabled: (name) => this.builtinExtensionEnabled(name),
       extensionFlagValuesForSession: (sessionRef) =>
         this.sessionState.extensionFlagsBySession.get(sessionKey(sessionRef)),
       ...(options.generateThreadTitleOverride
@@ -1435,6 +1443,75 @@ export class DesktopAppStore {
     return this.emit();
   }
 
+  /** Category switches: read on every tool call, so no session has to be reloaded. */
+  async setPermissionPreferences(patch: PermissionPreferencesPatch): Promise<DesktopAppState> {
+    await this.initialize();
+    const permissionPreferences = applyPermissionPreferencesPatch(
+      this.state.permissionPreferences,
+      patch,
+    );
+    this.state = {
+      ...this.state,
+      permissionPreferences,
+      lastError: undefined,
+      revision: this.state.revision + 1,
+    };
+    await this.persistUiState();
+    return this.emit();
+  }
+
+  /**
+   * The master switch. Threads created while the gate was off never loaded the extension, so open
+   * threads reload here; the setting itself is read live by the gate either way.
+   */
+  async setPermissionGateEnabled(enabled: boolean): Promise<DesktopAppState> {
+    await this.initialize();
+    if (this.state.permissionPreferences.enabled === enabled) {
+      return this.state;
+    }
+    this.state = {
+      ...this.state,
+      permissionPreferences: { ...this.state.permissionPreferences, enabled },
+      lastError: undefined,
+      revision: this.state.revision + 1,
+    };
+    await this.persistUiState();
+    const workspaceId = this.state.selectedWorkspaceId || this.state.workspaces[0]?.id;
+    const ws = workspaceId ? this.workspaceRefFromState(workspaceId) : undefined;
+    if (!ws) {
+      return this.emit();
+    }
+    return this.withErrorHandling(async () => {
+      const snapshot = await this.driver.runtimeSupervisor.refreshRuntime(ws);
+      await this.refreshRuntimeForAllWorkspaces(ws.workspaceId, snapshot);
+      const reloaded = await this.reloadOpenSessions(
+        this.state.workspaces.map((workspace) => workspace.id),
+      );
+      await this.refreshSessionCommandsForAllWorkspaces();
+      const state = await this.refreshState({ clearLastError: true });
+      return reloaded
+        ? state
+        : this.withError(
+            "Some open threads could not reload; they pick up the permission gate change when reopened.",
+          );
+    });
+  }
+
+  listPermissionRules(): readonly PermissionRuleRecord[] {
+    return listPermissionRules();
+  }
+
+  /** What the permission gate reads before each tool call; cheap and allocation-free. */
+  permissionPreferencesSnapshot(): PermissionPreferences {
+    return this.state.permissionPreferences;
+  }
+
+  private builtinExtensionEnabled(name: string): boolean {
+    return name === permissionGateExtensionName
+      ? this.state.permissionPreferences.enabled
+      : !this.disabledBuiltinExtensions.has(name);
+  }
+
   async setIntegratedTerminalShell(integratedTerminalShell: string): Promise<DesktopAppState> {
     await this.initialize();
     const normalizedShell = integratedTerminalShell.trim();
@@ -1815,6 +1892,11 @@ export class DesktopAppStore {
     enabled: boolean,
   ): Promise<DesktopAppState> {
     await this.initialize();
+    // The permission gate's switch is the Settings page's own setting; keeping it out of
+    // `disabledBuiltinExtensions` leaves one source of truth for both entrances.
+    if (name === permissionGateExtensionName) {
+      return this.setPermissionGateEnabled(enabled);
+    }
     const ws = this.workspaceRefFromState(workspaceId);
     if (!ws) {
       return this.withError(`Unknown workspace: ${workspaceId}`);
@@ -2250,6 +2332,14 @@ export class DesktopAppStore {
   private restorePersistedUiState(persisted: LegacyPersistedUiState): void {
     this.disabledBuiltinExtensions.clear();
     for (const name of persisted.disabledBuiltinExtensions ?? []) {
+      // The permission gate moved from this list to its own setting; keep the old choice.
+      if (name === permissionGateExtensionName) {
+        this.state = {
+          ...this.state,
+          permissionPreferences: { ...this.state.permissionPreferences, enabled: false },
+        };
+        continue;
+      }
       this.disabledBuiltinExtensions.add(name);
     }
     this.taskWorkbenchTemplatesBySession.clear();
@@ -2268,6 +2358,10 @@ export class DesktopAppStore {
         ...this.state.notificationPreferences,
         ...persisted.notificationPreferences,
       },
+      permissionPreferences: applyPermissionPreferencesPatch(
+        this.state.permissionPreferences,
+        persisted.permissionPreferences ?? {},
+      ),
       integratedTerminalShell:
         persisted.integratedTerminalShell ?? this.state.integratedTerminalShell,
       lastViewedAtBySession: persisted.lastViewedAtBySession ?? {},
@@ -4120,6 +4214,7 @@ export class DesktopAppStore {
       extensionFlagsByWorkspace: mapToRecord(this.extensionFlagsByWorkspace),
       extensionFlagsBySession: mapToRecord(this.sessionState.extensionFlagsBySession),
       notificationPreferences: this.state.notificationPreferences,
+      permissionPreferences: this.state.permissionPreferences,
       disabledBuiltinExtensions:
         this.disabledBuiltinExtensions.size > 0
           ? [...this.disabledBuiltinExtensions].sort()

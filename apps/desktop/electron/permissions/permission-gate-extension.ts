@@ -5,6 +5,10 @@
  * The dialog offers three answers: allow once, deny, or allow everything for this session. A denial
  * blocks the tool call, so the agent sees a failed tool result naming the rule instead of silently
  * continuing. A dialog that cannot be shown counts as a denial, never as approval.
+ *
+ * Which rules still ask is the user's choice in Settings: a rule whose category is switched off
+ * never opens the dialog. Settings are read on every tool call, so a change applies immediately and
+ * an already-open session does not need to be restarted.
  */
 
 import type {
@@ -14,10 +18,21 @@ import type {
   ToolCallEvent,
   ToolCallEventResult,
 } from "@earendil-works/pi-coding-agent";
+import {
+  createStrictPermissionPreferences,
+  isPermissionCategoryEnabled,
+  type PermissionCategoryId,
+  type PermissionPreferences,
+} from "../../contracts/permission-preferences";
 import { findDangerousCommandMatches } from "./dangerous-bash";
 import { findSensitivePathMatches } from "./sensitive-path";
 
 export const permissionGateExtensionName = "pi-gui-permission-gate";
+
+export interface PermissionGateOptions {
+  /** Read on every tool call; Settings changes apply without restarting the session. */
+  readonly getPreferences: () => PermissionPreferences;
+}
 
 /** A dialog shows the first lines of the command; the full text stays in the transcript's tool card. */
 const COMMAND_PREVIEW_LINES = 4;
@@ -114,12 +129,24 @@ async function askUser(ctx: ExtensionContext, prompt: string): Promise<GateDecis
   }
 }
 
+/**
+ * The rules that still ask under these settings. A command or file can match several rules at
+ * once, so one switched-off category must not silence the others that hit the same call.
+ */
+function gatedMatches<T extends { readonly category: PermissionCategoryId }>(
+  matches: readonly T[],
+  preferences: PermissionPreferences,
+): T[] {
+  return matches.filter((match) => isPermissionCategoryEnabled(preferences, match.category));
+}
+
 async function gateBashCommand(
   command: string,
   ctx: ExtensionContext,
   sessionAllowed: Set<string>,
+  preferences: PermissionPreferences,
 ): Promise<ToolCallEventResult | undefined> {
-  const matches = findDangerousCommandMatches(command);
+  const matches = gatedMatches(findDangerousCommandMatches(command), preferences);
   if (matches.length === 0) {
     return undefined;
   }
@@ -170,8 +197,9 @@ async function gateFilePath(
   path: string,
   ctx: ExtensionContext,
   sessionAllowed: Set<string>,
+  preferences: PermissionPreferences,
 ): Promise<ToolCallEventResult | undefined> {
-  const matches = findSensitivePathMatches(path);
+  const matches = gatedMatches(findSensitivePathMatches(path), preferences);
   if (matches.length === 0) {
     return undefined;
   }
@@ -218,16 +246,31 @@ async function gateFilePath(
     : { block: true, reason: `用户拒绝了这次${label}敏感文件的请求（规则：${ids}）。` };
 }
 
-export function createPermissionGateExtension(): ExtensionFactory {
+function readPreferences(options: PermissionGateOptions): PermissionPreferences {
+  try {
+    return options.getPreferences();
+  } catch {
+    // Unreadable settings mean "ask about everything", not "let it through".
+    return createStrictPermissionPreferences();
+  }
+}
+
+export function createPermissionGateExtension(options: PermissionGateOptions): ExtensionFactory {
   return (pi: ExtensionAPI) => {
     // Per runtime, so "allow for this session" ends with the session instead of leaking into a new one.
     const sessionAllowed = new Set<string>();
 
     pi.on("tool_call", async (event, ctx) => {
+      const preferences = readPreferences(options);
+      if (!preferences.enabled) {
+        return undefined;
+      }
       switch (event.toolName) {
         case "bash": {
           const command = stringInput(event, "command");
-          return command === undefined ? undefined : gateBashCommand(command, ctx, sessionAllowed);
+          return command === undefined
+            ? undefined
+            : gateBashCommand(command, ctx, sessionAllowed, preferences);
         }
         case "read":
         case "write":
@@ -235,7 +278,7 @@ export function createPermissionGateExtension(): ExtensionFactory {
           const path = stringInput(event, "path");
           return path === undefined
             ? undefined
-            : gateFilePath(event.toolName, path, ctx, sessionAllowed);
+            : gateFilePath(event.toolName, path, ctx, sessionAllowed, preferences);
         }
         default:
           return undefined;

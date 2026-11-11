@@ -10,6 +10,11 @@ import type {
   WorkspaceRecord,
 } from "../../../contracts/desktop-state";
 import type {
+  PermissionPreferences,
+  PermissionPreferencesPatch,
+} from "../../../contracts/permission-preferences";
+import type { PermissionRuleRecord } from "../../../contracts/ipc";
+import type {
   CustomInstructionsSnapshot,
   CustomProviderConfig,
   DesktopNotificationPermissionStatus,
@@ -21,6 +26,7 @@ import { SettingsInstructionsSection } from "./settings-instructions-section";
 import { type McpSettingsActions, SettingsMcpSection } from "./settings-mcp-section";
 import { SettingsModelsSection } from "./settings-models-section";
 import { SettingsNotificationsSection } from "./settings-notifications-section";
+import { SettingsPermissionsSection } from "./settings-permissions-section";
 import { SettingsProvidersSection } from "./settings-providers-section";
 import { type SettingsSection, settingsSectionDefinition } from "./settings-sections";
 import { SettingsShortcutsSection } from "./settings-shortcuts-section";
@@ -57,6 +63,10 @@ interface SettingsViewProps {
   readonly onSaveCustomProvider: (config: CustomProviderConfig) => Promise<string | undefined>;
   readonly onDeleteCustomProvider: (providerId: string) => Promise<string | undefined>;
   readonly onSetNotificationPreferences: (preferences: Partial<NotificationPreferences>) => void;
+  readonly permissionPreferences: PermissionPreferences;
+  readonly onSetPermissionPreferences: (patch: PermissionPreferencesPatch) => void;
+  readonly onSetPermissionGateEnabled: (enabled: boolean) => void;
+  readonly onListPermissionRules: () => Promise<readonly PermissionRuleRecord[]>;
   readonly onSetIntegratedTerminalShell: (shellPath: string) => void;
   readonly onReadCustomInstructions: () => Promise<CustomInstructionsSnapshot>;
   readonly onSaveCustomInstructions: (content: string) => Promise<CustomInstructionsSnapshot>;
@@ -95,6 +105,10 @@ export function SettingsView({
   onSaveCustomProvider,
   onDeleteCustomProvider,
   onSetNotificationPreferences,
+  permissionPreferences,
+  onSetPermissionPreferences,
+  onSetPermissionGateEnabled,
+  onListPermissionRules,
   onSetIntegratedTerminalShell,
   onReadCustomInstructions,
   onSaveCustomInstructions,
@@ -173,6 +187,15 @@ export function SettingsView({
             <SettingsInstructionsSection
               onRead={onReadCustomInstructions}
               onSave={onSaveCustomInstructions}
+            />
+          ) : null}
+
+          {section === "permissions" ? (
+            <SettingsPermissionsSection
+              listRules={onListPermissionRules}
+              preferences={permissionPreferences}
+              onSetEnabled={onSetPermissionGateEnabled}
+              onSetPreferences={onSetPermissionPreferences}
             />
           ) : null}
 

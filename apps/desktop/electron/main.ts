@@ -54,6 +54,7 @@ import {
   createPermissionGateExtension,
   permissionGateExtensionName,
 } from "./permissions/permission-gate-extension";
+import { createDefaultPermissionPreferences } from "../contracts/permission-preferences";
 import {
   createCustomInstructionsExtension,
   createCustomInstructionsService,
@@ -1061,7 +1062,11 @@ app
           displayName: "Permission gate",
           description:
             "Asks before a dangerous bash command runs and before a tool reaches a credentials file",
-          factory: createPermissionGateExtension(),
+          factory: createPermissionGateExtension({
+            // Read on every tool call: a Settings change applies without reopening the thread.
+            getPreferences: () =>
+              store?.permissionPreferencesSnapshot() ?? createDefaultPermissionPreferences(),
+          }),
         },
         {
           name: "pi-gui-custom-instructions",

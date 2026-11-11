@@ -26,6 +26,11 @@ import {
   type WorkspaceSessionTarget,
   isThreadGrouping,
 } from "../../contracts/desktop-state";
+import {
+  isPermissionCategoryId,
+  type PermissionCategoryId,
+  type PermissionPreferencesPatch,
+} from "../../contracts/permission-preferences";
 import type {
   CustomProviderConfig,
   CustomProviderProbeInput,
@@ -317,6 +322,33 @@ export function expectSetChildSupervisionLoopInput(value: unknown): SetChildSupe
     childThreadId: expectNonEmptyString(record.childThreadId, "input.childThreadId"),
     gate: record.gate,
   };
+}
+
+/**
+ * A Settings patch for the permission gate. An unknown category is rejected rather than dropped:
+ * a typo in the renderer must fail loudly instead of silently leaving a gate switched on or off.
+ */
+export function expectPermissionPreferencesPatch(value: unknown): PermissionPreferencesPatch {
+  const record = expectRecord(value, "patch");
+  const patch: {
+    enabled?: boolean;
+    categories?: Partial<Record<PermissionCategoryId, boolean>>;
+  } = {};
+  if (Object.hasOwn(record, "enabled")) {
+    patch.enabled = expectBoolean(record.enabled, "patch.enabled");
+  }
+  if (Object.hasOwn(record, "categories")) {
+    const categories = expectRecord(record.categories, "patch.categories");
+    const parsed: Partial<Record<PermissionCategoryId, boolean>> = {};
+    for (const [key, entry] of Object.entries(categories)) {
+      if (!isPermissionCategoryId(key)) {
+        throw new TypeError(`patch.categories.${key} is not a permission category`);
+      }
+      parsed[key] = expectBoolean(entry, `patch.categories.${key}`);
+    }
+    patch.categories = parsed;
+  }
+  return patch;
 }
 
 export function expectNotificationPreferences(value: unknown): Partial<NotificationPreferences> {

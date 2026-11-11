@@ -6,8 +6,12 @@
  * credentials. `.env.example` and its siblings are templates, so they stay quiet.
  */
 
+import type { PermissionCategoryId } from "../../contracts/permission-preferences";
+import type { PermissionCategoryRule } from "./dangerous-bash";
+
 export interface SensitivePathMatch {
   readonly id: string;
+  readonly category: PermissionCategoryId;
   readonly reason: string;
   readonly matchedText: string;
 }
@@ -16,6 +20,12 @@ interface PathRule {
   readonly id: string;
   readonly reason: string;
 }
+
+/**
+ * Every path rule classifies a credentials file, so the category lives here instead of being
+ * repeated on ten entries. A path rule that guards something else needs its own field.
+ */
+const PATH_RULE_CATEGORY: PermissionCategoryId = "credential-files";
 
 /** Compared against the filename with its extension removed. */
 const SENSITIVE_STEMS: ReadonlyMap<string, PathRule> = new Map([
@@ -60,6 +70,24 @@ const SENSITIVE_FILES: ReadonlyMap<string, PathRule> = new Map([
 /** Private key material keeps its name and carries a key extension. */
 const PRIVATE_KEY_EXTENSIONS: readonly string[] = [".pem", ".key", ".p12", ".pfx", ".keystore"];
 
+const PRIVATE_KEY_RULE: PathRule = {
+  id: "private-key-file",
+  reason: "私钥或证书文件（.pem/.key/.p12 等）",
+};
+
+/**
+ * One entry per rule id, for the Settings list. The tables above repeat an id once per filename
+ * (`id_rsa` and `id_ed25519` are both `ssh-private-key`), which the dialog dedupes per file.
+ */
+const PATH_RULES: readonly PathRule[] = [
+  ...new Map(
+    [...SENSITIVE_STEMS.values(), ...SENSITIVE_FILES.values(), PRIVATE_KEY_RULE].map((rule) => [
+      rule.id,
+      rule,
+    ]),
+  ).values(),
+];
+
 /** `tokens.md` and `secrets.rst` are notes about secrets, not secrets. */
 const DOCUMENT_EXTENSIONS: readonly string[] = [".md", ".mdx", ".rst"];
 
@@ -81,6 +109,11 @@ function extensionOf(fileName: string): string {
   return dot === -1 ? "" : fileName.slice(dot);
 }
 
+/** The rule table as Settings lists it; matching details stay inside this module. */
+export function listPathRules(): readonly PermissionCategoryRule[] {
+  return PATH_RULES.map(({ id, reason }) => ({ id, category: PATH_RULE_CATEGORY, reason }));
+}
+
 export function findSensitivePathMatches(path: string): SensitivePathMatch[] {
   const fileName = fileNameOf(path);
   if (fileName.length === 0) {
@@ -92,7 +125,12 @@ export function findSensitivePathMatches(path: string): SensitivePathMatch[] {
     if (matches.some((match) => match.id === rule.id)) {
       return;
     }
-    matches.push({ id: rule.id, reason: rule.reason, matchedText: fileName });
+    matches.push({
+      id: rule.id,
+      category: PATH_RULE_CATEGORY,
+      reason: rule.reason,
+      matchedText: fileName,
+    });
   };
 
   if (ENV_TEMPLATE.test(fileName)) {
@@ -108,9 +146,8 @@ export function findSensitivePathMatches(path: string): SensitivePathMatch[] {
   if (stem && !DOCUMENT_EXTENSIONS.includes(extensionOf(fileName))) {
     record(stem);
   }
-
   if (PRIVATE_KEY_EXTENSIONS.includes(extensionOf(fileName))) {
-    record({ id: "private-key-file", reason: "私钥或证书文件（.pem/.key/.p12 等）" });
+    record(PRIVATE_KEY_RULE);
   }
 
   return matches;
