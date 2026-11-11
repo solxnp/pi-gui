@@ -15,6 +15,11 @@ import type {
 } from "../../../contracts/permission-preferences";
 import type { PermissionRuleRecord } from "../../../contracts/ipc";
 import type {
+  NetworkResumePreferences,
+  NetworkResumePreferencesPatch,
+  NetworkResumeWaitingRecord,
+} from "../../../contracts/network-resume";
+import type {
   CustomInstructionsSnapshot,
   CustomProviderConfig,
   DesktopNotificationPermissionStatus,
@@ -29,6 +34,7 @@ import { SettingsInstructionsSection } from "./settings-instructions-section";
 import { type McpSettingsActions, SettingsMcpSection } from "./settings-mcp-section";
 import { SettingsModelsSection } from "./settings-models-section";
 import { SettingsNotificationsSection } from "./settings-notifications-section";
+import { SettingsNetworkResumeSection } from "./settings-network-resume-section";
 import { SettingsPermissionsSection } from "./settings-permissions-section";
 import { SettingsProvidersSection } from "./settings-providers-section";
 import { SettingsRecallProjectsSection } from "./settings-recall-projects-section";
@@ -71,6 +77,9 @@ interface SettingsViewProps {
   readonly onSetPermissionPreferences: (patch: PermissionPreferencesPatch) => void;
   readonly onSetPermissionGateEnabled: (enabled: boolean) => void;
   readonly onListPermissionRules: () => Promise<readonly PermissionRuleRecord[]>;
+  readonly networkResumePreferences: NetworkResumePreferences;
+  readonly networkResumeWaiting: readonly NetworkResumeWaitingRecord[];
+  readonly onSetNetworkResumePreferences: (patch: NetworkResumePreferencesPatch) => void;
   readonly onSetIntegratedTerminalShell: (shellPath: string) => void;
   readonly onReadCustomInstructions: () => Promise<CustomInstructionsSnapshot>;
   readonly onSaveCustomInstructions: (content: string) => Promise<CustomInstructionsSnapshot>;
@@ -117,6 +126,9 @@ export function SettingsView({
   onSetPermissionPreferences,
   onSetPermissionGateEnabled,
   onListPermissionRules,
+  networkResumePreferences,
+  networkResumeWaiting,
+  onSetNetworkResumePreferences,
   onSetIntegratedTerminalShell,
   onReadCustomInstructions,
   onSaveCustomInstructions,
@@ -190,6 +202,14 @@ export function SettingsView({
               onSetModelSettingsScopeMode={onSetModelSettingsScopeMode}
               onSetIntegratedTerminalShell={onSetIntegratedTerminalShell}
               onToggleSkillCommands={onToggleSkillCommands}
+            />
+          ) : null}
+
+          {section === "network-resume" ? (
+            <SettingsNetworkResumeSection
+              preferences={networkResumePreferences}
+              waiting={networkResumeWaiting}
+              onSetPreferences={onSetNetworkResumePreferences}
             />
           ) : null}
 

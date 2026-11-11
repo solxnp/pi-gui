@@ -54,6 +54,8 @@ import {
   createPermissionGateExtension,
   permissionGateExtensionName,
 } from "./permissions/permission-gate-extension";
+import { NetworkResumeService } from "./network-resume/network-resume-service";
+import { createHttpProbe } from "./network-resume/network-probe";
 import { createDefaultPermissionPreferences } from "../contracts/permission-preferences";
 import {
   createCustomInstructionsExtension,
@@ -186,6 +188,9 @@ async function runScheduledTaskRuntimeToolForTest(
 }
 
 let stopNotifications: (() => void) | undefined;
+let networkResume: NetworkResumeService | undefined;
+let stopNetworkResume: (() => void) | undefined;
+let stopNetworkResumeEvents: (() => void) | undefined;
 let stopUpdateChecker: (() => void) | undefined;
 let stopPruningTerminals: (() => void) | undefined;
 let retainedTerminalWorkspacePathSignature = "";
@@ -1178,6 +1183,19 @@ app
       },
     );
     stopNotifications = notificationManager.start();
+    networkResume = new NetworkResumeService(
+      {
+        getPreferences: () => store.networkResumePreferences(),
+        sessionState: (sessionRef) => store.networkResumeSessionState(sessionRef),
+        deliverContinue: (sessionRef, text) => store.deliverNetworkResumeContinue(sessionRef, text),
+        publish: (waiting) => store.setNetworkResumeWaiting(waiting),
+      },
+      { probe: createHttpProbe() },
+    );
+    stopNetworkResumeEvents = store.subscribeToSessionEvents((event) =>
+      networkResume?.handleEvent(event),
+    );
+    stopNetworkResume = networkResume.start();
     if (!isDev) {
       stopUpdateChecker = initUpdateChecker();
     }
@@ -1226,6 +1244,7 @@ app
         createLoginCallbacks: (window) => createRuntimeLoginCallbacks(window),
         probeCustomProviderModels,
         notificationPermission: () => notificationPermissionService,
+        optionalNetworkResume: () => networkResume,
         customInstructions,
         recallProjects,
         rewind,
@@ -1313,6 +1332,11 @@ app.on("window-all-closed", () => {
   // Electron harness closes windows to end each isolated run, so let explicit
   // test-mode launches quit instead of leaving their process behind forever.
   if (process.platform !== "darwin" || appTestMode !== undefined) {
+    stopNetworkResume?.();
+    stopNetworkResume = undefined;
+    stopNetworkResumeEvents?.();
+    stopNetworkResumeEvents = undefined;
+    networkResume = undefined;
     stopNotifications?.();
     stopNotifications = undefined;
     notificationManager = undefined;
@@ -1329,6 +1353,11 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", (event) => {
+  stopNetworkResume?.();
+  stopNetworkResume = undefined;
+  stopNetworkResumeEvents?.();
+  stopNetworkResumeEvents = undefined;
+  networkResume = undefined;
   stopNotifications?.();
   stopNotifications = undefined;
   notificationManager = undefined;

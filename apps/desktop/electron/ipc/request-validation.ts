@@ -27,6 +27,11 @@ import {
   isThreadGrouping,
 } from "../../contracts/desktop-state";
 import {
+  isNetworkResumeMaxAttempts,
+  type NetworkResumeMaxAttempts,
+  type NetworkResumePreferencesPatch,
+} from "../../contracts/network-resume";
+import {
   isPermissionCategoryId,
   type PermissionCategoryId,
   type PermissionPreferencesPatch,
@@ -349,6 +354,25 @@ export function expectPermissionPreferencesPatch(value: unknown): PermissionPref
     patch.categories = parsed;
   }
   return patch;
+}
+
+export function expectNetworkResumePreferencesPatch(value: unknown): NetworkResumePreferencesPatch {
+  const record = expectRecord(value, "patch");
+  const enabled = Object.hasOwn(record, "enabled")
+    ? expectBoolean(record.enabled, "patch.enabled")
+    : undefined;
+  let maxAttempts: NetworkResumeMaxAttempts | undefined;
+  if (Object.hasOwn(record, "maxAttempts")) {
+    const attempts = record.maxAttempts;
+    if (!isNetworkResumeMaxAttempts(attempts)) {
+      throw new TypeError("patch.maxAttempts must be 0, 3, 5 or 10");
+    }
+    maxAttempts = attempts;
+  }
+  return {
+    ...(enabled === undefined ? {} : { enabled }),
+    ...(maxAttempts === undefined ? {} : { maxAttempts }),
+  };
 }
 
 export function expectNotificationPreferences(value: unknown): Partial<NotificationPreferences> {

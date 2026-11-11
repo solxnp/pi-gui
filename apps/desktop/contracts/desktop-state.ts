@@ -19,6 +19,11 @@ import {
   createDefaultPermissionPreferences,
   type PermissionPreferences,
 } from "./permission-preferences";
+import {
+  defaultNetworkResumePreferences,
+  type NetworkResumePreferences,
+  type NetworkResumeWaitingRecord,
+} from "./network-resume";
 export type {
   CreateScheduledTaskInput,
   ScheduledTaskFilter,
@@ -505,6 +510,10 @@ export interface DesktopAppState {
   readonly notificationPreferences: NotificationPreferences;
   /** Which tool calls ask before running; app-wide, like the notification switches. */
   readonly permissionPreferences: PermissionPreferences;
+  /** Background resume of runs that a network outage cut short. */
+  readonly networkResumePreferences: NetworkResumePreferences;
+  /** Threads currently waiting for the network; empty unless the watcher is holding one. */
+  readonly networkResumeWaiting: readonly NetworkResumeWaitingRecord[];
   readonly integratedTerminalShell: string;
   readonly lastViewedAtBySession: Readonly<Record<string, string>>;
   readonly lastInteractedAtBySession: Readonly<Record<string, string>>;
@@ -563,6 +572,8 @@ export function createEmptyDesktopAppState(): DesktopAppState {
       attentionNeeded: true,
     },
     permissionPreferences: createDefaultPermissionPreferences(),
+    networkResumePreferences: defaultNetworkResumePreferences,
+    networkResumeWaiting: [],
     integratedTerminalShell: "",
     lastViewedAtBySession: {},
     lastInteractedAtBySession: {},

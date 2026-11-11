@@ -9,6 +9,7 @@ import {
 import type { RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
 import type { AppView, DesktopAppState, WorkspaceRecord } from "../../contracts/desktop-state";
 import type { PermissionPreferencesPatch } from "../../contracts/permission-preferences";
+import type { NetworkResumePreferencesPatch } from "../../contracts/network-resume";
 import { updateSnapshot } from "./desktop-app-state";
 import { getEffectiveModelRuntime } from "../features/settings/model-settings";
 import {
@@ -322,6 +323,14 @@ export function SecondarySurfaces({
     );
   };
 
+  const handleSetNetworkResumePreferences = (patch: NetworkResumePreferencesPatch) => {
+    void updateSnapshot(setSnapshot, () => api.setNetworkResumePreferences(patch)).catch(
+      (error: unknown) => {
+        console.error("[renderer] setNetworkResumePreferences failed", error);
+      },
+    );
+  };
+
   const handleSetPermissionPreferences = (patch: PermissionPreferencesPatch) => {
     void updateSnapshot(setSnapshot, () => api.setPermissionPreferences(patch)).catch(
       (error: unknown) => {
@@ -495,6 +504,9 @@ export function SecondarySurfaces({
           onSetPermissionPreferences={handleSetPermissionPreferences}
           onSetPermissionGateEnabled={handleSetPermissionGateEnabled}
           onListPermissionRules={handleListPermissionRules}
+          networkResumePreferences={snapshot.networkResumePreferences}
+          networkResumeWaiting={snapshot.networkResumeWaiting}
+          onSetNetworkResumePreferences={handleSetNetworkResumePreferences}
           onSetIntegratedTerminalShell={handleSetIntegratedTerminalShell}
           onRequestNotificationPermission={handleRequestNotificationPermission}
           onOpenSystemNotificationSettings={handleOpenSystemNotificationSettings}

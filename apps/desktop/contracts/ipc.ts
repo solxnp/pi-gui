@@ -19,6 +19,7 @@ import type { DesktopEditorList } from "./editors";
 import type { SessionRef } from "@pi-gui/session-driver/types";
 import type { SaveTaskWorkbenchTemplateInput, TaskWorkbenchTemplate } from "./workbench";
 import type { PermissionCategoryId, PermissionPreferencesPatch } from "./permission-preferences";
+import type { NetworkResumePreferencesPatch } from "./network-resume";
 import type {
   TurnChangesInput,
   TurnChangesResult,
@@ -292,6 +293,7 @@ export const desktopIpc = {
   setPermissionPreferences: "pi-gui:set-permission-preferences",
   setPermissionGateEnabled: "pi-gui:set-permission-gate-enabled",
   listPermissionRules: "pi-gui:list-permission-rules",
+  setNetworkResumePreferences: "pi-gui:set-network-resume-preferences",
   setIntegratedTerminalShell: "pi-gui:set-integrated-terminal-shell",
   listRewindPoints: "pi-gui:list-rewind-points",
   previewRewind: "pi-gui:preview-rewind",
@@ -988,6 +990,8 @@ export interface PiDesktopApi {
   /** The master switch; reloads open threads so the gate is wired the same way everywhere. */
   setPermissionGateEnabled(enabled: boolean): Promise<DesktopAppState>;
   listPermissionRules(): Promise<readonly PermissionRuleRecord[]>;
+  /** Background resume of runs cut short by a network outage. */
+  setNetworkResumePreferences(patch: NetworkResumePreferencesPatch): Promise<DesktopAppState>;
   setIntegratedTerminalShell(shell: string): Promise<DesktopAppState>;
   listRewindPoints(workspaceId: string, sessionId: string): Promise<readonly RewindPointRecord[]>;
   previewRewind(

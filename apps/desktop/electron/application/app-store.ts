@@ -61,6 +61,7 @@ import {
   type SelectedTranscriptRecord,
   type SessionExtensionNoticeRecord,
   type SessionExtensionUiUpdate,
+  type SessionStatus,
   type StartThreadInput,
   type StartupDiagnostic,
   type ThemeMode,
@@ -126,6 +127,12 @@ import { resolveRepoWorkspaceId } from "../../contracts/workspace-roots";
 import { decodeTaskWorkbenchTemplate, type TaskWorkbenchTemplate } from "../../contracts/workbench";
 import { composerImageSavedSkipMessage } from "../../contracts/composer-attachments";
 import { extensionToolLabels } from "../../contracts/tool-labels";
+import {
+  applyNetworkResumePreferencesPatch,
+  type NetworkResumePreferences,
+  type NetworkResumePreferencesPatch,
+  type NetworkResumeWaitingRecord,
+} from "../../contracts/network-resume";
 import {
   applyPermissionPreferencesPatch,
   type PermissionPreferences,
@@ -1502,6 +1509,61 @@ export class DesktopAppStore {
     return listPermissionRules();
   }
 
+  /** What the network-resume watcher reads; no session reload is involved. */
+  networkResumePreferences(): NetworkResumePreferences {
+    return this.state.networkResumePreferences;
+  }
+
+  async setNetworkResumePreferences(
+    patch: NetworkResumePreferencesPatch,
+  ): Promise<DesktopAppState> {
+    await this.initialize();
+    this.state = {
+      ...this.state,
+      networkResumePreferences: applyNetworkResumePreferencesPatch(
+        this.state.networkResumePreferences,
+        patch,
+      ),
+      lastError: undefined,
+      revision: this.state.revision + 1,
+    };
+    await this.persistUiState();
+    return this.emit();
+  }
+
+  /** Called by the watcher whenever its waiting list changes; never persisted. */
+  setNetworkResumeWaiting(waiting: readonly NetworkResumeWaitingRecord[]): void {
+    if (waiting.length === 0 && this.state.networkResumeWaiting.length === 0) {
+      return;
+    }
+    this.state = {
+      ...this.state,
+      networkResumeWaiting: waiting.map((record) => {
+        const title = this.sessionFromState({
+          workspaceId: record.workspaceId,
+          sessionId: record.sessionId,
+        })?.title;
+        return title ? { ...record, title } : record;
+      }),
+      revision: this.state.revision + 1,
+    };
+    this.emit();
+  }
+
+  /** The watcher's view of a thread: status and whether it is archived. */
+  networkResumeSessionState(
+    sessionRef: SessionRef,
+  ): { readonly status: SessionStatus; readonly archivedAt?: string } | undefined {
+    const session = this.sessionFromState(sessionRef);
+    return session ? { status: session.status, archivedAt: session.archivedAt } : undefined;
+  }
+
+  /** Delivers the watcher's "continue" as a background instruction, like a scheduled task does. */
+  async deliverNetworkResumeContinue(sessionRef: SessionRef, text: string): Promise<void> {
+    await this.initialize();
+    await this.conversationOwner.deliverBackgroundInstruction(sessionRef, text);
+  }
+
   /** What the permission gate reads before each tool call; cheap and allocation-free. */
   permissionPreferencesSnapshot(): PermissionPreferences {
     return this.state.permissionPreferences;
@@ -2362,6 +2424,10 @@ export class DesktopAppStore {
       permissionPreferences: applyPermissionPreferencesPatch(
         this.state.permissionPreferences,
         persisted.permissionPreferences ?? {},
+      ),
+      networkResumePreferences: applyNetworkResumePreferencesPatch(
+        this.state.networkResumePreferences,
+        persisted.networkResumePreferences ?? {},
       ),
       integratedTerminalShell:
         persisted.integratedTerminalShell ?? this.state.integratedTerminalShell,
@@ -4216,6 +4282,7 @@ export class DesktopAppStore {
       extensionFlagsBySession: mapToRecord(this.sessionState.extensionFlagsBySession),
       notificationPreferences: this.state.notificationPreferences,
       permissionPreferences: this.state.permissionPreferences,
+      networkResumePreferences: this.state.networkResumePreferences,
       disabledBuiltinExtensions:
         this.disabledBuiltinExtensions.size > 0
           ? [...this.disabledBuiltinExtensions].sort()

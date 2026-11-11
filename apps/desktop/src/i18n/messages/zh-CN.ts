@@ -367,6 +367,29 @@ export const zhCN: Partial<Messages> = {
   "settings.permissions.rules.collapse": "收起",
   "settings.permissions.rules.loadFailed": "没能从应用里读到规则，收起后再展开试一次。",
   "settings.permissions.offSummary": "{count} 个类别不再询问。把总开关重新打开可以全部恢复。",
+  "settings.nav.networkResume": "网络恢复",
+  "settings.section.networkResume.description":
+    "断网导致中断的会话，网络回来后自动替你发「继续」。",
+  "settings.networkResume.group": "自动续跑",
+  "settings.networkResume.group.description":
+    "只在有会话真的在等待时才探测，每分钟一次，不消耗模型调用。",
+  "settings.networkResume.enabled.title": "网络恢复后自动续跑",
+  "settings.networkResume.enabled.description":
+    "连接出错导致中断的会话会进入等待列表；网络一通，pi-gui 就在那个对话里发一条「继续」。关掉则全部等你手动继续。",
+  "settings.networkResume.limit.title": "每个对话最多续跑",
+  "settings.networkResume.limit.description":
+    "防止一直失败的会话整晚反复重试。到上限后停在等待列表里，等你处理。",
+  "settings.networkResume.limit.attempts": "{count} 次",
+  "settings.networkResume.limit.unlimited": "不限次数",
+  "settings.networkResume.waiting.title": "正在等网络的对话",
+  "settings.networkResume.waiting.description":
+    "只有网络类失败会出现在这里；鉴权失败、额度不足、上下文超限都不会。",
+  "settings.networkResume.waiting.empty": "没有对话在等待。",
+  "settings.networkResume.waiting.untitled": "未命名对话",
+  "settings.networkResume.waiting.attempts": "已续跑 {count} 次",
+  "settings.networkResume.waiting.exhausted": "已达上限，等你处理",
+  "settings.networkResume.note":
+    "只在这台机器上生效：pi-gui 开着、电脑不睡眠才会轮询。合盖睡眠期间不会探测，整夜依赖它的话记得别让电脑睡过去。",
   "extensions.group.workspace": "工作区",
   "extensions.group.user": "用户",
   "extensions.group.session": "本次会话",

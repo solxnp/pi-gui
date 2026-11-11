@@ -23,6 +23,8 @@ for (const invalid of [
   { version: 19, collapsedWorkspaceIds: ["alpha", 42] },
   { version: 19, permissionPreferences: { categories: { futureCategory: true } } },
   { version: 19, permissionPreferences: { enabled: "yes" } },
+  { version: 19, networkResumePreferences: { maxAttempts: 7 } },
+  { version: 19, networkResumePreferences: { futureKey: true } },
   [],
 ]) {
   test(`preserves invalid UI state ${JSON.stringify(invalid)}`, async () => {
@@ -191,4 +193,13 @@ test("permission category switches round-trip and default missing keys", async (
   await writePersistedUiState(path, { composerDraft: "kept" });
   const legacy = await readPersistedUiState(path);
   expect(legacy.permissionPreferences).toBeUndefined();
+});
+
+test("network resume settings round-trip and reject choices Settings never offers", async () => {
+  const path = join(await mkdtemp(join(tmpdir(), "ui-state-network-resume-")), "ui-state.json");
+  await writePersistedUiState(path, {
+    networkResumePreferences: { enabled: false, maxAttempts: 10 },
+  });
+  const decoded = await readPersistedUiState(path);
+  expect(decoded.networkResumePreferences).toEqual({ enabled: false, maxAttempts: 10 });
 });

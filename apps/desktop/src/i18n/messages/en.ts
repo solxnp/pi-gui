@@ -391,6 +391,29 @@ export const en = {
     "Could not load the rules from the app. Try expanding again.",
   "settings.permissions.offSummary":
     "{count} categories will not ask. Turn the master switch back on to restore all of them.",
+  "settings.nav.networkResume": "Network recovery",
+  "settings.section.networkResume.description":
+    'Finish runs that a network outage cut short, without typing "continue" yourself.',
+  "settings.networkResume.group": "Automatic resume",
+  "settings.networkResume.group.description":
+    "While pi-gui is open, it checks the network once a minute and only while a run is actually waiting.",
+  "settings.networkResume.enabled.title": "Resume after the network is back",
+  "settings.networkResume.enabled.description":
+    'A run that failed with a connection error joins the waiting list; once the network answers, pi-gui sends "continue" into that thread for you. Off means every thread waits for you.',
+  "settings.networkResume.limit.title": "Continues per thread",
+  "settings.networkResume.limit.description":
+    "Stops a thread that keeps failing from spending all night. Hitting the cap leaves the thread waiting for you.",
+  "settings.networkResume.limit.attempts": "{count} times",
+  "settings.networkResume.limit.unlimited": "No limit",
+  "settings.networkResume.waiting.title": "Waiting for the network",
+  "settings.networkResume.waiting.description":
+    "Only runs that failed with a network error appear here; authentication, quota and context errors never do.",
+  "settings.networkResume.waiting.empty": "No thread is waiting.",
+  "settings.networkResume.waiting.untitled": "Untitled thread",
+  "settings.networkResume.waiting.attempts": "{count} continues sent",
+  "settings.networkResume.waiting.exhausted": "Cap reached; waiting for you",
+  "settings.networkResume.note":
+    "This runs on this machine only: pi-gui has to be open and the computer awake. A sleeping Mac pauses the check, so keep the machine awake if you rely on it overnight.",
   "extensions.group.workspace": "Workspace",
   "extensions.group.user": "User",
   "extensions.group.session": "This session",

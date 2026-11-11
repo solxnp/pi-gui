@@ -21,6 +21,7 @@ import type { CustomInstructionsService } from "../instructions/custom-instructi
 import { RecallProjectsRejected, type RecallProjectsService } from "../settings/recall-projects";
 import type { RewindService } from "../workbench/checkpoint-rewind-service";
 import type { NotificationPermissionService } from "../platform/notification-permission";
+import type { NetworkResumeService } from "../network-resume/network-resume-service";
 import type { EditorService } from "../platform/editors/editor-service";
 import type { TerminalService } from "../platform/terminal-service";
 import type { ThemeManager } from "../platform/theme-manager";
@@ -52,6 +53,7 @@ import {
   expectNewMcpServerInput,
   expectNavigateSessionTreeOptions,
   expectNonEmptyString,
+  expectNetworkResumePreferencesPatch,
   expectNotificationPreferences,
   expectPermissionPreferencesPatch,
   expectOptionalDeliverOptions,
@@ -174,6 +176,7 @@ type SettingsOwner = Pick<
   | "setPermissionPreferences"
   | "setPermissionGateEnabled"
   | "listPermissionRules"
+  | "setNetworkResumePreferences"
   | "setIntegratedTerminalShell"
   | "setEnableTransparency"
   | "getSkillFilePath"
@@ -206,6 +209,7 @@ export interface DesktopIpcCapabilities {
     input: CustomProviderProbeInput,
   ) => Promise<CustomProviderProbeResult>;
   readonly notificationPermission: () => NotificationPermissionService | undefined;
+  readonly optionalNetworkResume: () => NetworkResumeService | undefined;
   readonly customInstructions: CustomInstructionsService;
   readonly recallProjects: RecallProjectsService;
   readonly rewind: RewindService;
@@ -681,6 +685,16 @@ export function registerDesktopIpc({
     run(event, () =>
       owners.settings.setNotificationPreferences(expectNotificationPreferences(rawPreferences)),
     ),
+  );
+  ipcMain.handle(desktopIpc.setNetworkResumePreferences, (event, rawPatch: unknown) =>
+    run(event, async () => {
+      const state = await owners.settings.setNetworkResumePreferences(
+        expectNetworkResumePreferencesPatch(rawPatch),
+      );
+      // A switched-off watcher must drop what it was holding right away.
+      capabilities.optionalNetworkResume?.()?.preferencesChanged();
+      return state;
+    }),
   );
   ipcMain.handle(desktopIpc.listPermissionRules, (event) => {
     windows.windowForSender(event.sender);

@@ -13,6 +13,12 @@ import type {
 } from "../../contracts/desktop-state";
 import { isThemeMode, isThemePresetId, isThreadGrouping } from "../../contracts/desktop-state";
 import {
+  applyNetworkResumePreferencesPatch,
+  defaultNetworkResumePreferences,
+  isNetworkResumeMaxAttempts,
+  type NetworkResumePreferences,
+} from "../../contracts/network-resume";
+import {
   applyPermissionPreferencesPatch,
   createDefaultPermissionPreferences,
   permissionCategoryIds,
@@ -47,6 +53,8 @@ export interface PersistedUiState {
   readonly notificationPreferences?: Partial<NotificationPreferences>;
   /** Which tool calls still ask before running, and the master switch. */
   readonly permissionPreferences?: PermissionPreferences;
+  /** Automatic "continue" after a network outage. */
+  readonly networkResumePreferences?: NetworkResumePreferences;
   /** Names of pi-gui built-in extensions the user switched off. */
   readonly disabledBuiltinExtensions?: readonly string[];
   readonly integratedTerminalShell?: string;
@@ -115,6 +123,7 @@ export function decodePersistedUiState(parsed: unknown): LegacyPersistedUiState 
     extensionFlagsBySession: toExtensionFlagRecords(candidate.extensionFlagsBySession),
     notificationPreferences: toNotificationPreferences(candidate.notificationPreferences),
     permissionPreferences: toPermissionPreferences(candidate.permissionPreferences),
+    networkResumePreferences: toNetworkResumePreferences(candidate.networkResumePreferences),
     disabledBuiltinExtensions: toStringArray(candidate.disabledBuiltinExtensions),
     integratedTerminalShell:
       typeof candidate.integratedTerminalShell === "string"
@@ -222,6 +231,7 @@ function validateUiState(value: unknown): Record<string, unknown> {
       "extensionFlagsBySession",
       "notificationPreferences",
       "permissionPreferences",
+      "networkResumePreferences",
       "disabledBuiltinExtensions",
       "integratedTerminalShell",
       "lastViewedAtBySession",
@@ -316,6 +326,18 @@ function validateUiState(value: unknown): Record<string, unknown> {
       for (const key of permissionCategoryIds)
         optional(categories, key, boolean, `permissionPreferences.categories.${key}`);
     }
+  }
+  if (root.networkResumePreferences !== undefined) {
+    const preferences =
+      objectRecord(root.networkResumePreferences) ?? fail("networkResumePreferences");
+    knownKeys(preferences, ["enabled", "maxAttempts"], "networkResumePreferences");
+    optional(preferences, "enabled", boolean, "networkResumePreferences.enabled");
+    optional(
+      preferences,
+      "maxAttempts",
+      (value) => isNetworkResumeMaxAttempts(value),
+      "networkResumePreferences.maxAttempts",
+    );
   }
   if (root.appGlobalModelSettings !== undefined) {
     const settings = objectRecord(root.appGlobalModelSettings) ?? fail("appGlobalModelSettings");
@@ -810,6 +832,18 @@ function numberValue(value: unknown): number | undefined {
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+/** Missing keys fall back to the defaults; `validateUiState` already rejected unknown ones. */
+function toNetworkResumePreferences(value: unknown): NetworkResumePreferences | undefined {
+  const candidate = objectRecord(value);
+  if (!candidate) {
+    return undefined;
+  }
+  return applyNetworkResumePreferencesPatch(defaultNetworkResumePreferences, {
+    ...(typeof candidate.enabled === "boolean" ? { enabled: candidate.enabled } : {}),
+    ...(typeof candidate.maxAttempts === "number" ? { maxAttempts: candidate.maxAttempts } : {}),
+  });
 }
 
 /** Missing keys fall back to the defaults; `validateUiState` already rejected unknown ones. */

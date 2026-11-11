@@ -46,6 +46,7 @@ import {
   type PermissionRuleRecord,
 } from "../contracts/ipc";
 import type { PermissionPreferencesPatch } from "../contracts/permission-preferences";
+import type { NetworkResumePreferencesPatch } from "../contracts/network-resume";
 import type { ExtensionActionEffect, ExtensionActionRequest } from "../contracts/extension-actions";
 import type { ClipboardImageRead } from "../contracts/composer-attachments";
 import type { DesktopEditorList } from "../contracts/editors";
@@ -466,6 +467,8 @@ contextBridge.exposeInMainWorld("piApp", {
     ipcRenderer.invoke(desktopIpc.setPermissionPreferences, patch) as Promise<DesktopAppState>,
   setPermissionGateEnabled: (enabled: boolean) =>
     ipcRenderer.invoke(desktopIpc.setPermissionGateEnabled, enabled) as Promise<DesktopAppState>,
+  setNetworkResumePreferences: (patch: NetworkResumePreferencesPatch) =>
+    ipcRenderer.invoke(desktopIpc.setNetworkResumePreferences, patch) as Promise<DesktopAppState>,
   listPermissionRules: () =>
     ipcRenderer.invoke(desktopIpc.listPermissionRules) as Promise<readonly PermissionRuleRecord[]>,
   setIntegratedTerminalShell: (shellPath: string) =>
