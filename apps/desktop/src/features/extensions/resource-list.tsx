@@ -5,6 +5,8 @@ export interface ResourceListItem {
   readonly id: string;
   readonly title: string;
   readonly description: string;
+  /** Accessible name for the switch; falls back to the English "Enable <title>". */
+  readonly toggleLabel?: string;
   readonly enabled: boolean;
   /** Undefined when pi cannot change this item, such as a built-in extension. */
   readonly onToggle?: (enabled: boolean) => void;
@@ -87,7 +89,7 @@ function ResourceGroup({
             <SettingsSwitch
               checked={item.enabled}
               disabled={!item.onToggle}
-              label={`Enable ${item.title}`}
+              label={item.toggleLabel ?? `Enable ${item.title}`}
               onChange={(enabled) => item.onToggle?.(enabled)}
             />
           </div>

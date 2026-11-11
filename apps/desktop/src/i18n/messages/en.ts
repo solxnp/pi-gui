@@ -391,6 +391,68 @@ export const en = {
     "Could not load the rules from the app. Try expanding again.",
   "settings.permissions.offSummary":
     "{count} categories will not ask. Turn the master switch back on to restore all of them.",
+  "extensions.group.workspace": "Workspace",
+  "extensions.group.user": "User",
+  "extensions.group.session": "This session",
+  "extensions.group.piAddons": "Built into pi",
+  "extensions.group.piGuiTools": "pi-gui tools",
+  "extensions.toggle": "Enable {name}",
+  "extensions.detail.back": "All extensions",
+  "extensions.detail.openFolder": "Open folder",
+  "extensions.detail.enabled": "Enabled",
+  "extensions.detail.source": "Source",
+  "extensions.detail.sourcePiAddon":
+    "Ships with pi; this switch also applies to pi in the terminal",
+  "extensions.detail.sourcePackage": "Installed as a package",
+  "extensions.detail.sourceFile": "Loaded from a file",
+  "extensions.detail.location": "Location",
+  "extensions.detail.tools": "Tools",
+  "extensions.detail.commands": "Commands",
+  "extensions.detail.commandsDescription":
+    "Whether each command works in the app is learned the first time it runs here.",
+  "extensions.detail.commandGui": "{name} · GUI-compatible",
+  "extensions.detail.commandTerminalOnly": "{name} · Terminal-only",
+  "extensions.detail.commandUnknown": "{name} · Unknown",
+  "extensions.detail.flags": "Flags",
+  "extensions.detail.shortcuts": "Shortcuts",
+  "extensions.detail.diagnostics": "Diagnostics",
+  "extensions.count.tool": "{count} tools",
+  "extensions.count.command": "{count} commands",
+  "extensions.count.issue": "{count} issues",
+  "extensions.builtin.permissionGate.title": "Permission gate",
+  "extensions.builtin.permissionGate.description":
+    "Asks before a dangerous command or a credentials file; off means no prompts",
+  "extensions.builtin.permissionGate.detail":
+    "pi-gui's own safety check. Before running a command such as rm -rf, sudo, dd onto a device or git push --force, or before reading or writing a file that holds credentials (.env, id_rsa, tokens.json), it stops and asks: allow once, allow for this session, or deny — a denial reaches the model as a failed tool result. Turning it off trusts the model completely: even rm -rf / runs without asking. Its table holds 39 rules, and Settings can relax them one category at a time.",
+  "extensions.builtin.scheduledTasks.title": "Scheduled tasks",
+  "extensions.builtin.scheduledTasks.description":
+    "Lets pi schedule local tasks that run in a new thread",
+  "extensions.builtin.scheduledTasks.detail":
+    "The model can create, change and stop scheduled tasks for you: once on a date, daily at a time, on chosen weekdays, or every N minutes. Tasks only fire on this machine while pi-gui is open, and every run starts its own thread, so the result stays in that thread.",
+  "extensions.builtin.threadOrchestration.title": "Thread orchestration",
+  "extensions.builtin.threadOrchestration.description":
+    "Lets pi start child threads, read their progress and message them",
+  "extensions.builtin.threadOrchestration.detail":
+    "The model can split work across child threads, read their progress and conclusions, and send follow-ups to an existing thread. Turned off, the model can only work inside the current thread and those tools disappear.",
+  "extensions.builtin.customInstructions.title": "Custom instructions",
+  "extensions.builtin.customInstructions.description":
+    "Appends custom-instructions.md to every run's system prompt",
+  "extensions.builtin.customInstructions.detail":
+    "The contents of custom-instructions.md in the app's data folder are appended to the system prompt of every run, alongside the project's AGENTS.md. A change applies to the next run; no restart.",
+  "extensions.builtin.mcp.title": "MCP servers",
+  "extensions.builtin.mcp.description": "Connects the MCP servers in mcp.json and adds /mcp",
+  "extensions.builtin.mcp.detail":
+    "Reads the global mcp.json and the project's .pi/mcp.json, connects the servers configured there so the model can use their tools, and registers the /mcp command. This switch also applies to pi in the terminal.",
+  "extensions.builtin.codemode.title": "Code mode",
+  "extensions.builtin.codemode.description":
+    "Lets the model run scripts that call several tools at once, MCP tools included",
+  "extensions.builtin.codemode.detail":
+    "Instead of calling tools one by one, the model writes a short script that calls several tools in one go, MCP tools included. Useful for batch work or anything that needs a condition.",
+  "extensions.builtin.toolSearch.title": "Tool search",
+  "extensions.builtin.toolSearch.description":
+    "Finds and loads tools on demand when there are many",
+  "extensions.builtin.toolSearch.detail":
+    "The model searches first and loads only the tools it needs, instead of putting the definitions of hundreds of tools into the context up front.",
   "settings.section.shortcuts.description": "Shortcuts available across the app.",
   "settings.section.providers.description": "Connect providers and manage auth for {workspace}.",
   "settings.section.models.description":

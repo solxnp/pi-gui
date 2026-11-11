@@ -647,6 +647,10 @@ test("keeps a single subscription path when an extension creates a child session
   }
 });
 
+const PI_GUI_TOOLS = /^(pi-gui tools|pi-gui 工具)( \d+)?$/;
+const PI_ADDONS = /^(Built into pi|pi 自带)( \d+)?$/;
+const ENABLE_THREAD_ORCHESTRATION = /^(Enable Thread orchestration|启用会话编排|启用 会话编排)$/;
+
 test("switches pi-gui tools off app-wide and keeps them off after a restart", async () => {
   test.setTimeout(90_000);
   const userDataDir = await makeUserDataDir();
@@ -669,8 +673,8 @@ test("switches pi-gui tools off app-wide and keeps them off after a restart", as
     if (!(await list.isVisible())) {
       await openButton.click();
     }
-    await expect(list.getByRole("heading", { name: /pi-gui tools/ })).toBeVisible();
-    return list.getByRole("switch", { name: "Enable Thread orchestration" });
+    await expect(list.getByRole("heading", { name: PI_GUI_TOOLS })).toBeVisible();
+    return list.getByRole("switch", { name: ENABLE_THREAD_ORCHESTRATION });
   };
 
   let harness = await launchDesktop(userDataDir, {
@@ -698,7 +702,9 @@ test("switches pi-gui tools off app-wide and keeps them off after a restart", as
     const toggle = await openPiGuiTools(window);
     await expect(toggle).not.toBeChecked();
     await expect(
-      window.getByTestId("extensions-list").getByRole("switch", { name: "Enable Scheduled tasks" }),
+      window
+        .getByTestId("extensions-list")
+        .getByRole("switch", { name: /^(Enable Scheduled tasks|启用定时任务)$/ }),
     ).toBeChecked();
     await toggle.click();
     await expect.poll(() => orchestrationEnabled(window)).toBe(true);
@@ -724,17 +730,17 @@ test("lists pi's add-ons as Built into pi and switches them in pi's extensions s
     await window.getByRole("button", { name: "Extensions", exact: true }).click();
     const list = window.getByTestId("extensions-list");
     const addons = list.locator("section", {
-      has: window.getByRole("heading", { name: /Built into pi/ }),
+      has: window.getByRole("heading", { name: PI_ADDONS }),
     });
     const piGuiTools = list.locator("section", {
-      has: window.getByRole("heading", { name: /pi-gui tools/ }),
+      has: window.getByRole("heading", { name: PI_GUI_TOOLS }),
     });
     for (const name of ["MCP servers", "Code mode", "Tool search"]) {
       await expect(addons.getByRole("switch", { name: `Enable ${name}` })).toBeChecked();
       await expect(piGuiTools.getByRole("switch", { name: `Enable ${name}` })).toHaveCount(0);
     }
 
-    const mcpSwitch = addons.getByRole("switch", { name: "Enable MCP servers" });
+    const mcpSwitch = addons.getByRole("switch", { name: /^(Enable MCP servers|启用MCP 服务器)$/ });
     await mcpSwitch.click();
     await expect(mcpSwitch).not.toBeChecked();
     await expect(mcpSwitch).toBeEnabled();

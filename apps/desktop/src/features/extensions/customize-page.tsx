@@ -8,8 +8,10 @@ import type {
   ExtensionCommandCompatibilityRecord,
   WorkspaceRecord,
 } from "../../../contracts/desktop-state";
+import { useTranslation, type Translate } from "../../i18n";
 import { RefreshIcon, SearchIcon } from "../../ui/icons";
-import { extensionScopeLabel } from "./extension-display";
+import { extensionGroupId, extensionGroupLabel } from "./extension-display";
+import { extensionSearchCopy } from "./extension-copy";
 import { ExtensionsTab } from "./extensions-view";
 import { SkillsTab } from "./skills-view";
 
@@ -51,6 +53,7 @@ export function CustomizePage({
   onToggleExtension,
   onOpenExtensionFolder,
 }: CustomizePageProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | undefined>();
   // The palette and the workspace picker change what is listed without going through the tabs,
@@ -84,9 +87,9 @@ export function CustomizePage({
   const filteredExtensions = useMemo(
     () =>
       extensions.filter((extension) =>
-        matchesQuery(extensionSearchText(extension), normalizedQuery),
+        matchesQuery(extensionSearchText(extension, t), normalizedQuery),
       ),
-    [extensions, normalizedQuery],
+    [extensions, normalizedQuery, t],
   );
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -256,13 +259,14 @@ function skillSearchText(skill: RuntimeSkillRecord): string {
   return [skill.name, skill.description, skill.source, skill.slashCommand].join(" ").toLowerCase();
 }
 
-function extensionSearchText(extension: RuntimeExtensionRecord): string {
+function extensionSearchText(extension: RuntimeExtensionRecord, t: Translate): string {
   return [
     extension.displayName,
     extension.description ?? "",
     extension.path,
     extension.sourceInfo.source,
-    extensionScopeLabel(extension),
+    extensionGroupLabel(extensionGroupId(extension), t),
+    extensionSearchCopy(extension, t),
     ...extension.commands,
     ...extension.tools.flatMap((tool) => [tool.name, tool.label]),
     ...extension.flags,

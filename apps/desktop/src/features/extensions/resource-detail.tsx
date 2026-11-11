@@ -9,6 +9,7 @@ export function ResourceDetail({
   subtitle,
   enabled,
   onToggle,
+  switchLabel = "Enabled",
   actions,
   onBack,
   children,
@@ -20,6 +21,8 @@ export function ResourceDetail({
   readonly enabled: boolean;
   /** Undefined when pi cannot change this item. */
   readonly onToggle?: (enabled: boolean) => void;
+  /** Accessible name for the switch. */
+  readonly switchLabel?: string;
   readonly actions?: ReactNode;
   readonly onBack: () => void;
   readonly children: ReactNode;
@@ -62,7 +65,7 @@ export function ResourceDetail({
           <SettingsSwitch
             checked={enabled}
             disabled={!onToggle}
-            label="Enabled"
+            label={switchLabel}
             onChange={(next) => onToggle?.(next)}
           />
         </div>
