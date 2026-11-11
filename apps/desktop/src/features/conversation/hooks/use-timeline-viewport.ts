@@ -20,6 +20,7 @@ import {
   type TimelinePosition,
   type TimelineRow,
 } from "../timeline-layout";
+import { buildRailTicks } from "../timeline-rail-model";
 
 type ScrollState =
   TimelinePosition | { readonly kind: "restoring"; readonly destination: TimelinePosition };
@@ -75,6 +76,21 @@ export function useTimelineViewport({
   const [pane, setPane] = useState<HTMLDivElement | null>(null);
   const [searchMode, setSearchMode] = useState(false);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [railScrolling, setRailScrolling] = useState(false);
+  const railEmphasis = useRef({ active: false, timer: 0 });
+  const emphasizeRail = useCallback(() => {
+    const state = railEmphasis.current;
+    if (!state.active) {
+      state.active = true;
+      setRailScrolling(true);
+    }
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = window.setTimeout(() => {
+      state.timer = 0;
+      state.active = false;
+      setRailScrolling(false);
+    }, 700);
+  }, []);
   const destination = (state: ScrollState): TimelinePosition =>
     state.kind === "restoring" ? state.destination : state;
 
@@ -167,6 +183,12 @@ export function useTimelineViewport({
       : (resolveAnchor(layout, position.anchor) ?? 0);
   const placements = searchMode ? layout : visibleRows(layout, target, current.height || 800);
   const placedFromEstimates = placements.some((row) => !current.heights.has(row.item.id));
+  const railTicks = buildRailTicks(
+    layout,
+    totalHeight,
+    target,
+    destination(current.state).kind === "following",
+  );
 
   useLayoutEffect(() => {
     if (!pane || !active) return;
@@ -331,6 +353,7 @@ export function useTimelineViewport({
           pane.clientHeight !== current.committedHeight)
       )
         return;
+      emphasizeRail();
       const anchor = anchorAt(current.layout, pane.scrollTop);
       const previous = destination(current.state);
       const previousTop =
@@ -398,8 +421,12 @@ export function useTimelineViewport({
       const current = model.current;
       if (current.frame) cancelAnimationFrame(current.frame);
       current.frame = 0;
+      if (railEmphasis.current.timer) {
+        clearTimeout(railEmphasis.current.timer);
+        railEmphasis.current.timer = 0;
+      }
     };
-  }, [pane, active, schedule, savePosition]);
+  }, [pane, active, schedule, savePosition, emphasizeRail]);
 
   const jumpToLatest = useCallback(() => {
     model.current.state = { kind: "following" };
@@ -407,6 +434,32 @@ export function useTimelineViewport({
     model.current.userIntent = 0;
     schedule();
   }, [schedule]);
+  /** Jump to one transcript row by id, even while it is outside the mounted window. */
+  const jumpToRow = useCallback(
+    (rowId: string) => {
+      const current = model.current;
+      if (!current.layout.some((row) => row.item.id === rowId)) return;
+      current.state = { kind: "reading", anchor: { rowId, offsetWithinRow: 0 } };
+      current.pendingNavigation = true;
+      current.userIntent = 0;
+      schedule();
+    },
+    [schedule],
+  );
+  /** Wheel motion that starts over the prompt rail still scrolls the transcript. */
+  const scrollByDelta = useCallback(
+    (deltaY: number) => {
+      const pane = paneRef.current;
+      if (!pane || !deltaY) return;
+      const current = model.current;
+      current.userIntent = performance.now() + 1000;
+      current.pendingNavigation = false;
+      current.expectedScrollTop = null;
+      const maximum = Math.max(0, pane.scrollHeight - pane.clientHeight);
+      pane.scrollTop = Math.max(0, Math.min(maximum, pane.scrollTop + deltaY));
+    },
+    [paneRef],
+  );
   const navigateToElement = useCallback(
     (element: HTMLElement) => {
       const pane = paneRef.current;
@@ -426,6 +479,10 @@ export function useTimelineViewport({
   );
   return {
     totalHeight,
+    railTicks,
+    railScrolling,
+    jumpToRow,
+    scrollByDelta,
     visibleRows: placements,
     layoutGeneration: current.generation,
     showJumpToLatest,
