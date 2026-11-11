@@ -99,6 +99,19 @@ test("commands that only mention a dangerous string stay quiet", () => {
   expect(ruleIds('pnpm test -- --grep "rm -rf"')).toEqual([]);
 });
 
+test("a script heredoc is data, a shell heredoc is a command", () => {
+  const pythonScript = [
+    "python3 - <<'PY'",
+    "rules = {'secret': 'credentials files usually hold secrets'}",
+    "print(rules)",
+    "PY",
+  ].join("\n");
+  expect(ruleIds(pythonScript)).toEqual([]);
+
+  const shellScript = ["bash <<'EOF'", "rm -rf /", "EOF"].join("\n");
+  expect(ruleIds(shellScript)).toContain("rm-root-path");
+});
+
 test("writing to /dev/null is not a device write", () => {
   expect(ruleIds("pnpm test > /dev/null 2>&1")).toEqual([]);
   expect(ruleIds("pnpm test 2> /dev/null")).toEqual([]);
@@ -120,6 +133,50 @@ test("credential files are matched by name, not by substring", () => {
   expect(pathIds("/repo/src/secrets-helper.ts")).toEqual([]);
   expect(pathIds("/repo/.env.example")).toEqual([]);
   expect(pathIds("/repo/tokens.md")).toEqual([]);
+});
+
+test("the dialog shows a short command preview and a readable layout", async () => {
+  let message = "";
+  let title = "";
+  const pi = {
+    on: (_event: string, next: ToolCallHandler) => {
+      handler = next;
+      return () => {};
+    },
+  } as unknown as ExtensionAPI;
+  let handler: ToolCallHandler | undefined;
+  await createPermissionGateExtension()(pi);
+  const ctx = {
+    hasUI: true,
+    ui: {
+      confirm: async (nextTitle: string, nextMessage: string) => {
+        title = nextTitle;
+        message = nextMessage;
+        return false;
+      },
+    },
+  } as unknown as ExtensionContext;
+
+  const longCommand = [
+    "cd /repo && python3 - <<'PY'",
+    "line two",
+    "line three",
+    "line four",
+    "line five",
+    "PY",
+  ].join("\n");
+  if (!handler) {
+    throw new Error("The permission gate did not register a tool_call handler.");
+  }
+  await handler(bashEvent(`rm -rf build && ${longCommand}`), ctx);
+
+  expect(title).toBe("要执行这条命令，确认吗？");
+  expect(message).toContain("【要执行的命令】");
+  expect(message).toContain("【为什么先问你】");
+  expect(message).toContain("· 递归强制删除文件或目录");
+  expect(message).toContain("Confirm = 放行这一次");
+  expect(message).toContain("共");
+  expect(message).not.toContain("line five");
 });
 
 test("a denied command blocks the tool call with the matched rule ids", async () => {
@@ -155,11 +212,11 @@ test("without a dialog the gate refuses instead of approving", async () => {
 
   const command = await run(bashEvent("rm -rf /"));
   expect(command?.block).toBe(true);
-  expect(command?.reason).toContain("without a confirmation dialog");
+  expect(command?.reason).toContain("没有可用的确认对话框");
 
   const file = await run(fileEvent("write", "/repo/.env"));
   expect(file?.block).toBe(true);
-  expect(file?.reason).toContain("without a confirmation dialog");
+  expect(file?.reason).toContain("没有可用的确认对话框");
 });
 
 test("a dialog that throws counts as a refusal", async () => {

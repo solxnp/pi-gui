@@ -23,41 +23,38 @@ const SENSITIVE_STEMS: ReadonlyMap<string, PathRule> = new Map([
     ".env",
     {
       id: "env-file",
-      reason: "Environment files usually hold API keys, tokens and database passwords",
+      reason: "环境变量文件，通常放着 API Key、Token、数据库密码",
     },
   ],
-  ["id_rsa", { id: "ssh-private-key", reason: "SSH private key" }],
-  ["id_dsa", { id: "ssh-private-key", reason: "SSH private key" }],
-  ["id_ecdsa", { id: "ssh-private-key", reason: "SSH private key" }],
-  ["id_ed25519", { id: "ssh-private-key", reason: "SSH private key" }],
-  [".npmrc", { id: "package-credentials", reason: "Package manager registry credentials" }],
-  [".pypirc", { id: "package-credentials", reason: "Python package index credentials" }],
-  [".netrc", { id: "network-credentials", reason: "Network credentials file" }],
-  [".git-credentials", { id: "network-credentials", reason: "Stored Git credentials" }],
-  [
-    ".bashrc",
-    { id: "shell-rc-file", reason: "Shell startup file that can hold environment values and keys" },
-  ],
-  [
-    ".zshrc",
-    { id: "shell-rc-file", reason: "Shell startup file that can hold environment values and keys" },
-  ],
-  ["secret", { id: "secret-file", reason: "File named as a secret" }],
-  ["secrets", { id: "secret-file", reason: "File named as a secret" }],
-  ["credential", { id: "credential-file", reason: "File named as a credential" }],
-  ["credentials", { id: "credential-file", reason: "File named as a credential" }],
-  ["creds", { id: "credential-file", reason: "File named as a credential" }],
-  ["token", { id: "token-file", reason: "File named as a token" }],
-  ["tokens", { id: "token-file", reason: "File named as a token" }],
+  ["id_rsa", { id: "ssh-private-key", reason: "SSH 私钥" }],
+  ["id_dsa", { id: "ssh-private-key", reason: "SSH 私钥" }],
+  ["id_ecdsa", { id: "ssh-private-key", reason: "SSH 私钥" }],
+  ["id_ed25519", { id: "ssh-private-key", reason: "SSH 私钥" }],
+  [".npmrc", { id: "package-credentials", reason: "包管理器的仓库凭据" }],
+  [".pypirc", { id: "package-credentials", reason: "Python 包索引凭据" }],
+  [".netrc", { id: "network-credentials", reason: "网络认证凭据文件" }],
+  [".git-credentials", { id: "network-credentials", reason: "Git 保存的账号凭据" }],
+  [".bashrc", { id: "shell-rc-file", reason: "shell 启动文件，里面可能有密钥或环境变量" }],
+  [".zshrc", { id: "shell-rc-file", reason: "shell 启动文件，里面可能有密钥或环境变量" }],
+  ["secret", { id: "secret-file", reason: "文件名就是 secret / secrets" }],
+  ["secrets", { id: "secret-file", reason: "文件名就是 secret / secrets" }],
+  ["credential", { id: "credential-file", reason: "文件名就是 credential / credentials / creds" }],
+  ["credentials", { id: "credential-file", reason: "文件名就是 credential / credentials / creds" }],
+  ["creds", { id: "credential-file", reason: "文件名就是 credential / credentials / creds" }],
+  ["token", { id: "token-file", reason: "文件名就是 token / tokens" }],
+  ["tokens", { id: "token-file", reason: "文件名就是 token / tokens" }],
 ]);
 
 /** Compared against the full filename. */
 const SENSITIVE_FILES: ReadonlyMap<string, PathRule> = new Map([
-  ["auth.json", { id: "auth-file", reason: "Stores provider credentials for pi" }],
-  ["credentials.json", { id: "credential-file", reason: "File named as a credential" }],
-  ["secrets.yml", { id: "secret-file", reason: "File named as a secret" }],
-  ["secrets.yaml", { id: "secret-file", reason: "File named as a secret" }],
-  ["secrets.json", { id: "secret-file", reason: "File named as a secret" }],
+  ["auth.json", { id: "auth-file", reason: "pi 保存的模型供应商凭据" }],
+  [
+    "credentials.json",
+    { id: "credential-file", reason: "文件名就是 credential / credentials / creds" },
+  ],
+  ["secrets.yml", { id: "secret-file", reason: "文件名就是 secret / secrets" }],
+  ["secrets.yaml", { id: "secret-file", reason: "文件名就是 secret / secrets" }],
+  ["secrets.json", { id: "secret-file", reason: "文件名就是 secret / secrets" }],
 ]);
 
 /** Private key material keeps its name and carries a key extension. */
@@ -113,7 +110,7 @@ export function findSensitivePathMatches(path: string): SensitivePathMatch[] {
   }
 
   if (PRIVATE_KEY_EXTENSIONS.includes(extensionOf(fileName))) {
-    record({ id: "private-key-file", reason: "Private key or certificate bundle" });
+    record({ id: "private-key-file", reason: "私钥或证书文件（.pem/.key/.p12 等）" });
   }
 
   return matches;

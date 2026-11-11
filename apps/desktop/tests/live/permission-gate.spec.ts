@@ -11,7 +11,7 @@ import {
  * The permission gate is a pi-gui built-in extension, so only a real tool call proves it is wired:
  * the dialog has to come from the running app, and a denial has to reach the tool result.
  */
-test("a dangerous bash command asks first and the denial reaches the tool result", async () => {
+test("a dangerous bash command asks first and the denial reaches the tool result", async ({}, testInfo) => {
   test.setTimeout(300_000);
   const realAuth = getRealAuthConfig();
   test.skip(!realAuth.enabled, realAuth.skipReason);
@@ -36,8 +36,10 @@ test("a dangerous bash command asks first and the denial reaches the tool result
 
     const dialog = window.getByTestId("extension-dialog");
     await expect(dialog).toBeVisible({ timeout: 180_000 });
-    await expect(dialog).toContainText("Confirm dangerous command");
-    await expect(dialog).toContainText("rm-recursive-force");
+    await expect(dialog).toContainText("要执行这条命令，确认吗？");
+    await expect(dialog).toContainText("递归强制删除文件或目录");
+    await expect(dialog).toContainText("rm -rf permission-gate-probe-dir");
+    await window.screenshot({ path: testInfo.outputPath("permission-dialog.png") });
 
     await window.getByTestId("extension-dialog-cancel").click();
     await expect(dialog).toBeHidden();
@@ -45,7 +47,7 @@ test("a dangerous bash command asks first and the denial reaches the tool result
     const toolItem = window.locator(".timeline-tool").first();
     await expect(toolItem).toBeVisible({ timeout: 60_000 });
     await toolItem.locator(".timeline-tool__header").click();
-    await expect(toolItem.locator(".timeline-tool__body")).toContainText("denied by the user");
+    await expect(toolItem.locator(".timeline-tool__body")).toContainText("用户拒绝了这条危险命令");
   } finally {
     await harness.close();
   }

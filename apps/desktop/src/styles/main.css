@@ -3128,6 +3128,11 @@
   color: var(--muted-strong);
   font-size: 14px;
   line-height: 1.65;
+  /* A confirm dialog from an extension arrives as one string with its own line breaks. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 40vh;
+  overflow-y: auto;
 }
 
 .extension-dialog__options {

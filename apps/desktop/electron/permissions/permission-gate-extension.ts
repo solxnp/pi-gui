@@ -18,18 +18,26 @@ import { findSensitivePathMatches } from "./sensitive-path";
 
 export const permissionGateExtensionName = "pi-gui-permission-gate";
 
-const COMMAND_PREVIEW_LIMIT = 400;
+/** A dialog shows the first lines of the command; the full text stays in the transcript's tool card. */
+const COMMAND_PREVIEW_LINES = 4;
+const COMMAND_PREVIEW_CHARS = 320;
 
 type FileOperation = "read" | "write" | "edit";
 
 const FILE_OPERATION_LABEL: Readonly<Record<FileOperation, string>> = {
-  read: "Read",
-  write: "Write",
-  edit: "Edit",
+  read: "读取",
+  write: "写入",
+  edit: "编辑",
 };
 
-function preview(text: string, limit: number): string {
-  return text.length <= limit ? text : `${text.slice(0, limit)}…`;
+function previewCommand(command: string): string {
+  const lines = command.replace(/\r\n/g, "\n").trimEnd().split("\n");
+  const shown = lines.slice(0, COMMAND_PREVIEW_LINES);
+  const text = shown.join("\n");
+  const clipped =
+    text.length <= COMMAND_PREVIEW_CHARS ? text : `${text.slice(0, COMMAND_PREVIEW_CHARS)}…`;
+  const hidden = lines.length - shown.length;
+  return hidden > 0 ? `${clipped}\n…（共 ${lines.length} 行，完整命令见对话里的工具卡）` : clipped;
 }
 
 /**
@@ -63,25 +71,22 @@ async function gateBashCommand(
   if (!ctx.hasUI) {
     return {
       block: true,
-      reason: `Dangerous bash command blocked without a confirmation dialog (${ids}).`,
+      reason: `这条命令被判为危险，但没有可用的确认对话框，已拦下（规则：${ids}）。`,
     };
   }
 
   const message = [
-    `${matches.length === 1 ? "1 rule" : `${matches.length} rules`} matched:`,
+    "【要执行的命令】",
+    previewCommand(command),
     "",
-    ...matches.map((match) => `[${match.severity}] ${match.id} — ${match.reason}`),
+    "【为什么先问你】",
+    ...matches.map((match) => `· ${match.reason}`),
     "",
-    "Command:",
-    preview(command, COMMAND_PREVIEW_LIMIT),
-    "",
-    "Deny skips this tool call.",
+    "Confirm = 放行这一次　　Cancel = 拦下，AI 会收到你的拒绝",
   ].join("\n");
 
-  const allowed = await askUser(ctx, "Confirm dangerous command", message);
-  return allowed
-    ? undefined
-    : { block: true, reason: `Dangerous bash command denied by the user (${ids}).` };
+  const allowed = await askUser(ctx, "要执行这条命令，确认吗？", message);
+  return allowed ? undefined : { block: true, reason: `用户拒绝了这条危险命令（规则：${ids}）。` };
 }
 
 async function gateFilePath(
@@ -99,22 +104,24 @@ async function gateFilePath(
   if (!ctx.hasUI) {
     return {
       block: true,
-      reason: `Sensitive file blocked without a confirmation dialog (${label.toLowerCase()} ${path}: ${ids}).`,
+      reason: `要${label}一个存凭据的文件，但没有可用的确认对话框，已拦下（${path}，规则：${ids}）。`,
     };
   }
 
   const message = [
-    `${label}: ${path}`,
+    `【要做的事】${label}这个文件`,
+    path,
     "",
-    ...matches.map((match) => `[${match.id}] ${match.reason}`),
+    "【为什么先问你】",
+    ...matches.map((match) => `· ${match.reason}`),
     "",
-    `Allow this ${operation}?`,
+    `Confirm = 允许这一次　　Cancel = 拒绝`,
   ].join("\n");
 
-  const allowed = await askUser(ctx, "Confirm sensitive file access", message);
+  const allowed = await askUser(ctx, "要动一个存密码的文件，确认吗？", message);
   return allowed
     ? undefined
-    : { block: true, reason: `Sensitive file access denied by the user (${ids}).` };
+    : { block: true, reason: `用户拒绝了这次${label}敏感文件的请求（规则：${ids}）。` };
 }
 
 export function createPermissionGateExtension(): ExtensionFactory {
