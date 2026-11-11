@@ -992,6 +992,7 @@ export default function App() {
       ) : null}
       {!snapshot.sidebarCollapsed ? (
         <Sidebar
+          pendingApprovalsBySession={snapshot?.sessionExtensionUiBySession}
           activeView={snapshot.activeView}
           selectedWorkspace={selectedWorkspace}
           selectedSession={selectedSession}

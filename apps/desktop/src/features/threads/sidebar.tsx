@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -29,8 +30,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { sessionKey } from "@pi-gui/session-driver";
+import { pendingApprovalSessionKeys } from "./pending-approval";
 import type {
   AppView,
+  DesktopAppState,
   SessionRecord,
   ThreadGrouping,
   WorkspaceRecord,
@@ -79,8 +83,13 @@ import {
 } from "./thread-groups";
 import { useThreadShortcutHintsVisible } from "./thread-shortcut-hints";
 import type { Dispatch, SetStateAction } from "react";
-import type { DesktopAppState } from "../../../contracts/desktop-state";
 import { applySnapshotIfNewer } from "../../app/desktop-app-state";
+
+/**
+ * Sessions with a dialog the user still has to answer. A context rather than a prop keeps the four
+ * row call sites (list, nested children, pinned, drag overlay) from threading it by hand.
+ */
+const PendingApprovalContext = createContext<ReadonlySet<string>>(new Set<string>());
 
 interface SidebarProps {
   readonly activeView: AppView;
@@ -111,6 +120,8 @@ interface SidebarProps {
     pinned: boolean,
   ) => void;
   readonly onUnarchiveSession: (target: { workspaceId: string; sessionId: string }) => void;
+  /** Extension UI per session; a session with a pending dialog is marked in the list. */
+  readonly pendingApprovalsBySession: DesktopAppState["sessionExtensionUiBySession"] | undefined;
   readonly threadShortcutOrderRef: MutableRefObject<readonly ThreadListEntry[] | null>;
 }
 
@@ -164,6 +175,7 @@ export function Sidebar(props: SidebarProps) {
     onSelectSession,
     onSetSessionPinned,
     onUnarchiveSession,
+    pendingApprovalsBySession,
     threadShortcutOrderRef,
   } = props;
 
@@ -449,292 +461,299 @@ export function Sidebar(props: SidebarProps) {
     });
   }
 
+  const pendingApprovalKeys = useMemo(
+    () => pendingApprovalSessionKeys(pendingApprovalsBySession),
+    [pendingApprovalsBySession],
+  );
+
   return (
-    <aside className="sidebar" id="primary-sidebar" style={sidebarWidthStyle}>
-      <PaneResizeHandle
-        className="sidebar__resize-handle"
-        label={t("sidebar.width")}
-        controls="primary-sidebar"
-        edge="right"
-        bounds={sidebarWidthBounds}
-        onResize={setSidebarWidth}
-        onReset={() => setSidebarWidth(undefined)}
-      />
-      <div className="sidebar__top">
-        <button
-          className="sidebar__new"
-          type="button"
-          disabled={!selectedWorkspace}
-          onClick={() => onNewThread()}
-        >
-          <PlusIcon />
-          <span>{t("sidebar.newThread")}</span>
-        </button>
+    <PendingApprovalContext.Provider value={pendingApprovalKeys}>
+      <aside className="sidebar" id="primary-sidebar" style={sidebarWidthStyle}>
+        <PaneResizeHandle
+          className="sidebar__resize-handle"
+          label={t("sidebar.width")}
+          controls="primary-sidebar"
+          edge="right"
+          bounds={sidebarWidthBounds}
+          onResize={setSidebarWidth}
+          onReset={() => setSidebarWidth(undefined)}
+        />
+        <div className="sidebar__top">
+          <button
+            className="sidebar__new"
+            type="button"
+            disabled={!selectedWorkspace}
+            onClick={() => onNewThread()}
+          >
+            <PlusIcon />
+            <span>{t("sidebar.newThread")}</span>
+          </button>
 
-        <div className="sidebar__nav">
-          <button
-            className={`sidebar__nav-item ${activeView === "threads" ? "sidebar__nav-item--active" : ""}`}
-            type="button"
-            onClick={() => onSetActiveView("threads")}
-          >
-            <FolderIcon />
-            <span>{t("sidebar.navThreads")}</span>
-          </button>
-          <button
-            className={`sidebar__nav-item ${activeView === "scheduled" ? "sidebar__nav-item--active" : ""}`}
-            type="button"
-            data-testid="sidebar-scheduled"
-            onClick={() => onSetActiveView("scheduled")}
-          >
-            <ClockIcon />
-            <span>{t("sidebar.navScheduled")}</span>
-          </button>
-          <button
-            className="sidebar__nav-item"
-            type="button"
-            onClick={() =>
-              onOpenSkills(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
-            }
-          >
-            <SkillIcon />
-            <span>{t("sidebar.navSkills")}</span>
-          </button>
-          <button
-            className="sidebar__nav-item"
-            type="button"
-            onClick={() =>
-              onOpenExtensions(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
-            }
-          >
-            <ExtensionIcon />
-            <span>{t("sidebar.navExtensions")}</span>
-          </button>
-          <button
-            className="sidebar__nav-item"
-            type="button"
-            onClick={() =>
-              onOpenSettings(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
-            }
-          >
-            <SettingsIcon />
-            <span>{t("sidebar.navSettings")}</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="sidebar__section">
-        <div className="section__head">
-          <span>{t("sidebar.sectionThreads")}</span>
-          <div className="section__tools">
-            <ThreadGroupingControl
-              grouping={threadGrouping}
-              onChange={(grouping) => {
-                void updateSnapshot(setSnapshot, () => api.setThreadGrouping(grouping)).catch(
-                  (error: unknown) => {
-                    console.error("[renderer] setThreadGrouping failed", error);
-                  },
-                );
-              }}
-            />
+          <div className="sidebar__nav">
             <button
-              aria-label={t("sidebar.openFolder")}
-              className="icon-button"
+              className={`sidebar__nav-item ${activeView === "threads" ? "sidebar__nav-item--active" : ""}`}
               type="button"
-              onClick={() => {
-                void updateSnapshot(setSnapshot, () => api.pickWorkspace()).catch(
-                  (error: unknown) => {
-                    console.error("[renderer] pickWorkspace failed", error);
-                  },
-                );
-              }}
+              onClick={() => onSetActiveView("threads")}
             >
               <FolderIcon />
+              <span>{t("sidebar.navThreads")}</span>
+            </button>
+            <button
+              className={`sidebar__nav-item ${activeView === "scheduled" ? "sidebar__nav-item--active" : ""}`}
+              type="button"
+              data-testid="sidebar-scheduled"
+              onClick={() => onSetActiveView("scheduled")}
+            >
+              <ClockIcon />
+              <span>{t("sidebar.navScheduled")}</span>
+            </button>
+            <button
+              className="sidebar__nav-item"
+              type="button"
+              onClick={() =>
+                onOpenSkills(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
+              }
+            >
+              <SkillIcon />
+              <span>{t("sidebar.navSkills")}</span>
+            </button>
+            <button
+              className="sidebar__nav-item"
+              type="button"
+              onClick={() =>
+                onOpenExtensions(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
+              }
+            >
+              <ExtensionIcon />
+              <span>{t("sidebar.navExtensions")}</span>
+            </button>
+            <button
+              className="sidebar__nav-item"
+              type="button"
+              onClick={() =>
+                onOpenSettings(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
+              }
+            >
+              <SettingsIcon />
+              <span>{t("sidebar.navSettings")}</span>
             </button>
           </div>
         </div>
 
-        {visibleWorkspaces.length === 0 ? (
-          <div className="empty-state" data-testid="empty-state">
-            <h2>{t("sidebar.emptyTitle")}</h2>
-            <p>{t("sidebar.emptyBody")}</p>
-            <button
-              className="button button--primary"
-              type="button"
-              onClick={() => {
-                void updateSnapshot(setSnapshot, () => api.pickWorkspace()).catch(
-                  (error: unknown) => {
-                    console.error("[renderer] pickWorkspace failed", error);
-                  },
-                );
-              }}
-            >
-              {t("sidebar.openFirstFolder")}
-            </button>
+        <div className="sidebar__section">
+          <div className="section__head">
+            <span>{t("sidebar.sectionThreads")}</span>
+            <div className="section__tools">
+              <ThreadGroupingControl
+                grouping={threadGrouping}
+                onChange={(grouping) => {
+                  void updateSnapshot(setSnapshot, () => api.setThreadGrouping(grouping)).catch(
+                    (error: unknown) => {
+                      console.error("[renderer] setThreadGrouping failed", error);
+                    },
+                  );
+                }}
+              />
+              <button
+                aria-label={t("sidebar.openFolder")}
+                className="icon-button"
+                type="button"
+                onClick={() => {
+                  void updateSnapshot(setSnapshot, () => api.pickWorkspace()).catch(
+                    (error: unknown) => {
+                      console.error("[renderer] pickWorkspace failed", error);
+                    },
+                  );
+                }}
+              >
+                <FolderIcon />
+              </button>
+            </div>
           </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={headerCollision}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <ThreadListContext.Provider
-              value={{
-                shortcuts: shortcutByKey,
-                props,
-                collapsed: collapsedThreads,
-                toggle: toggleThread,
-              }}
+
+          {visibleWorkspaces.length === 0 ? (
+            <div className="empty-state" data-testid="empty-state">
+              <h2>{t("sidebar.emptyTitle")}</h2>
+              <p>{t("sidebar.emptyBody")}</p>
+              <button
+                className="button button--primary"
+                type="button"
+                onClick={() => {
+                  void updateSnapshot(setSnapshot, () => api.pickWorkspace()).catch(
+                    (error: unknown) => {
+                      console.error("[renderer] pickWorkspace failed", error);
+                    },
+                  );
+                }}
+              >
+                {t("sidebar.openFirstFolder")}
+              </button>
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={headerCollision}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
             >
-              <div className="workspace-list" data-testid="workspace-list">
-                <SortableContext items={rootGroupIds} strategy={verticalListSortingStrategy}>
-                  {rootGroups.map((group) => (
-                    <SortableWorkspaceFolder
-                      key={group.workspace.id}
-                      workspace={group.workspace}
-                      threads={threadGrouping === "workspace" ? group.threads : undefined}
-                      historyExpanded={expandedHistory.has(
-                        workspaceHistoryExpansionKey(group.workspace.id),
-                      )}
-                      onToggleHistory={() =>
-                        toggleHistoryExpanded(workspaceHistoryExpansionKey(group.workspace.id))
-                      }
-                      collapsed={collapsedFolderIds.has(group.workspace.id)}
-                      onToggleCollapsed={() =>
-                        setFolderCollapsed(
-                          group.workspace.id,
-                          !collapsedFolderIds.has(group.workspace.id),
-                        )
-                      }
-                      canDrag={canDrag}
-                      selectedWorkspace={selectedWorkspace}
-                      selectedSession={selectedSession}
-                      linkedWorktreeByWorkspaceId={linkedWorktreeByWorkspaceId}
-                      wsMenu={wsMenu}
-                      api={api}
-                      threadMenu={threadMenu}
-                      onNewThread={onNewThread}
-                      onArchiveSession={onArchiveSession}
-                      onSelectSession={onSelectSession}
-                      onSetSessionPinned={onSetSessionPinned}
-                    />
-                  ))}
-                </SortableContext>
-                {orphanGroups.map((group) => (
-                  <section
-                    key={group.workspace.id}
-                    className="workspace-group"
-                    data-workspace-id={group.workspace.id}
-                  >
-                    <WorkspaceFolderContent
-                      workspace={group.workspace}
-                      threads={threadGrouping === "workspace" ? group.threads : undefined}
-                      historyExpanded={expandedHistory.has(
-                        workspaceHistoryExpansionKey(group.workspace.id),
-                      )}
-                      onToggleHistory={() =>
-                        toggleHistoryExpanded(workspaceHistoryExpansionKey(group.workspace.id))
-                      }
-                      collapsed={collapsedFolderIds.has(group.workspace.id)}
-                      onToggleCollapsed={() =>
-                        setFolderCollapsed(
-                          group.workspace.id,
-                          !collapsedFolderIds.has(group.workspace.id),
-                        )
-                      }
-                      canDrag={false}
-                      selectedWorkspace={selectedWorkspace}
-                      selectedSession={selectedSession}
-                      linkedWorktreeByWorkspaceId={linkedWorktreeByWorkspaceId}
-                      wsMenu={wsMenu}
-                      api={api}
-                      threadMenu={threadMenu}
-                      onNewThread={onNewThread}
-                      onArchiveSession={onArchiveSession}
-                      onSelectSession={onSelectSession}
-                      onSetSessionPinned={onSetSessionPinned}
-                    />
-                  </section>
-                ))}
-                {pinnedThreads.length > 0 ? (
-                  <PinnedThreadsSection
-                    pinnedThreads={pinnedThreads}
-                    sortableIds={pinnedSortableIds}
-                    sortableIdForThread={pinnedSortableId}
-                    selectedWorkspace={selectedWorkspace}
-                    selectedSession={selectedSession}
-                    threadMenu={threadMenu}
-                    onArchiveSession={onArchiveSession}
-                    onSelectSession={onSelectSession}
-                    onSetSessionPinned={onSetSessionPinned}
-                  />
-                ) : null}
-                {threadGrouping === "time"
-                  ? threadSidebarModel.recencySections.map((section) => (
-                      <RecencyThreadSectionView
-                        key={section.bucket}
-                        section={section}
+              <ThreadListContext.Provider
+                value={{
+                  shortcuts: shortcutByKey,
+                  props,
+                  collapsed: collapsedThreads,
+                  toggle: toggleThread,
+                }}
+              >
+                <div className="workspace-list" data-testid="workspace-list">
+                  <SortableContext items={rootGroupIds} strategy={verticalListSortingStrategy}>
+                    {rootGroups.map((group) => (
+                      <SortableWorkspaceFolder
+                        key={group.workspace.id}
+                        workspace={group.workspace}
+                        threads={threadGrouping === "workspace" ? group.threads : undefined}
                         historyExpanded={expandedHistory.has(
-                          recencyHistoryExpansionKey(section.bucket),
+                          workspaceHistoryExpansionKey(group.workspace.id),
                         )}
                         onToggleHistory={() =>
-                          toggleHistoryExpanded(recencyHistoryExpansionKey(section.bucket))
+                          toggleHistoryExpanded(workspaceHistoryExpansionKey(group.workspace.id))
                         }
+                        collapsed={collapsedFolderIds.has(group.workspace.id)}
+                        onToggleCollapsed={() =>
+                          setFolderCollapsed(
+                            group.workspace.id,
+                            !collapsedFolderIds.has(group.workspace.id),
+                          )
+                        }
+                        canDrag={canDrag}
                         selectedWorkspace={selectedWorkspace}
                         selectedSession={selectedSession}
+                        linkedWorktreeByWorkspaceId={linkedWorktreeByWorkspaceId}
+                        wsMenu={wsMenu}
+                        api={api}
                         threadMenu={threadMenu}
+                        onNewThread={onNewThread}
                         onArchiveSession={onArchiveSession}
                         onSelectSession={onSelectSession}
                         onSetSessionPinned={onSetSessionPinned}
                       />
-                    ))
-                  : null}
-                {threadSidebarModel.archivedThreads.length > 0 ? (
-                  <ArchivedThreadsSection
-                    archivedThreads={threadSidebarModel.archivedThreads}
-                    open={archivedOpen}
-                    onToggle={() => setArchivedOpen((current) => !current)}
-                    selectedWorkspace={selectedWorkspace}
-                    selectedSession={selectedSession}
-                    threadMenu={threadMenu}
-                    onUnarchiveSession={onUnarchiveSession}
-                    onSelectSession={onSelectSession}
-                    onSetSessionPinned={onSetSessionPinned}
-                  />
-                ) : null}
-              </div>
-              <DragOverlay>
-                {activePinnedThread ? (
-                  <ThreadSessionRow
-                    active={
-                      activePinnedThread.workspaceId === selectedWorkspace?.id &&
-                      activePinnedThread.session.id === selectedSession?.id
-                    }
-                    thread={activePinnedThread}
-                    showContext
-                    overlay
-                    onAction={() => undefined}
-                    onSelect={() => undefined}
-                    onTogglePinned={() => undefined}
-                  />
-                ) : activeFolder ? (
-                  <div className="workspace-group workspace-group--overlay">
-                    <WorkspaceFolderContent
-                      workspace={activeFolder}
-                      canDrag={false}
+                    ))}
+                  </SortableContext>
+                  {orphanGroups.map((group) => (
+                    <section
+                      key={group.workspace.id}
+                      className="workspace-group"
+                      data-workspace-id={group.workspace.id}
+                    >
+                      <WorkspaceFolderContent
+                        workspace={group.workspace}
+                        threads={threadGrouping === "workspace" ? group.threads : undefined}
+                        historyExpanded={expandedHistory.has(
+                          workspaceHistoryExpansionKey(group.workspace.id),
+                        )}
+                        onToggleHistory={() =>
+                          toggleHistoryExpanded(workspaceHistoryExpansionKey(group.workspace.id))
+                        }
+                        collapsed={collapsedFolderIds.has(group.workspace.id)}
+                        onToggleCollapsed={() =>
+                          setFolderCollapsed(
+                            group.workspace.id,
+                            !collapsedFolderIds.has(group.workspace.id),
+                          )
+                        }
+                        canDrag={false}
+                        selectedWorkspace={selectedWorkspace}
+                        selectedSession={selectedSession}
+                        linkedWorktreeByWorkspaceId={linkedWorktreeByWorkspaceId}
+                        wsMenu={wsMenu}
+                        api={api}
+                        threadMenu={threadMenu}
+                        onNewThread={onNewThread}
+                        onArchiveSession={onArchiveSession}
+                        onSelectSession={onSelectSession}
+                        onSetSessionPinned={onSetSessionPinned}
+                      />
+                    </section>
+                  ))}
+                  {pinnedThreads.length > 0 ? (
+                    <PinnedThreadsSection
+                      pinnedThreads={pinnedThreads}
+                      sortableIds={pinnedSortableIds}
+                      sortableIdForThread={pinnedSortableId}
                       selectedWorkspace={selectedWorkspace}
-                      linkedWorktreeByWorkspaceId={linkedWorktreeByWorkspaceId}
-                      wsMenu={wsMenu}
-                      api={api}
+                      selectedSession={selectedSession}
+                      threadMenu={threadMenu}
+                      onArchiveSession={onArchiveSession}
+                      onSelectSession={onSelectSession}
+                      onSetSessionPinned={onSetSessionPinned}
                     />
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </ThreadListContext.Provider>
-          </DndContext>
-        )}
-      </div>
-    </aside>
+                  ) : null}
+                  {threadGrouping === "time"
+                    ? threadSidebarModel.recencySections.map((section) => (
+                        <RecencyThreadSectionView
+                          key={section.bucket}
+                          section={section}
+                          historyExpanded={expandedHistory.has(
+                            recencyHistoryExpansionKey(section.bucket),
+                          )}
+                          onToggleHistory={() =>
+                            toggleHistoryExpanded(recencyHistoryExpansionKey(section.bucket))
+                          }
+                          selectedWorkspace={selectedWorkspace}
+                          selectedSession={selectedSession}
+                          threadMenu={threadMenu}
+                          onArchiveSession={onArchiveSession}
+                          onSelectSession={onSelectSession}
+                          onSetSessionPinned={onSetSessionPinned}
+                        />
+                      ))
+                    : null}
+                  {threadSidebarModel.archivedThreads.length > 0 ? (
+                    <ArchivedThreadsSection
+                      archivedThreads={threadSidebarModel.archivedThreads}
+                      open={archivedOpen}
+                      onToggle={() => setArchivedOpen((current) => !current)}
+                      selectedWorkspace={selectedWorkspace}
+                      selectedSession={selectedSession}
+                      threadMenu={threadMenu}
+                      onUnarchiveSession={onUnarchiveSession}
+                      onSelectSession={onSelectSession}
+                      onSetSessionPinned={onSetSessionPinned}
+                    />
+                  ) : null}
+                </div>
+                <DragOverlay>
+                  {activePinnedThread ? (
+                    <ThreadSessionRow
+                      active={
+                        activePinnedThread.workspaceId === selectedWorkspace?.id &&
+                        activePinnedThread.session.id === selectedSession?.id
+                      }
+                      thread={activePinnedThread}
+                      showContext
+                      overlay
+                      onAction={() => undefined}
+                      onSelect={() => undefined}
+                      onTogglePinned={() => undefined}
+                    />
+                  ) : activeFolder ? (
+                    <div className="workspace-group workspace-group--overlay">
+                      <WorkspaceFolderContent
+                        workspace={activeFolder}
+                        canDrag={false}
+                        selectedWorkspace={selectedWorkspace}
+                        linkedWorktreeByWorkspaceId={linkedWorktreeByWorkspaceId}
+                        wsMenu={wsMenu}
+                        api={api}
+                      />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </ThreadListContext.Provider>
+            </DndContext>
+          )}
+        </div>
+      </aside>
+    </PendingApprovalContext.Provider>
   );
 }
 
@@ -1625,6 +1644,9 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
   ) {
     const { t } = useTranslation();
     const indicatorVariant = sessionIndicatorVariant(thread);
+    const pendingApproval = useContext(PendingApprovalContext).has(
+      sessionKey({ workspaceId: thread.workspaceId, sessionId: thread.session.id }),
+    );
     const tree = useContext(ThreadListContext);
     const threadKey = sessionThreadKey(thread);
     const children = thread.children ?? [];
@@ -1710,6 +1732,11 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
             <span className="session-row__body">
               <span className="session-row__title-line">
                 <span className="session-row__title">{thread.session.title}</span>
+                {pendingApproval ? (
+                  <span className="session-row__pending" data-testid="session-pending-approval">
+                    {t("sidebar.pendingApproval")}
+                  </span>
+                ) : null}
               </span>
               {showContext ? (
                 <span className="session-row__context">{thread.contextLabel}</span>

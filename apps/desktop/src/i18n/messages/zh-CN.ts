@@ -139,6 +139,7 @@ export const zhCN: Partial<Messages> = {
   "secondarySurface.noMatches": "没有与“{query}”匹配的结果",
   "common.save": "保存",
   "common.cancel": "取消",
+  "sidebar.pendingApproval": "待确认",
   "sidebar.newThread": "新会话",
   "sidebar.newThreadIn": "在 {name} 中新建会话",
   "sidebar.navThreads": "会话",

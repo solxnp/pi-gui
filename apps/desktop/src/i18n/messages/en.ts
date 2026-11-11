@@ -147,6 +147,7 @@ export const en = {
   "secondarySurface.noMatches": "No matches for “{query}”",
   "common.save": "Save",
   "common.cancel": "Cancel",
+  "sidebar.pendingApproval": "Awaiting you",
   "sidebar.newThread": "New thread",
   "sidebar.newThreadIn": "New thread in {name}",
   "sidebar.navThreads": "Threads",

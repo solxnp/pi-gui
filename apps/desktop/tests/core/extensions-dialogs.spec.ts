@@ -207,8 +207,8 @@ test("renders extension dialogs in the Electron surface and routes responses bac
     await dialog.getByRole("button", { name: "Alpha", exact: true }).press("Tab");
     await expect(dialog.getByRole("button", { name: "Beta", exact: true })).toBeFocused();
     await dialog.getByRole("button", { name: "Beta", exact: true }).press("Tab");
-    await expect(dialog.getByTestId("extension-dialog-cancel")).toBeFocused();
-    await dialog.getByTestId("extension-dialog-cancel").press("Tab");
+    // A select offers its own dismiss option, so the footer Cancel is not rendered at all.
+    await expect(dialog.getByTestId("extension-dialog-cancel")).toHaveCount(0);
     await expect(dialog.getByRole("button", { name: "Alpha", exact: true })).toBeFocused();
     await dialog.getByRole("button", { name: "Alpha", exact: true }).press("Tab");
     await expect(dialog.getByRole("button", { name: "Beta", exact: true })).toBeFocused();
