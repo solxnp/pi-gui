@@ -40,7 +40,17 @@ function fileEvent(toolName: "read" | "write" | "edit", path: string): ToolCallE
   } as unknown as ToolCallEvent;
 }
 
-function createGate(options: { confirm: boolean; hasUI?: boolean }) {
+interface GateHarness {
+  run(event: ToolCallEvent): Promise<ToolCallEventResult | undefined>;
+  /** Every prompt the gate showed, in order. */
+  prompts: string[];
+}
+
+function createGate(options: {
+  choice: string | undefined;
+  hasUI?: boolean;
+  sessionId?: string;
+}): GateHarness {
   let handler: ToolCallHandler | undefined;
   const pi = {
     on: (_event: string, next: ToolCallHandler) => {
@@ -52,16 +62,27 @@ function createGate(options: { confirm: boolean; hasUI?: boolean }) {
   const factoryResult = createPermissionGateExtension()(pi);
   expect(factoryResult).toBeUndefined();
 
+  const prompts: string[] = [];
   const ctx = {
     hasUI: options.hasUI ?? true,
-    ui: { confirm: async () => options.confirm },
+    ui: {
+      select: async (prompt: string, choices: string[]) => {
+        prompts.push(prompt);
+        // The dialog only offers real options; a harness asking for an unknown answer means none.
+        return options.choice && choices.includes(options.choice) ? options.choice : undefined;
+      },
+    },
+    sessionManager: { getSessionId: () => options.sessionId ?? "session-1" },
   } as unknown as ExtensionContext;
 
-  return async (event: ToolCallEvent): Promise<ToolCallEventResult | undefined> => {
-    if (!handler) {
-      throw new Error("The permission gate did not register a tool_call handler.");
-    }
-    return handler(event, ctx);
+  return {
+    prompts,
+    run: async (event) => {
+      if (!handler) {
+        throw new Error("The permission gate did not register a tool_call handler.");
+      }
+      return handler(event, ctx);
+    },
   };
 }
 
@@ -136,85 +157,89 @@ test("credential files are matched by name, not by substring", () => {
 });
 
 test("the dialog shows a short command preview and a readable layout", async () => {
-  let message = "";
-  let title = "";
-  const pi = {
-    on: (_event: string, next: ToolCallHandler) => {
-      handler = next;
-      return () => {};
-    },
-  } as unknown as ExtensionAPI;
-  let handler: ToolCallHandler | undefined;
-  await createPermissionGateExtension()(pi);
-  const ctx = {
-    hasUI: true,
-    ui: {
-      confirm: async (nextTitle: string, nextMessage: string) => {
-        title = nextTitle;
-        message = nextMessage;
-        return false;
-      },
-    },
-  } as unknown as ExtensionContext;
-
+  const gate = createGate({ choice: "取消" });
   const longCommand = [
-    "cd /repo && python3 - <<'PY'",
+    "rm -rf build && cd /repo && python3 - <<'PY'",
     "line two",
     "line three",
     "line four",
     "line five",
     "PY",
   ].join("\n");
-  if (!handler) {
-    throw new Error("The permission gate did not register a tool_call handler.");
-  }
-  await handler(bashEvent(`rm -rf build && ${longCommand}`), ctx);
+  await gate.run(bashEvent(longCommand));
 
-  expect(title).toBe("要执行这条命令，确认吗？");
-  expect(message).toContain("【要执行的命令】");
-  expect(message).toContain("【为什么先问你】");
-  expect(message).toContain("· 递归强制删除文件或目录");
-  expect(message).toContain("Confirm = 放行这一次");
-  expect(message).toContain("共");
-  expect(message).not.toContain("line five");
+  const prompt = gate.prompts[0] ?? "";
+  expect(prompt).toContain("要执行这条命令，怎么处理？");
+  expect(prompt).toContain("【要执行的命令】");
+  expect(prompt).toContain("【为什么先问你】");
+  expect(prompt).toContain("· 递归强制删除文件或目录");
+  expect(prompt).toContain("本次会话都允许");
+  expect(prompt).toContain("共");
+  expect(prompt).not.toContain("line five");
 });
 
 test("a denied command blocks the tool call with the matched rule ids", async () => {
-  const run = createGate({ confirm: false });
-  const result = await run(bashEvent("rm -rf dist"));
+  const gate = createGate({ choice: "取消" });
+  const result = await gate.run(bashEvent("rm -rf dist"));
 
   expect(result?.block).toBe(true);
   expect(result?.reason).toContain("rm-recursive-force");
 });
 
-test("an allowed command and a harmless command both run", async () => {
-  const confirmed = createGate({ confirm: true });
-  expect(await confirmed(bashEvent("rm -rf dist"))).toBeUndefined();
+test("allowing once runs the command without remembering the answer", async () => {
+  const gate = createGate({ choice: "确认执行" });
+  expect(await gate.run(bashEvent("rm -rf dist"))).toBeUndefined();
+  expect(gate.prompts).toHaveLength(1);
 
-  const harmless = createGate({ confirm: false });
-  expect(await harmless(bashEvent("git status --short"))).toBeUndefined();
+  expect(await gate.run(bashEvent("rm -rf dist"))).toBeUndefined();
+  expect(gate.prompts).toHaveLength(2);
+});
+
+test("allowing for the session stops later prompts in that session only", async () => {
+  const gate = createGate({ choice: "本次会话都允许" });
+  expect(await gate.run(bashEvent("rm -rf dist"))).toBeUndefined();
+  expect(gate.prompts).toHaveLength(1);
+
+  // Both the command and the file path skip the dialog afterwards.
+  expect(await gate.run(bashEvent("rm -rf /"))).toBeUndefined();
+  expect(await gate.run(fileEvent("read", "/repo/.env"))).toBeUndefined();
+  expect(gate.prompts).toHaveLength(1);
+
+  const otherSession = createGate({ choice: "取消", sessionId: "session-2" });
+  expect((await otherSession.run(bashEvent("rm -rf dist")))?.block).toBe(true);
+});
+
+test("dismissing the dialog without an answer is a denial", async () => {
+  const gate = createGate({ choice: undefined });
+  expect((await gate.run(bashEvent("rm -rf dist")))?.block).toBe(true);
+});
+
+test("a harmless command never opens a dialog", async () => {
+  const gate = createGate({ choice: "取消" });
+  expect(await gate.run(bashEvent("git status --short"))).toBeUndefined();
+  expect(gate.prompts).toHaveLength(0);
 });
 
 test("a credentials file is gated for read, write and edit", async () => {
-  const run = createGate({ confirm: false });
+  const gate = createGate({ choice: "取消" });
 
   for (const toolName of ["read", "write", "edit"] as const) {
-    const result = await run(fileEvent(toolName, "/repo/.env"));
+    const result = await gate.run(fileEvent(toolName, "/repo/.env"));
     expect(result?.block).toBe(true);
     expect(result?.reason).toContain("env-file");
   }
 
-  expect(await run(fileEvent("read", "/repo/src/main.ts"))).toBeUndefined();
+  expect(await gate.run(fileEvent("read", "/repo/src/main.ts"))).toBeUndefined();
 });
 
 test("without a dialog the gate refuses instead of approving", async () => {
-  const run = createGate({ confirm: true, hasUI: false });
+  const gate = createGate({ choice: "确认执行", hasUI: false });
 
-  const command = await run(bashEvent("rm -rf /"));
+  const command = await gate.run(bashEvent("rm -rf /"));
   expect(command?.block).toBe(true);
   expect(command?.reason).toContain("没有可用的确认对话框");
 
-  const file = await run(fileEvent("write", "/repo/.env"));
+  const file = await gate.run(fileEvent("write", "/repo/.env"));
   expect(file?.block).toBe(true);
   expect(file?.reason).toContain("没有可用的确认对话框");
 });
@@ -232,10 +257,11 @@ test("a dialog that throws counts as a refusal", async () => {
   const ctx = {
     hasUI: true,
     ui: {
-      confirm: async () => {
+      select: async () => {
         throw new Error("session is not visible");
       },
     },
+    sessionManager: { getSessionId: () => "session-1" },
   } as unknown as ExtensionContext;
 
   if (!handler) {

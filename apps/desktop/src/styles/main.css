@@ -3063,6 +3063,8 @@
   z-index: 42;
   display: grid;
   place-items: center;
+  /* A dialog taller than the window scrolls inside the backdrop instead of being clipped. */
+  overflow: auto;
   padding: 24px;
   background: var(--scrim);
   backdrop-filter: blur(6px);
@@ -3070,6 +3072,8 @@
 
 .extension-dialog {
   width: min(560px, 100%);
+  max-height: calc(100vh - var(--window-titlebar-height) - 48px);
+  overflow: hidden;
   display: grid;
   gap: 14px;
   padding: 22px;
@@ -3121,6 +3125,11 @@
   color: var(--text-strong);
   font-size: 20px;
   font-weight: 630;
+  /* A select prompt carries its whole explanation in the title. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 40vh;
+  overflow-y: auto;
 }
 
 .extension-dialog__body {

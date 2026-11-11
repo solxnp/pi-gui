@@ -36,12 +36,17 @@ test("a dangerous bash command asks first and the denial reaches the tool result
 
     const dialog = window.getByTestId("extension-dialog");
     await expect(dialog).toBeVisible({ timeout: 180_000 });
-    await expect(dialog).toContainText("要执行这条命令，确认吗？");
+    await expect(dialog).toContainText("要执行这条命令，怎么处理？");
     await expect(dialog).toContainText("递归强制删除文件或目录");
     await expect(dialog).toContainText("rm -rf permission-gate-probe-dir");
-    await window.screenshot({ path: testInfo.outputPath("permission-dialog.png") });
+    await expect(dialog).toContainText("本次会话都允许");
+    // CSS scale keeps the attachment at window size instead of the Retina pixel count.
+    await window.screenshot({
+      path: testInfo.outputPath("permission-dialog.png"),
+      scale: "css",
+    });
 
-    await window.getByTestId("extension-dialog-cancel").click();
+    await dialog.getByRole("button", { name: "取消", exact: true }).click();
     await expect(dialog).toBeHidden();
 
     const toolItem = window.locator(".timeline-tool").first();
