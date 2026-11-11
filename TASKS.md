@@ -84,13 +84,13 @@
 
 | 项 | 内容 |
 |---|---|
-| 状态 | 待验证 |
-| 提交 | — |
+| 状态 | 已完成 |
+| 提交 | `6ddb0e0` |
 | 验收 | 窗口重新获得焦点时重读台账，外部编辑（agent、编辑器）不用手点刷新 |
 
 - [x] `useTasksLedger` 监听 `focus` 重新读文件（不做文件系统监听，只针对这一个路径）
 - [x] typecheck / eslint / build / core 用例全过
-- [ ] commit + push + 回写本表
+- [x] commit + push + 回写本表
 
 ## 二、已完成
 
