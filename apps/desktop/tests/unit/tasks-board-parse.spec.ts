@@ -123,3 +123,30 @@ test("task tables outside a finished section do not become items", () => {
 `);
   expect(board.groups[0].items).toEqual([]);
 });
+
+test("reads the commit row so the panel can flag unverified 已完成 rows", () => {
+  const board = parseTasksBoard(`### P0-01 做完了
+
+| 项 | 内容 |
+|---|---|
+| 状态 | 已完成 |
+| 提交 | \`7db402b\` |
+
+### P0-02 也标了完成
+
+| 项 | 内容 |
+|---|---|
+| 状态 | 已完成 |
+| 提交 | — |
+`);
+  const [first, second] = board.groups;
+  expect(first?.commit).toBe("7db402b");
+  expect(second?.commit).toBeUndefined();
+});
+
+test("a legacy finished section has no status cell, so it is not treated as an unverified task", () => {
+  const board = parseTasksBoard("## 四、已完成\n\n| 项 | 结果 |\n|---|---|\n| 导出 | ok |\n");
+  expect(board.groups[0]?.status).toBe("done");
+  expect(board.groups[0]?.statusText).toBe("");
+  expect(board.groups[0]?.commit).toBeUndefined();
+});

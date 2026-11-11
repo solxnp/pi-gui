@@ -41,6 +41,13 @@ const TASKS_MARKDOWN = `# TASKS
 
 - [ ] 分 3 个 commit
 
+### P0-08 标了完成没写提交号
+
+| 项 | 内容 |
+|---|---|
+| 状态 | 已完成 |
+| 提交 | — |
+
 ### P0-09 已经放弃的实验
 
 | 项 | 内容 |
@@ -144,12 +151,14 @@ test("reads TASKS.md, ranks in-progress first, and puts a row in the composer", 
     // Cancelled work must not masquerade as to-do.
     await expect(todo).not.toContainText("P0-09");
 
-    // Finished work starts collapsed, and its table rows become steps.
+    // Finished work starts collapsed, so the unverified row is not visible yet.
     const done = window.getByTestId("tasks-board-section-done");
     await expect(done).not.toContainText("全量导出");
     await done.getByRole("button").first().click();
     await expect(done).toContainText("全量导出");
     await expect(done).toContainText("enc_key 校验");
+    // A 已完成 task row without a commit sha is not trusted.
+    await expect(done.getByTestId("tasks-board-missing-commit")).toHaveCount(1);
 
     const path = testInfo.outputPath("tasks-board.png");
     await window.screenshot({ path, animations: "disabled" });

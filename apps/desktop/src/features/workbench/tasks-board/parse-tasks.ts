@@ -24,6 +24,8 @@ export interface TasksBoardGroup {
   readonly status: TasksBoardStatus;
   /** The raw status cell, kept for display when it carries extra detail. */
   readonly statusText: string;
+  /** The `| 提交 |` cell when present and a real sha; undefined means "not filled in". */
+  readonly commit: string | undefined;
   readonly items: readonly TasksBoardItem[];
 }
 
@@ -40,6 +42,8 @@ const MAX_GROUPS = 200;
 const MAX_ITEMS = 500;
 const HEADING = /^#{1,4}\s+(.+?)\s*$/;
 const STATUS_ROW = /^\|\s*状态\s*\|\s*(.+?)\s*\|/;
+const COMMIT_ROW = /^\|\s*提交\s*\|\s*(.+?)\s*\|/;
+const COMMIT_VALUE = /^[`*\s]*([0-9a-f]{7,40})[`*\s]*$/i;
 const CHECKBOX = /^[-*]\s+\[([ xX])\]\s+(.+?)\s*$/;
 const TABLE_ROW = /^\|(.+)\|\s*$/;
 const TABLE_SEPARATOR = /^\|[\s:|-]+\|\s*$/;
@@ -69,6 +73,7 @@ interface PendingGroup {
   title: string;
   status: TasksBoardStatus | null;
   statusText: string;
+  commit: string | undefined;
   items: TasksBoardItem[];
 }
 
@@ -83,6 +88,7 @@ export function parseTasksBoard(markdown: string): TasksBoard {
     title,
     status: null,
     statusText: "",
+    commit: undefined,
     items: [],
   });
 
@@ -99,6 +105,7 @@ export function parseTasksBoard(markdown: string): TasksBoard {
       // A plain checkbox list under a heading is a to-do list even without a status row.
       status: pending.status ?? (open || pending.items.length === 0 ? "todo" : "done"),
       statusText: pending.statusText,
+      commit: pending.commit,
       items: pending.items,
     });
     pending = null;
@@ -123,6 +130,14 @@ export function parseTasksBoard(markdown: string): TasksBoard {
       const statusText = statusRow[1] ?? "";
       pending.status = tasksStatusFromText(statusText);
       pending.statusText = cleanTasksText(statusText);
+      continue;
+    }
+
+    const commitRow = COMMIT_ROW.exec(line);
+    if (commitRow) {
+      pending ??= start("");
+      const value = COMMIT_VALUE.exec(commitRow[1] ?? "");
+      pending.commit = value?.[1]?.toLowerCase();
       continue;
     }
 

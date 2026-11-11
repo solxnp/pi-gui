@@ -315,3 +315,9 @@
   cursor: default;
   opacity: 0.5;
 }
+
+.tasks-board__warn {
+  flex: 0 0 auto;
+  font-size: var(--text-xs);
+  line-height: 1;
+}

@@ -49,7 +49,19 @@
 - [x] core 用例：面板加一条 → 磁盘上出现在「已完成」之前
 - [x] commit + push + 回写本表
 
-### P0-03 「AI 维护状态」工具 `tasks.update`
+### P0-03 「AI 维护状态」工具 `tasks_update`
+
+| 项 | 内容 |
+|---|---|
+| 状态 | 待验证 |
+| 提交 | — |
+| 验收 | 工具只接受五个状态；`已完成` 必须带仓库里真实存在的 commit（`git rev-parse --verify`），否则拒绝且不写文件；`取消` 没写阻塞原因时给警告；原子写 |
+
+- [x] `~/.pi/agent/lib/tasks-ledger.ts`：纯逻辑（找 task / 改状态行 / 维护提交行 / 歧义与未知 task 报错 / git 校验）+ 原子写
+- [x] `~/.pi/agent/extensions/task-ledger.ts`：注册 `tasks_update({ task, status, commit?, workspace? })`，已确认 pi 能加载并出现在工具列表
+- [x] 面板对「已完成 + 有状态格 + 没提交号」的条目打 ⚠️（`## 已完成` 章节的旧表格不算）
+- [x] 验证：core 流程 11 项断言全过（含假 sha 被拒、拒绝后文件不变、docs/TASKS.md 也支持）
+- [ ] commit + push + 回写本表（扩音器与 lib 在用户目录，不进本仓库）
 
 | 项 | 内容 |
 |---|---|

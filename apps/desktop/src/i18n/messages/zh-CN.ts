@@ -230,6 +230,7 @@ export const zhCN: Partial<Messages> = {
   "tasksBoard.status.todo": "待做",
   "tasksBoard.status.done": "已完成",
   "tasksBoard.status.cancelled": "已取消",
+  "tasksBoard.missingCommit": "标了已完成但没有提交号，未经验证",
   "tasksBoard.add": "添加",
   "tasksBoard.addPlaceholder": "新的待做条目",
   "tasksBoard.addFailed": "加不进去：{message}",

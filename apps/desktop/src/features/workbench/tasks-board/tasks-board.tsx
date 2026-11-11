@@ -28,6 +28,11 @@ const SECTIONS = [
   { status: "cancelled", folded: true },
 ] as const satisfies readonly { status: TasksBoardStatus; folded: boolean }[];
 
+/** A task marked 已完成 by hand but without a commit sha cannot be trusted. */
+function needsCommit(group: TasksBoardGroup): boolean {
+  return group.status === "done" && group.statusText.length > 0 && !group.commit;
+}
+
 function statusClassName(status: TasksBoardStatus): string {
   return `tasks-board__badge tasks-board__badge--${status}`;
 }
@@ -253,6 +258,15 @@ export function TasksBoardPanel({
                             >
                               {group.title || t("tasksBoard.untitled")}
                             </span>
+                            {needsCommit(group) ? (
+                              <span
+                                className="tasks-board__warn"
+                                data-testid="tasks-board-missing-commit"
+                                title={t("tasksBoard.missingCommit")}
+                              >
+                                ⚠️
+                              </span>
+                            ) : null}
                             {group.items.length > 0 ? (
                               <span className="tasks-board__count">{pending}</span>
                             ) : null}
