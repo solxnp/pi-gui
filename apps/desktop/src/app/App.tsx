@@ -25,8 +25,8 @@ import { ComposerPanel } from "../features/conversation/composer-panel";
 
 import { DiffPanel } from "../features/workbench/diff-panel";
 import type { DiffPanelFileRequest } from "../features/workbench/diff-panel-types";
-import { FileWorkbench } from "../features/workbench/file-workbench";
 import { useWorkbench } from "../features/workbench/use-workbench";
+import { WorkbenchToolPanels } from "./workbench-tool-panels";
 import {
   ExtensionViewPanel,
   type ExtensionViewTheme,
@@ -1371,50 +1371,46 @@ export default function App() {
                 }
               />
             ) : activeTool && activeTool.kind !== "extension" ? (
-              renderBuiltinToolPanel(activeTool.kind, {
-                changes: () => (
-                  <DiffPanel
-                    key={selectedSessionKey}
-                    workspaceId={selectedWorkspace.id}
-                    sessionId={selectedSession.id}
-                    api={api}
-                    sessionStatus={selectedSession.status}
-                    selection={workbench.view.changes}
-                    onSelectionChange={workbench.setChanges}
-                    onOpenFile={workbench.openFile}
-                    fileRequest={
-                      diffFileRequest?.sessionKey === selectedSessionKey
-                        ? diffFileRequest.request
-                        : null
-                    }
-                    contexts={fileWorkbenchContexts}
-                  />
-                ),
-                files: () =>
-                  filesWorkspace ? (
-                    <FileWorkbench
-                      key={selectedSessionKey}
-                      api={api}
-                      onTabsChange={workbench.setFiles}
-                      sessionStatus={selectedSession.status}
-                      tabs={workbench.view.files.tabs}
-                      worktree={filesWorktree}
-                      workspace={filesWorkspace}
-                    />
-                  ) : (
-                    <p className="workbench__unavailable" role="status">
-                      This file checkout is unavailable.
-                    </p>
-                  ),
-                terminal: () => (
-                  <TerminalPanel
-                    key={selectedSessionKey}
-                    workspace={selectedWorkspace}
-                    sessionId={selectedSession.id}
-                    onHide={() => workbench.closeTool("terminal")}
-                  />
-                ),
-              })
+              <WorkbenchToolPanels
+                tool={activeTool.kind}
+                sessionKey={selectedSessionKey}
+                api={api}
+                tasks={{
+                  api,
+                  workspaceId: selectedWorkspace.id,
+                  onInsertPrompt: (prompt) => {
+                    setComposerDraft(prompt);
+                    focusComposer();
+                  },
+                }}
+                changes={{
+                  workspaceId: selectedWorkspace.id,
+                  sessionId: selectedSession.id,
+                  api,
+                  sessionStatus: selectedSession.status,
+                  selection: workbench.view.changes,
+                  onSelectionChange: workbench.setChanges,
+                  onOpenFile: workbench.openFile,
+                  fileRequest:
+                    diffFileRequest?.sessionKey === selectedSessionKey
+                      ? diffFileRequest.request
+                      : null,
+                  contexts: fileWorkbenchContexts,
+                }}
+                files={{
+                  api,
+                  onTabsChange: workbench.setFiles,
+                  sessionStatus: selectedSession.status,
+                  tabs: workbench.view.files.tabs,
+                  worktree: filesWorktree,
+                  workspace: filesWorkspace,
+                }}
+                terminal={{
+                  workspace: selectedWorkspace,
+                  sessionId: selectedSession.id,
+                  onHide: () => workbench.closeTool("terminal"),
+                }}
+              />
             ) : null}
           </Workbench>
         ) : null}
