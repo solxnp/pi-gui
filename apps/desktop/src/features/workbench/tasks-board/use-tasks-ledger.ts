@@ -81,6 +81,15 @@ export function useTasksLedger(
   }, [api, workspaceId, reloadToken, t]);
 
   const reload = useCallback(() => setReloadToken((token) => token + 1), []);
+
+  // The ledger is edited outside the app too (agents, editors). Re-read when the
+  // window regains focus instead of watching the file system for one path.
+  useEffect(() => {
+    const onFocus = () => setReloadToken((token) => token + 1);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
+
   return { state, reload };
 }
 
