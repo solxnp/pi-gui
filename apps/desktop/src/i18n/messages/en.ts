@@ -221,6 +221,8 @@ export const en = {
   "threadActions.editScheduled": "Edit scheduled task…",
   "threadActions.addScheduled": "Add scheduled task…",
   "threadActions.copySessionId": "Copy session ID",
+  "sessionOverview.changes": "{files} files +{added} −{removed}",
+  "sessionOverview.task": "Current task: {task}",
   "tasksBoard.title": "Tasks",
   "tasksBoard.refresh": "Reload task list",
   "tasksBoard.loading": "Reading the task list…",

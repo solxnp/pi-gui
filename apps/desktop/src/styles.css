@@ -9,6 +9,7 @@
 @import "./styles/main.css";
 @import "./styles/workbench.css";
 @import "./styles/tasks-board.css";
+@import "./styles/session-strip.css";
 @import "./styles/review.css";
 @import "./styles/extension-views.css";
 @import "./styles/timeline.css";

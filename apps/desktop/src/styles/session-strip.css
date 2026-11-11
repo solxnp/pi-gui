@@ -1,0 +1,30 @@
+/* One read-only line above the composer: branch, last turn, current task. */
+
+.session-overview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 16px 0;
+  color: var(--muted-soft);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+}
+
+.session-overview__item {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-overview__branch {
+  flex: 0 1 auto;
+  color: var(--muted-strong);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+
+.session-overview__task {
+  flex: 1 1 auto;
+  color: var(--muted);
+}

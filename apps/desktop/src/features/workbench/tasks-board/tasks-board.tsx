@@ -1,13 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { PiDesktopApi } from "../../../../contracts/ipc";
 import { useTranslation } from "../../../i18n";
 import { ChevronDownIcon, ChevronRightIcon, RefreshIcon } from "../../../ui/icons";
-import {
-  parseTasksBoard,
-  TASKS_BOARD_FILES,
-  type TasksBoard,
-  type TasksBoardGroup,
-} from "./parse-tasks";
+import type { TasksBoardGroup } from "./parse-tasks";
+import { useTasksLedger } from "./use-tasks-ledger";
 
 interface TasksBoardPanelProps {
   readonly api: PiDesktopApi | undefined;
@@ -16,70 +12,14 @@ interface TasksBoardPanelProps {
   readonly onInsertPrompt: (prompt: string) => void;
 }
 
-type LoadState =
-  | { readonly kind: "loading" }
-  | { readonly kind: "missing" }
-  | { readonly kind: "error"; readonly message: string }
-  | {
-      readonly kind: "ready";
-      readonly path: string;
-      readonly board: TasksBoard;
-      readonly truncated: boolean;
-    };
-
-const MISSING_FILE = /ENOENT|no such file|not found/i;
-
 function statusClassName(status: TasksBoardGroup["status"]): string {
   return `tasks-board__badge tasks-board__badge--${status}`;
 }
 
 export function TasksBoardPanel({ api, workspaceId, onInsertPrompt }: TasksBoardPanelProps) {
   const { t } = useTranslation();
-  const [state, setState] = useState<LoadState>({ kind: "loading" });
+  const { state, reload } = useTasksLedger(api, workspaceId);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
-  const [reloadToken, setReloadToken] = useState(0);
-  const requestId = useRef(0);
-
-  useEffect(() => {
-    if (!api || !workspaceId) {
-      setState({ kind: "missing" });
-      return;
-    }
-    const current = ++requestId.current;
-    setState({ kind: "loading" });
-    (async () => {
-      let missing = true;
-      let failure = "";
-      for (const path of TASKS_BOARD_FILES) {
-        try {
-          const preview = await api.readWorkspaceFile(workspaceId, path);
-          if (current !== requestId.current) return;
-          if (preview.binary) {
-            missing = false;
-            failure = t("tasksBoard.binary", { path });
-            continue;
-          }
-          setState({
-            kind: "ready",
-            path,
-            board: parseTasksBoard(preview.content),
-            truncated: preview.truncated,
-          });
-          return;
-        } catch (error) {
-          if (current !== requestId.current) return;
-          const message = error instanceof Error ? error.message : String(error);
-          if (!MISSING_FILE.test(message)) {
-            missing = false;
-            failure = t("tasksBoard.readFailed", { path, message });
-          }
-        }
-      }
-      setState(missing && !failure ? { kind: "missing" } : { kind: "error", message: failure });
-    })().catch(() => {
-      // The panel reports read failures as state; it never rejects on its own.
-    });
-  }, [api, workspaceId, reloadToken, t]);
 
   const groups = state.kind === "ready" ? state.board.groups : [];
   const badge = useMemo(
@@ -119,7 +59,7 @@ export function TasksBoardPanel({ api, workspaceId, onInsertPrompt }: TasksBoard
         <button
           aria-label={t("tasksBoard.refresh")}
           className="tasks-board__icon-button"
-          onClick={() => setReloadToken((token) => token + 1)}
+          onClick={reload}
           title={t("tasksBoard.refresh")}
           type="button"
         >

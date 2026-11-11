@@ -22,6 +22,7 @@ import { buildDisplayTimelineItems } from "../features/conversation/timeline-tur
 import { useTurnChanges } from "../features/conversation/hooks/use-turn-changes";
 import { restoreTopmostDialogFocus } from "../ui/dialog-focus";
 import { ComposerPanel } from "../features/conversation/composer-panel";
+import { SessionOverview } from "../features/conversation/session-overview";
 
 import { DiffPanel } from "../features/workbench/diff-panel";
 import type { DiffPanelFileRequest } from "../features/workbench/diff-panel-types";
@@ -1205,6 +1206,7 @@ export default function App() {
                   onOpen={() => setScheduledEditor({ mode: "edit", taskId: scheduledBinding.id })}
                 />
               ) : null}
+              <SessionOverview api={api} workspace={selectedWorkspace} session={selectedSession} />
               <ComposerPanel
                 key={selectedSessionKey}
                 preparingTaskDraft={extensionHostActions.preparingTaskDraft}

@@ -211,6 +211,8 @@ export const zhCN: Partial<Messages> = {
   "threadActions.editScheduled": "编辑定时任务…",
   "threadActions.addScheduled": "添加定时任务…",
   "threadActions.copySessionId": "复制会话 ID",
+  "sessionOverview.changes": "{files} 个文件 +{added} −{removed}",
+  "sessionOverview.task": "当前任务：{task}",
   "tasksBoard.title": "台账",
   "tasksBoard.refresh": "重新读取台账",
   "tasksBoard.loading": "正在读取台账…",
