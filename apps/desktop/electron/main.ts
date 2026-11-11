@@ -49,6 +49,10 @@ import {
   type ScheduledTaskRuntimeBridge,
 } from "./scheduled-tasks/scheduled-task-runtime";
 import {
+  createPermissionGateExtension,
+  permissionGateExtensionName,
+} from "./permissions/permission-gate-extension";
+import {
   createCustomInstructionsExtension,
   customInstructionsFileName,
   customInstructionsPath,
@@ -1049,6 +1053,13 @@ app
               return undefined;
             }
           }),
+        },
+        {
+          name: permissionGateExtensionName,
+          displayName: "Permission gate",
+          description:
+            "Asks before a dangerous bash command runs and before a tool reaches a credentials file",
+          factory: createPermissionGateExtension(),
         },
         {
           name: "pi-gui-custom-instructions",
