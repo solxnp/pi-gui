@@ -53,28 +53,15 @@
 
 | 项 | 内容 |
 |---|---|
-| 状态 | 待验证 |
-| 提交 | — |
+| 状态 | 已完成 |
+| 提交 | `6abbfd4` |
 | 验收 | 工具只接受五个状态；`已完成` 必须带仓库里真实存在的 commit（`git rev-parse --verify`），否则拒绝且不写文件；`取消` 没写阻塞原因时给警告；原子写 |
 
 - [x] `~/.pi/agent/lib/tasks-ledger.ts`：纯逻辑（找 task / 改状态行 / 维护提交行 / 歧义与未知 task 报错 / git 校验）+ 原子写
 - [x] `~/.pi/agent/extensions/task-ledger.ts`：注册 `tasks_update({ task, status, commit?, workspace? })`，已确认 pi 能加载并出现在工具列表
 - [x] 面板对「已完成 + 有状态格 + 没提交号」的条目打 ⚠️（`## 已完成` 章节的旧表格不算）
 - [x] 验证：core 流程 11 项断言全过（含假 sha 被拒、拒绝后文件不变、docs/TASKS.md 也支持）
-- [ ] commit + push + 回写本表（扩音器与 lib 在用户目录，不进本仓库）
-
-| 项 | 内容 |
-|---|---|
-| 状态 | 待做 |
-| 提交 | — |
-| 验收 | 扩展提供 `tasks.update({ id, status, commit? })`；状态只接受五个取值；带 commit 时校验 `git cat-file -e`；原子写回 md |
-| 备注 | 面板已能新增待做条目（P0-02），这条接着做「改状态」的那一半 |
-
-- [ ] 扩展工具骨架 + 参数校验
-- [ ] 原子写 md（保留原格式与缩进）
-- [ ] commit 号存在性校验
-- [ ] 面板对「已完成但无 commit」标 ⚠️
-- [ ] 把约定写进 `~/.pi/agent/AGENTS.md` §十
+- [x] commit + push + 回写本表（扩展与 lib 在用户目录，不进本仓库）
 
 ---
 

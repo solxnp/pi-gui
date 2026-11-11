@@ -43,7 +43,8 @@ const MAX_ITEMS = 500;
 const HEADING = /^#{1,4}\s+(.+?)\s*$/;
 const STATUS_ROW = /^\|\s*状态\s*\|\s*(.+?)\s*\|/;
 const COMMIT_ROW = /^\|\s*提交\s*\|\s*(.+?)\s*\|/;
-const COMMIT_VALUE = /^[`*\s]*([0-9a-f]{7,40})[`*\s]*$/i;
+/** Any sha inside the cell counts: a task finished in three commits lists all three. */
+const COMMIT_VALUE = /(?:^|[^0-9a-z])([0-9a-f]{7,40})(?![0-9a-z])/i;
 const CHECKBOX = /^[-*]\s+\[([ xX])\]\s+(.+?)\s*$/;
 const TABLE_ROW = /^\|(.+)\|\s*$/;
 const TABLE_SEPARATOR = /^\|[\s:|-]+\|\s*$/;

@@ -144,6 +144,17 @@ test("reads the commit row so the panel can flag unverified 已完成 rows", () 
   expect(second?.commit).toBeUndefined();
 });
 
+test("a cell listing several commits still counts as verified", () => {
+  const board = parseTasksBoard(`### P0-00 三件套
+
+| 项 | 内容 |
+|---|---|
+| 状态 | 已完成 |
+| 提交 | \`c3e0097\`（台账 tab）、\`4a07045\`（概况条） |
+`);
+  expect(board.groups[0]?.commit).toBe("c3e0097");
+});
+
 test("a legacy finished section has no status cell, so it is not treated as an unverified task", () => {
   const board = parseTasksBoard("## 四、已完成\n\n| 项 | 结果 |\n|---|---|\n| 导出 | ok |\n");
   expect(board.groups[0]?.status).toBe("done");
