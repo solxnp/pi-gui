@@ -58,6 +58,15 @@ export const SETTINGS_SECTIONS = [
     needsWorkspace: false,
   },
   {
+    id: "instructions",
+    titleKey: "settings.nav.instructions",
+    groupKey: "settings.group.agent",
+    icon: <SettingsIcon />,
+    keywords: ["instructions", "custom instructions", "system prompt", "preference", "指令"],
+    descriptionKey: "settings.section.instructions.description",
+    needsWorkspace: false,
+  },
+  {
     id: "shortcuts",
     titleKey: "settings.nav.shortcuts",
     groupKey: "settings.group.app",

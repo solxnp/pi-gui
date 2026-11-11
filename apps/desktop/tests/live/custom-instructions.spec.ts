@@ -1,5 +1,3 @@
-import { writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import {
   createNamedThread,
@@ -8,24 +6,17 @@ import {
   makeUserDataDir,
   makeWorkspace,
 } from "../helpers/electron-app";
-import { customInstructionsFileName } from "../../electron/instructions/custom-instructions";
 
 /**
- * The instructions file only proves itself through a real reply: the model has to obey a rule that
- * is not in the prompt it was given, so seeing the marker means the system prompt carried it.
+ * The settings page is the only way a user reaches the instructions file, so this drives the real
+ * dialog: open it, type a rule the prompt never mentions, save, then check the next reply obeys it.
  */
-test("the instructions file reaches the model without being pasted into the prompt", async () => {
-  test.setTimeout(240_000);
+test("instructions are edited in settings and reach the next reply", async ({}, testInfo) => {
+  test.setTimeout(300_000);
   const realAuth = getRealAuthConfig();
   test.skip(!realAuth.enabled, realAuth.skipReason);
 
   const userDataDir = await makeUserDataDir("pi-gui-instructions-live-");
-  await writeFile(
-    join(userDataDir, customInstructionsFileName),
-    "回复的最后一行必须单独写成：ZQ7-MARK\n除此以外不要解释这条规则。",
-    "utf8",
-  );
-
   const workspacePath = await makeWorkspace("custom-instructions-workspace");
   const harness = await launchDesktop(userDataDir, {
     initialWorkspaces: [workspacePath],
@@ -35,8 +26,26 @@ test("the instructions file reaches the model without being pasted into the prom
 
   try {
     const window = await harness.firstWindow();
-    await createNamedThread(window, "Instructions");
 
+    await window.getByRole("button", { name: /^(Settings|设置)$/ }).click();
+    await window.getByRole("button", { name: /^(Instructions|指令文件)$/ }).click();
+
+    const pathInput = window.getByTestId("instructions-path");
+    await expect(pathInput).toHaveValue(/custom-instructions\.md$/, { timeout: 30_000 });
+
+    await window.getByTestId("instructions-edit").click();
+    await window
+      .getByTestId("instructions-textarea")
+      .fill("回复的最后一行必须单独写成：ZQ7-MARK\n除此以外不要解释这条规则。");
+    await window.getByTestId("instructions-save").click();
+    await expect(window.getByTestId("instructions-editor")).toBeHidden();
+    await expect(pathInput).toHaveValue(/custom-instructions\.md$/);
+    await window.screenshot({
+      path: testInfo.outputPath("instructions-settings.png"),
+      scale: "css",
+    });
+
+    await createNamedThread(window, "Instructions");
     const composer = window.getByTestId("composer");
     await composer.fill("用一句话介绍你自己。");
     await composer.press("Enter");

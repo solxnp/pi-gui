@@ -10,12 +10,14 @@ import type {
   WorkspaceRecord,
 } from "../../../contracts/desktop-state";
 import type {
+  CustomInstructionsSnapshot,
   CustomProviderConfig,
   DesktopNotificationPermissionStatus,
 } from "../../../contracts/ipc";
 import { useTranslation } from "../../i18n";
 import { SettingsAppearanceSection } from "./settings-appearance-section";
 import { SettingsGeneralSection } from "./settings-general-section";
+import { SettingsInstructionsSection } from "./settings-instructions-section";
 import { type McpSettingsActions, SettingsMcpSection } from "./settings-mcp-section";
 import { SettingsModelsSection } from "./settings-models-section";
 import { SettingsNotificationsSection } from "./settings-notifications-section";
@@ -56,6 +58,8 @@ interface SettingsViewProps {
   readonly onDeleteCustomProvider: (providerId: string) => Promise<string | undefined>;
   readonly onSetNotificationPreferences: (preferences: Partial<NotificationPreferences>) => void;
   readonly onSetIntegratedTerminalShell: (shellPath: string) => void;
+  readonly onReadCustomInstructions: () => Promise<CustomInstructionsSnapshot>;
+  readonly onSaveCustomInstructions: (content: string) => Promise<CustomInstructionsSnapshot>;
   readonly onRequestNotificationPermission: () => void;
   readonly onOpenSystemNotificationSettings: () => void;
   readonly onSetThemeMode: (mode: "system" | "light" | "dark") => void;
@@ -92,6 +96,8 @@ export function SettingsView({
   onDeleteCustomProvider,
   onSetNotificationPreferences,
   onSetIntegratedTerminalShell,
+  onReadCustomInstructions,
+  onSaveCustomInstructions,
   onRequestNotificationPermission,
   onOpenSystemNotificationSettings,
   onSetThemeMode,
@@ -160,6 +166,13 @@ export function SettingsView({
               onSetModelSettingsScopeMode={onSetModelSettingsScopeMode}
               onSetIntegratedTerminalShell={onSetIntegratedTerminalShell}
               onToggleSkillCommands={onToggleSkillCommands}
+            />
+          ) : null}
+
+          {section === "instructions" ? (
+            <SettingsInstructionsSection
+              onRead={onReadCustomInstructions}
+              onSave={onSaveCustomInstructions}
             />
           ) : null}
 

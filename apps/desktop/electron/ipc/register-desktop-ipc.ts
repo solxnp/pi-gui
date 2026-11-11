@@ -17,6 +17,7 @@ import {
   type CustomProviderProbeResult,
 } from "../../contracts/ipc";
 import type { DesktopAppStore } from "../application/app-store";
+import type { CustomInstructionsService } from "../instructions/custom-instructions";
 import type { NotificationPermissionService } from "../platform/notification-permission";
 import type { EditorService } from "../platform/editors/editor-service";
 import type { TerminalService } from "../platform/terminal-service";
@@ -194,6 +195,7 @@ export interface DesktopIpcCapabilities {
     input: CustomProviderProbeInput,
   ) => Promise<CustomProviderProbeResult>;
   readonly notificationPermission: () => NotificationPermissionService | undefined;
+  readonly customInstructions: CustomInstructionsService;
   readonly terminal: () => TerminalService;
   readonly optionalTerminal: () => TerminalService | undefined;
   readonly setTerminalFocused: (webContentsId: number, focused: boolean) => void;
@@ -667,6 +669,21 @@ export function registerDesktopIpc({
       owners.settings.setNotificationPreferences(expectNotificationPreferences(rawPreferences)),
     ),
   );
+  ipcMain.handle(desktopIpc.getCustomInstructions, (event) => {
+    windows.windowForSender(event.sender);
+    return {
+      path: capabilities.customInstructions.path,
+      content: capabilities.customInstructions.read(),
+    };
+  });
+  ipcMain.handle(desktopIpc.setCustomInstructions, async (event, rawContent: unknown) => {
+    windows.windowForSender(event.sender);
+    await capabilities.customInstructions.write(expectString(rawContent, "content"));
+    return {
+      path: capabilities.customInstructions.path,
+      content: capabilities.customInstructions.read(),
+    };
+  });
   ipcMain.handle(desktopIpc.setIntegratedTerminalShell, (event, rawShellPath: unknown) =>
     run(event, () =>
       owners.settings.setIntegratedTerminalShell(expectString(rawShellPath, "shellPath")),

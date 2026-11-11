@@ -5,6 +5,7 @@ import { expect, test } from "@playwright/test";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
   createCustomInstructionsExtension,
+  createCustomInstructionsService,
   CUSTOM_INSTRUCTIONS_LIMIT,
   customInstructionsPath,
   readCustomInstructions,
@@ -99,5 +100,21 @@ test("each run reads the file again, so an edit needs no restart", async () => {
     const second = await handler({ systemPrompt: "BASE" }, {} as ExtensionContext);
     expect(second?.systemPrompt).toContain("第二版");
     expect(second?.systemPrompt).not.toContain("第一版");
+  });
+});
+
+test("the service saves and reads the file the settings page edits", async () => {
+  await withTempDir(async (dir) => {
+    const service = createCustomInstructionsService(dir);
+
+    expect(service.path.endsWith("custom-instructions.md")).toBe(true);
+    expect(service.read()).toBe("");
+
+    await service.write("  用中文回答。  ");
+    // read() hands back the trimmed text, which is what the extension appends.
+    expect(service.read()).toBe("用中文回答。");
+
+    await service.write("");
+    expect(service.read()).toBe("");
   });
 });

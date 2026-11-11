@@ -480,6 +480,8 @@ export function SecondarySurfaces({
           onSetThemePresetId={handleSetThemePresetId}
           onSetThinkingLevel={handleSetThinkingLevel}
           onToggleSkillCommands={handleToggleSkillCommands}
+          onReadCustomInstructions={() => api.getCustomInstructions()}
+          onSaveCustomInstructions={(content) => api.setCustomInstructions(content)}
           mcpActions={mcpActions}
           onSetEnableTransparency={(enabled) => {
             void updateSnapshot(setSnapshot, () => api.setEnableTransparency(enabled)).catch(

@@ -8,6 +8,7 @@
  */
 
 import { readFileSync } from "node:fs";
+import { mkdir, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ExtensionAPI, ExtensionFactory } from "@earendil-works/pi-coding-agent";
 
@@ -49,5 +50,28 @@ export function createCustomInstructionsExtension(
       }
       return { systemPrompt: withCustomInstructions(event.systemPrompt, instructions) };
     });
+  };
+}
+
+export interface CustomInstructionsService {
+  /** Absolute path of the file the settings page shows and edits. */
+  readonly path: string;
+  /** Current contents; an empty string when the file is missing or blank. */
+  read(): string;
+  write(content: string): Promise<void>;
+}
+
+export function createCustomInstructionsService(userDataDir: string): CustomInstructionsService {
+  const path = customInstructionsPath(userDataDir);
+  return {
+    path,
+    read: () => readCustomInstructions(path) ?? "",
+    write: async (content: string) => {
+      await mkdir(userDataDir, { recursive: true });
+      // Write beside the target and rename, so an interrupted save cannot truncate the file.
+      const temporary = `${path}.tmp`;
+      await writeFile(temporary, content, { encoding: "utf-8", mode: 0o600 });
+      await rename(temporary, path);
+    },
   };
 }

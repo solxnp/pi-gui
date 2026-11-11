@@ -18,6 +18,7 @@ import {
   type CustomProviderProbeResult,
   type McpServerScope,
   type McpServersSnapshot,
+  type CustomInstructionsSnapshot,
   type NewMcpServerInput,
   type ChangedFilesResult,
   type DesktopNotificationPermissionStatus,
@@ -453,6 +454,13 @@ contextBridge.exposeInMainWorld("piApp", {
       desktopIpc.setIntegratedTerminalShell,
       shellPath,
     ) as Promise<DesktopAppState>,
+  getCustomInstructions: () =>
+    ipcRenderer.invoke(desktopIpc.getCustomInstructions) as Promise<CustomInstructionsSnapshot>,
+  setCustomInstructions: (content: string) =>
+    ipcRenderer.invoke(
+      desktopIpc.setCustomInstructions,
+      content,
+    ) as Promise<CustomInstructionsSnapshot>,
   setEnableTransparency: (enabled: boolean) =>
     ipcRenderer.invoke(desktopIpc.setEnableTransparency, enabled) as Promise<DesktopAppState>,
   setThemePresetId: (presetId: ThemePresetId) =>

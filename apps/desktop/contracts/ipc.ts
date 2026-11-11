@@ -77,6 +77,11 @@ export type CustomProviderProbeResult =
   | { readonly ok: true; readonly models: readonly string[] }
   | { readonly ok: false; readonly error: string };
 
+/** The user-level instructions file that the built-in extension appends to every run. */
+export interface CustomInstructionsSnapshot {
+  readonly path: string;
+  readonly content: string;
+}
 export type McpServerScope = "global" | "project";
 
 /** An `mcp.json` server as Settings shows it; `env`, `headers` and `oauth` never leave main. */
@@ -189,6 +194,8 @@ export const desktopIpc = {
   respondToHostUiRequest: "pi-gui:respond-to-host-ui-request",
   setNotificationPreferences: "pi-gui:set-notification-preferences",
   setIntegratedTerminalShell: "pi-gui:set-integrated-terminal-shell",
+  getCustomInstructions: "pi-gui:get-custom-instructions",
+  setCustomInstructions: "pi-gui:set-custom-instructions",
   setEnableTransparency: "pi-gui:set-enable-transparency",
   terminalEnsurePanel: "pi-gui:terminal-ensure-panel",
   terminalCreateSession: "pi-gui:terminal-create-session",
@@ -838,6 +845,8 @@ export interface PiDesktopApi {
     preferences: Partial<NotificationPreferences>,
   ): Promise<DesktopAppState>;
   setIntegratedTerminalShell(shell: string): Promise<DesktopAppState>;
+  getCustomInstructions(): Promise<CustomInstructionsSnapshot>;
+  setCustomInstructions(content: string): Promise<CustomInstructionsSnapshot>;
   setEnableTransparency(enabled: boolean): Promise<DesktopAppState>;
   setThemePresetId(presetId: ThemePresetId): Promise<DesktopAppState>;
   ensureTerminalPanel(

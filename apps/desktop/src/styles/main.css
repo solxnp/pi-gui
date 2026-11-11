@@ -3184,6 +3184,25 @@
   background: var(--overlay-hover);
 }
 
+.instructions-path {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(420px, 100%);
+}
+
+.instructions-path__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-ctl);
+  background: var(--surface-sunken);
+  color: var(--muted-strong);
+  font-size: 12px;
+  text-overflow: ellipsis;
+}
+
 .extension-dialog__editor {
   min-height: 180px;
   padding: 12px 14px;

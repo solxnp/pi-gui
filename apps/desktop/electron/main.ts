@@ -54,9 +54,8 @@ import {
 } from "./permissions/permission-gate-extension";
 import {
   createCustomInstructionsExtension,
+  createCustomInstructionsService,
   customInstructionsFileName,
-  customInstructionsPath,
-  readCustomInstructions,
 } from "./instructions/custom-instructions";
 import { getChangedFiles, getFileDiff, stageFile } from "./platform/files/app-store-diff";
 import { listWorkspaceFiles, readWorkspaceFile } from "./platform/files/app-store-files";
@@ -993,6 +992,7 @@ app
     const orchestrationRuntimeBridge = createStoreBackedOrchestrationRuntimeBridge();
     const scheduledTaskRuntimeBridge = createStoreBackedScheduledTaskRuntimeBridge();
     const checkpoints = new TurnCheckpointStore(configuredUserDataDir);
+    const customInstructions = createCustomInstructionsService(configuredUserDataDir);
     const extensionViews: DesktopExtensionViewOwner = new DesktopExtensionViewOwner({
       frameDocument: extensionFrameDocument,
       hostAssets: {
@@ -1065,9 +1065,7 @@ app
           name: "pi-gui-custom-instructions",
           displayName: "Custom instructions",
           description: `Adds ${customInstructionsFileName} from the app's data folder to every run`,
-          factory: createCustomInstructionsExtension(() =>
-            readCustomInstructions(customInstructionsPath(configuredUserDataDir)),
-          ),
+          factory: createCustomInstructionsExtension(() => customInstructions.read() || undefined),
         },
       ],
     };
@@ -1213,6 +1211,7 @@ app
         createLoginCallbacks: (window) => createRuntimeLoginCallbacks(window),
         probeCustomProviderModels,
         notificationPermission: () => notificationPermissionService,
+        customInstructions,
         terminal: getTerminalService,
         optionalTerminal: () => terminalService,
         setTerminalFocused: (webContentsId, focused) => {
