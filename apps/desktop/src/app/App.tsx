@@ -355,9 +355,7 @@ export default function App() {
   const displayedSessionTitle = selectedExtensionUi?.title ?? selectedSession?.title ?? "";
   const activeExtensionDialog = selectedExtensionUi?.pendingDialogs[0];
   // A form is not a dialog: the timeline draws it at the end of the conversation.
-  const pendingForm = selectedExtensionUi?.pendingDialogs.find(
-    (dialog) => dialog.kind === "form",
-  );
+  const pendingForm = selectedExtensionUi?.pendingDialogs.find((dialog) => dialog.kind === "form");
   const activeExtensionForm = pendingForm?.kind === "form" ? pendingForm : undefined;
 
   const selectedExtensionUiInstance =

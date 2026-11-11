@@ -623,9 +623,7 @@ function parseExtensionCard(data: unknown): ExtensionCard | string {
         .slice(0, MAX_CARD_ACTIONS)
     : [];
   const answeredForm =
-    data.answeredForm === undefined
-      ? undefined
-      : parseExtensionCardAnsweredForm(data.answeredForm);
+    data.answeredForm === undefined ? undefined : parseExtensionCardAnsweredForm(data.answeredForm);
   return {
     ...(key ? { key } : {}),
     title,
@@ -678,22 +676,18 @@ function parseAnsweredField(data: unknown): HostUiFormField | undefined {
   const kind =
     data.kind === "multi" || data.kind === "text" ? (data.kind as "multi" | "text") : "single";
   const options = Array.isArray(data.options)
-    ? data.options
-        .slice(0, MAX_CARD_BOARD_ITEMS)
-        .flatMap((option): HostUiFormOption[] =>
-          isRecord(option) && nonEmptyString(option.value)
-            ? [
-                {
-                  value: option.value,
-                  label: nonEmptyString(option.label) ? option.label : option.value,
-                  ...(nonEmptyString(option.description)
-                    ? { description: option.description }
-                    : {}),
-                  ...(option.recommended === true ? { recommended: true } : {}),
-                },
-              ]
-            : [],
-        )
+    ? data.options.slice(0, MAX_CARD_BOARD_ITEMS).flatMap((option): HostUiFormOption[] =>
+        isRecord(option) && nonEmptyString(option.value)
+          ? [
+              {
+                value: option.value,
+                label: nonEmptyString(option.label) ? option.label : option.value,
+                ...(nonEmptyString(option.description) ? { description: option.description } : {}),
+                ...(option.recommended === true ? { recommended: true } : {}),
+              },
+            ]
+          : [],
+      )
     : [];
   if (kind !== "text" && options.length === 0) return undefined;
   return {
