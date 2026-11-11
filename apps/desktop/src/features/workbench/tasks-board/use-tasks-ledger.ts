@@ -3,6 +3,16 @@ import type { PiDesktopApi } from "../../../../contracts/ipc";
 import { useTranslation } from "../../../i18n";
 import { parseTasksBoard, TASKS_BOARD_FILES, type TasksBoard } from "./parse-tasks";
 
+export interface TasksProjectCount {
+  readonly doing: number;
+  readonly todo: number;
+  readonly done: number;
+  readonly cancelled: number;
+}
+
+/** At most this many projects are read for the overview; the rest keep their place in the list. */
+export const MAX_LEDGER_PROJECTS = 12;
+
 export type TasksLedgerState =
   | { readonly kind: "loading" }
   | { readonly kind: "missing" }
@@ -77,4 +87,56 @@ export function currentTaskTitle(board: TasksBoard): string | undefined {
     board.groups.find((group) => group.status === "doing")?.title ??
     board.groups.find((group) => group.status === "todo")?.title
   );
+}
+
+/** Counts one board's groups by status, so the project switcher can show them. */
+export function countBoard(board: TasksBoard): TasksProjectCount {
+  const counts = { doing: 0, todo: 0, done: 0, cancelled: 0 };
+  for (const group of board.groups) counts[group.status] += 1;
+  return counts;
+}
+
+/**
+ * Reads every root workspace's ledger once, in series, so the switcher can show
+ * per-project counts without opening each project.
+ */
+export function useTasksProjectCounts(
+  api: PiDesktopApi | undefined,
+  workspaceIds: readonly string[],
+): Readonly<Record<string, TasksProjectCount>> {
+  const [counts, setCounts] = useState<Readonly<Record<string, TasksProjectCount>>>({});
+  const key = workspaceIds.slice(0, MAX_LEDGER_PROJECTS).join("\n");
+
+  useEffect(() => {
+    const ids = key ? key.split("\n") : [];
+    if (!api || ids.length === 0) {
+      setCounts({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const next: Record<string, TasksProjectCount> = {};
+      for (const workspaceId of ids) {
+        for (const path of TASKS_BOARD_FILES) {
+          try {
+            const preview = await api.readWorkspaceFile(workspaceId, path);
+            if (cancelled) return;
+            if (preview.binary) continue;
+            next[workspaceId] = countBoard(parseTasksBoard(preview.content));
+            break;
+          } catch {
+            // Missing files are the normal case for projects without a ledger.
+          }
+        }
+      }
+      if (!cancelled) setCounts(next);
+    })().catch(() => {
+      // A failed overview read leaves the switcher without numbers; it never throws.
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, key]);
+
+  return counts;
 }

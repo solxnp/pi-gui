@@ -51,7 +51,7 @@ test("groups follow the status ranking, then file order", () => {
     "P0-02 客户端本地 dev 验证",
     "P0-09 已经做完的",
   ]);
-  expect(board.groups.map((group) => group.status)).toEqual(["doing", "todo", "other"]);
+  expect(board.groups.map((group) => group.status)).toEqual(["doing", "todo", "done"]);
 });
 
 test("keeps raw status detail and counts open and done items", () => {
@@ -92,9 +92,34 @@ test("cleans markdown emphasis out of titles and items", () => {
   expect(board.groups[0].items[0].text).toBe("跑 npm version");
 });
 
-test("status text maps in-progress before to-do, everything else last", () => {
+test("status text maps in-progress first, then cancelled, then to-do, then done", () => {
   expect(tasksStatusFromText("进行中")).toBe("doing");
   expect(tasksStatusFromText("待做（阻塞：等通知）")).toBe("todo");
-  expect(tasksStatusFromText("已完成")).toBe("other");
-  expect(tasksStatusFromText("阻塞")).toBe("other");
+  expect(tasksStatusFromText("已完成")).toBe("done");
+  expect(tasksStatusFromText("取消（决定不做了）")).toBe("cancelled");
+});
+
+test("a finished-work section turns its table rows into done items", () => {
+  const board = parseTasksBoard(`## 四、已完成
+
+| 项 | 结果 |
+|---|---|
+| 全量导出 | 20 MB |
+| \`enc_key\` | 逐字节一致 |
+`);
+  expect(board.groups).toHaveLength(1);
+  expect(board.groups[0].status).toBe("done");
+  expect(board.groups[0].items.map((item) => item.text)).toEqual(["全量导出", "enc_key"]);
+  expect(board.doneItems).toBe(2);
+});
+
+test("task tables outside a finished section do not become items", () => {
+  const board = parseTasksBoard(`### P0-01 提交
+
+| 项 | 内容 |
+|---|---|
+| 状态 | 待做 |
+| 提交 | — |
+`);
+  expect(board.groups[0].items).toEqual([]);
 });

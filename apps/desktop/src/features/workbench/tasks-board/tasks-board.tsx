@@ -1,48 +1,92 @@
-import { useCallback, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PiDesktopApi } from "../../../../contracts/ipc";
 import { useTranslation } from "../../../i18n";
 import { ChevronDownIcon, ChevronRightIcon, RefreshIcon } from "../../../ui/icons";
-import type { TasksBoardGroup } from "./parse-tasks";
-import { useTasksLedger } from "./use-tasks-ledger";
+import type { TasksBoardGroup, TasksBoardStatus } from "./parse-tasks";
+import { useTasksLedger, useTasksProjectCounts } from "./use-tasks-ledger";
+
+export interface TasksBoardProject {
+  readonly id: string;
+  readonly name: string;
+  /** Worktrees share their root's ledger, so only roots are listed. */
+  readonly kind: "primary" | "worktree";
+}
 
 interface TasksBoardPanelProps {
   readonly api: PiDesktopApi | undefined;
+  /** The workspace of the open thread; the switcher starts here. */
   readonly workspaceId: string;
+  readonly workspaces: readonly TasksBoardProject[];
   /** Puts a prompt about the clicked row in the composer; the user still presses send. */
   readonly onInsertPrompt: (prompt: string) => void;
 }
 
-function statusClassName(status: TasksBoardGroup["status"]): string {
+const SECTIONS = [
+  { status: "doing", folded: false },
+  { status: "todo", folded: false },
+  { status: "done", folded: true },
+  { status: "cancelled", folded: true },
+] as const satisfies readonly { status: TasksBoardStatus; folded: boolean }[];
+
+function statusClassName(status: TasksBoardStatus): string {
   return `tasks-board__badge tasks-board__badge--${status}`;
 }
 
-export function TasksBoardPanel({ api, workspaceId, onInsertPrompt }: TasksBoardPanelProps) {
+export function TasksBoardPanel({
+  api,
+  workspaceId,
+  workspaces,
+  onInsertPrompt,
+}: TasksBoardPanelProps) {
   const { t } = useTranslation();
-  const { state, reload } = useTasksLedger(api, workspaceId);
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
+  const projects = useMemo(
+    () => workspaces.filter((workspace) => workspace.kind === "primary"),
+    [workspaces],
+  );
+  const [selectedId, setSelectedId] = useState(workspaceId);
+  useEffect(() => setSelectedId(workspaceId), [workspaceId]);
 
-  const groups = state.kind === "ready" ? state.board.groups : [];
-  const badge = useMemo(
-    () => ({
-      doing: t("tasksBoard.status.doing"),
-      todo: t("tasksBoard.status.todo"),
-      other: t("tasksBoard.status.other"),
-    }),
-    [t],
+  const selected =
+    projects.find((project) => project.id === selectedId) ??
+    projects.find((project) => project.id === workspaceId);
+  const selectedWorkspaceId = selected?.id ?? workspaceId;
+  const { state, reload } = useTasksLedger(api, selectedWorkspaceId);
+  const counts = useTasksProjectCounts(
+    api,
+    projects.map((project) => project.id),
   );
 
-  const toggleGroup = useCallback((id: string) => {
-    setCollapsed((previous) => {
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(() => new Set());
+  const [openSections, setOpenSections] = useState<ReadonlySet<string>>(() => new Set());
+
+  const toggleGroup = (id: string) => {
+    setCollapsedGroups((previous) => {
       const next = new Set(previous);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }, []);
-
-  const askAbout = (label: string) => {
-    onInsertPrompt(t("tasksBoard.prompt", { item: label }));
   };
+  const toggleSection = (status: string) => {
+    setOpenSections((previous) => {
+      const next = new Set(previous);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  };
+
+  const groups = state.kind === "ready" ? state.board.groups : [];
+  const labels: Record<TasksBoardStatus, string> = {
+    doing: t("tasksBoard.status.doing"),
+    todo: t("tasksBoard.status.todo"),
+    done: t("tasksBoard.status.done"),
+    cancelled: t("tasksBoard.status.cancelled"),
+  };
+
+  const askAbout = (label: string) => onInsertPrompt(t("tasksBoard.prompt", { item: label }));
+  const askRow = (group: TasksBoardGroup, text: string) =>
+    askAbout(group.title ? `${group.title} — ${text}` : text);
 
   return (
     <section className="tasks-board" data-testid="tasks-board">
@@ -67,13 +111,34 @@ export function TasksBoardPanel({ api, workspaceId, onInsertPrompt }: TasksBoard
         </button>
       </header>
 
-      {state.kind === "ready" && (state.board.openItems > 0 || state.board.doneItems > 0) ? (
-        <p className="tasks-board__summary">
-          {t("tasksBoard.summary", {
-            open: state.board.openItems,
-            done: state.board.doneItems,
-          })}
-        </p>
+      {projects.length > 0 ? (
+        <div className="tasks-board__project">
+          <label className="tasks-board__project-label" htmlFor="tasks-board-project">
+            {t("tasksBoard.project")}
+          </label>
+          <select
+            className="tasks-board__project-select"
+            data-testid="tasks-board-project"
+            id="tasks-board-project"
+            onChange={(event) => setSelectedId(event.target.value)}
+            value={selectedWorkspaceId}
+          >
+            {projects.map((project) => {
+              const count = counts[project.id];
+              return (
+                <option key={project.id} value={project.id}>
+                  {count
+                    ? t("tasksBoard.projectOption", {
+                        name: project.name,
+                        doing: count.doing,
+                        todo: count.todo,
+                      })
+                    : project.name}
+                </option>
+              );
+            })}
+          </select>
+        </div>
       ) : null}
 
       {state.kind === "loading" ? (
@@ -94,64 +159,89 @@ export function TasksBoardPanel({ api, workspaceId, onInsertPrompt }: TasksBoard
           {t("tasksBoard.empty")}
         </p>
       ) : (
-        <ul className="tasks-board__groups">
-          {groups.map((group) => {
-            const isCollapsed = collapsed.has(group.id);
-            const open = group.items.filter((item) => !item.done).length;
+        <div className="tasks-board__groups">
+          {SECTIONS.map(({ status, folded }) => {
+            const sectionGroups = groups.filter((group) => group.status === status);
+            if (sectionGroups.length === 0) return null;
+            const open = openSections.has(status);
             return (
-              <li className="tasks-board__group" key={group.id}>
+              <section
+                className={`tasks-board__section tasks-board__section--${status}`}
+                data-testid={`tasks-board-section-${status}`}
+                key={status}
+              >
                 <button
-                  aria-expanded={!isCollapsed}
-                  className="tasks-board__group-toggle"
-                  onClick={() => toggleGroup(group.id)}
+                  aria-expanded={folded ? open : true}
+                  className="tasks-board__section-toggle"
+                  onClick={() => toggleSection(status)}
                   type="button"
                 >
                   <span className="tasks-board__chevron">
-                    {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
+                    {folded && !open ? <ChevronRightIcon /> : <ChevronDownIcon />}
                   </span>
-                  <span className={statusClassName(group.status)} title={group.statusText}>
-                    {badge[group.status]}
-                  </span>
-                  <span className="tasks-board__group-title">
-                    {group.title || t("tasksBoard.untitled")}
-                  </span>
-                  {group.items.length > 0 ? (
-                    <span className="tasks-board__count">{open}</span>
-                  ) : null}
+                  <span className={statusClassName(status)}>{labels[status]}</span>
+                  <span className="tasks-board__count">{sectionGroups.length}</span>
                 </button>
-                {isCollapsed ? null : group.items.length === 0 ? (
-                  <button
-                    className="tasks-board__ask"
-                    onClick={() => askAbout(group.title)}
-                    type="button"
-                  >
-                    {t("tasksBoard.ask")}
-                  </button>
-                ) : (
-                  <ul className="tasks-board__items">
-                    {group.items.map((item) => (
-                      <li key={item.id}>
-                        <button
-                          className={`tasks-board__item${item.done ? " tasks-board__item--done" : ""}`}
-                          onClick={() =>
-                            askAbout(group.title ? `${group.title} — ${item.text}` : item.text)
-                          }
-                          title={t("tasksBoard.ask")}
-                          type="button"
-                        >
-                          <span className="tasks-board__check" aria-hidden="true">
-                            {item.done ? "✓" : "☐"}
-                          </span>
-                          <span>{item.text}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
+                {folded && !open
+                  ? null
+                  : sectionGroups.map((group) => {
+                      const isCollapsed = collapsedGroups.has(group.id);
+                      const pending = group.items.filter((item) => !item.done).length;
+                      return (
+                        <div className="tasks-board__group" key={group.id}>
+                          <button
+                            aria-expanded={!isCollapsed}
+                            className="tasks-board__group-toggle"
+                            onClick={() => toggleGroup(group.id)}
+                            type="button"
+                          >
+                            <span className="tasks-board__chevron">
+                              {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
+                            </span>
+                            <span
+                              className="tasks-board__group-title"
+                              title={group.statusText || undefined}
+                            >
+                              {group.title || t("tasksBoard.untitled")}
+                            </span>
+                            {group.items.length > 0 ? (
+                              <span className="tasks-board__count">{pending}</span>
+                            ) : null}
+                          </button>
+                          {isCollapsed ? null : group.items.length === 0 ? (
+                            <button
+                              className="tasks-board__ask"
+                              onClick={() => askAbout(group.title)}
+                              type="button"
+                            >
+                              {t("tasksBoard.ask")}
+                            </button>
+                          ) : (
+                            <ul className="tasks-board__items">
+                              {group.items.map((item) => (
+                                <li key={item.id}>
+                                  <button
+                                    className={`tasks-board__item${item.done ? " tasks-board__item--done" : ""}`}
+                                    onClick={() => askRow(group, item.text)}
+                                    title={t("tasksBoard.ask")}
+                                    type="button"
+                                  >
+                                    <span className="tasks-board__check" aria-hidden="true">
+                                      {item.done ? "✓" : "☐"}
+                                    </span>
+                                    <span>{item.text}</span>
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })}
+              </section>
             );
           })}
-        </ul>
+        </div>
       )}
     </section>
   );

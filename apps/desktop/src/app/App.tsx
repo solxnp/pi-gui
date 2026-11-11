@@ -1380,6 +1380,7 @@ export default function App() {
                 tasks={{
                   api,
                   workspaceId: selectedWorkspace.id,
+                  workspaces: snapshot.workspaces,
                   onInsertPrompt: (prompt) => {
                     setComposerDraft(prompt);
                     focusComposer();
