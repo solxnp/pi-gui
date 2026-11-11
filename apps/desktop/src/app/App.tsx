@@ -66,6 +66,7 @@ import { OpenInEditorButton } from "../features/threads/open-in-editor-button";
 import { useOpenInEditor } from "../features/threads/hooks/use-open-in-editor";
 import { Topbar } from "./topbar";
 import { TerminalPanel } from "../features/workbench/terminal-panel";
+import { ConversationTimelineWithRewind } from "../features/conversation/conversation-timeline-with-rewind";
 import { ConversationTimeline } from "../features/conversation/conversation-timeline";
 import { ScheduledTasksView } from "../features/scheduled-tasks/scheduled-tasks-view";
 import {
@@ -1172,7 +1173,7 @@ export default function App() {
                     </div>
                   ) : null}
 
-                  <ConversationTimeline
+                  <ConversationTimelineWithRewind
                     key={selectedSessionKey}
                     transcript={pins.timeline}
                     running={selectedSessionRunning}
@@ -1182,7 +1183,7 @@ export default function App() {
                     viewport={viewport}
                     threadSearch={threadSearch}
                     onViewFileInDiff={handleViewFileInDiff}
-                    onOpenTurnChange={turnChanges.openTurnChange}
+                    turnChanges={turnChanges}
                     onOpenWorkspaceFileLine={handleOpenWorkspaceFileLine}
                     onExtensionAction={runExtensionCardAction}
                     pendingForm={activeExtensionForm}

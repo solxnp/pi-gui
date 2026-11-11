@@ -7,12 +7,23 @@ const COLLAPSED_FILE_COUNT = 5;
 export type OpenTurnChange = (turn: TurnChangeSummary, path: string) => void;
 
 /** The files one agent turn changed; each row opens that file's diff in the Changes panel. */
+export interface RewindOutcomeSummary {
+  readonly restored: number;
+  readonly removed: number;
+}
+
 export function TurnChangesCard({
   turn,
   onOpen,
+  onRewind,
+  rewindOutcome,
+  onUndoRewind,
 }: {
   readonly turn: TurnChangeSummary;
   readonly onOpen?: OpenTurnChange;
+  readonly onRewind?: (turn: TurnChangeSummary) => void;
+  readonly rewindOutcome?: RewindOutcomeSummary;
+  readonly onUndoRewind?: (checkpointId: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const listRef = useRef<HTMLUListElement | null>(null);
@@ -44,6 +55,21 @@ export function TurnChangesCard({
           </span>
           <LineStats lines={totals} />
         </div>
+        {rewindOutcome ? (
+          <span className="turn-changes__rewound" data-testid="turn-changes-rewound">
+            已回退 {rewindOutcome.restored + rewindOutcome.removed} 个文件
+          </span>
+        ) : null}
+        {rewindOutcome && onUndoRewind ? (
+          <button
+            type="button"
+            className="turn-changes__review"
+            data-testid="turn-changes-undo-rewind"
+            onClick={() => onUndoRewind(turn.checkpointId)}
+          >
+            撤销
+          </button>
+        ) : null}
         {firstFile && onOpen ? (
           <button
             type="button"
@@ -51,6 +77,16 @@ export function TurnChangesCard({
             onClick={() => onOpen(turn, firstFile.path)}
           >
             Review
+          </button>
+        ) : null}
+        {!rewindOutcome && onRewind ? (
+          <button
+            type="button"
+            className="turn-changes__review turn-changes__rewind"
+            data-testid="turn-changes-rewind"
+            onClick={() => onRewind(turn)}
+          >
+            回退
           </button>
         ) : null}
       </header>

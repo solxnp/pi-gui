@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTurnRewind } from "./use-turn-rewind";
 import type { SessionRef } from "@pi-gui/session-driver/types";
 import type { PiDesktopApi } from "../../../../contracts/ipc";
 import type { TurnChangeSummary } from "../../../../contracts/review";
@@ -52,9 +53,25 @@ export function useTurnChanges({
     workbenchRef.current.openTool({ kind: "changes" });
   }, []);
 
+  const rewind = useTurnRewind(
+    api && target
+      ? {
+          workspaceId: target.workspaceId,
+          sessionId: target.sessionId,
+          preview: (workspaceId, sessionId, checkpointId) =>
+            api.previewRewind(workspaceId, sessionId, checkpointId),
+          apply: (workspaceId, sessionId, checkpointId) =>
+            api.applyRewind(workspaceId, sessionId, checkpointId),
+          undo: (workspaceId, sessionId, checkpointId) =>
+            api.undoRewind(workspaceId, sessionId, checkpointId),
+        }
+      : undefined,
+  );
+
   return {
     turns: loaded && target && sameTarget(loaded.target, target) ? loaded.turns : NO_TURNS,
     openTurnChange,
+    rewind,
   };
 }
 

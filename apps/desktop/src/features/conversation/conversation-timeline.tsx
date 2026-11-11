@@ -25,6 +25,7 @@ import { ExtensionFormCard, type PendingExtensionForm } from "./extension-form-c
 import { TimelineItem } from "./timeline-item";
 import { TimelineRail } from "./timeline-rail";
 import { sameRowContent, type TimelineRow } from "./timeline-layout";
+import type { TurnChangeSummary } from "../../../contracts/review";
 import type { OpenTurnChange } from "./turn-changes-card";
 import type { WorkspaceFileLine } from "./workspace-file-line";
 import { SparkIcon } from "../../ui/icons";
@@ -39,7 +40,7 @@ interface ThreadSearchModel {
   readonly goToMatch: (direction: 1 | -1) => void;
   readonly close: () => void;
 }
-interface ConversationTimelineProps {
+export interface ConversationTimelineProps {
   readonly transcript: readonly TimelineTranscriptItem[];
   /** A run with nothing in the transcript yet still shows its Working line, not the empty state. */
   readonly running: boolean;
@@ -50,6 +51,11 @@ interface ConversationTimelineProps {
   readonly threadSearch: ThreadSearchModel;
   readonly onViewFileInDiff?: (path: string) => void;
   readonly onOpenTurnChange?: OpenTurnChange;
+  readonly onRewindTurn?: (turn: TurnChangeSummary) => void;
+  readonly rewindOutcomes?: Readonly<
+    Record<string, { readonly restored: number; readonly removed: number }>
+  >;
+  readonly onUndoRewind?: (checkpointId: string) => void;
   readonly onForkFromMessage?: (messageIndex: number, preview?: string) => void;
   readonly onOpenWorkspaceFileLine?: (target: WorkspaceFileLine) => void;
   readonly onExtensionAction?: RunExtensionAction;
@@ -73,6 +79,9 @@ export function ConversationTimeline({
   threadSearch,
   onViewFileInDiff,
   onOpenTurnChange,
+  onRewindTurn,
+  rewindOutcomes,
+  onUndoRewind,
   onForkFromMessage,
   onOpenWorkspaceFileLine,
   onExtensionAction,
@@ -185,6 +194,9 @@ export function ConversationTimeline({
                     onToggleToolCall={toggleToolCall}
                     onViewFileInDiff={onViewFileInDiff}
                     onOpenTurnChange={onOpenTurnChange}
+                    onRewindTurn={onRewindTurn}
+                    rewindOutcomes={rewindOutcomes}
+                    onUndoRewind={onUndoRewind}
                     sourceMessageIndex={renderedMessageIndexById.get(item.id)}
                     onForkFromMessage={onForkFromMessage}
                     onOpenWorkspaceFileLine={onOpenWorkspaceFileLine}
@@ -312,6 +324,11 @@ interface MeasuredTimelineItemProps {
   readonly onToggleToolCall: (callId: string) => void;
   readonly onViewFileInDiff?: (path: string) => void;
   readonly onOpenTurnChange?: OpenTurnChange;
+  readonly onRewindTurn?: (turn: TurnChangeSummary) => void;
+  readonly rewindOutcomes?: Readonly<
+    Record<string, { readonly restored: number; readonly removed: number }>
+  >;
+  readonly onUndoRewind?: (checkpointId: string) => void;
   readonly sourceMessageIndex?: number;
   readonly onForkFromMessage?: (messageIndex: number, preview?: string) => void;
   readonly onOpenWorkspaceFileLine?: (target: WorkspaceFileLine) => void;
@@ -333,6 +350,9 @@ function MeasuredTimelineItemBase({
   onToggleToolCall,
   onViewFileInDiff,
   onOpenTurnChange,
+  onRewindTurn,
+  rewindOutcomes,
+  onUndoRewind,
   sourceMessageIndex,
   onForkFromMessage,
   onOpenWorkspaceFileLine,
@@ -381,6 +401,9 @@ function MeasuredTimelineItemBase({
           onToggleToolCall={onToggleToolCall}
           onViewFileInDiff={onViewFileInDiff}
           onOpenTurnChange={onOpenTurnChange}
+          onRewindTurn={onRewindTurn}
+          rewindOutcomes={rewindOutcomes}
+          onUndoRewind={onUndoRewind}
           sourceMessageIndex={sourceMessageIndex}
           onForkFromMessage={onForkFromMessage}
           onOpenWorkspaceFileLine={onOpenWorkspaceFileLine}
@@ -472,6 +495,9 @@ function areMeasuredTimelineItemPropsEqual(
     prev.onToggleToolCall === next.onToggleToolCall &&
     prev.onViewFileInDiff === next.onViewFileInDiff &&
     prev.onOpenTurnChange === next.onOpenTurnChange &&
+    prev.onRewindTurn === next.onRewindTurn &&
+    prev.rewindOutcomes === next.rewindOutcomes &&
+    prev.onUndoRewind === next.onUndoRewind &&
     prev.sourceMessageIndex === next.sourceMessageIndex &&
     prev.onForkFromMessage === next.onForkFromMessage &&
     prev.onOpenWorkspaceFileLine === next.onOpenWorkspaceFileLine &&

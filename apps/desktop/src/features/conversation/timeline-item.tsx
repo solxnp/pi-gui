@@ -27,7 +27,12 @@ import { ExtensionCardItem, type RunExtensionAction } from "./extension-card";
 import { ImageAttachmentThumb } from "./image-attachment-thumb";
 import { MessageMarkdown } from "./message-markdown";
 import { stringifyToolValue, toolOutputImages } from "./tool-output-images";
-import { TurnChangesCard, type OpenTurnChange } from "./turn-changes-card";
+import {
+  TurnChangesCard,
+  type OpenTurnChange,
+  type RewindOutcomeSummary,
+} from "./turn-changes-card";
+import type { TurnChangeSummary } from "../../../contracts/review";
 import type { WorkspaceFileLine } from "./workspace-file-line";
 import { InlineDiff, extractDiffFromOutput } from "../../ui/diff-inline";
 import {
@@ -49,6 +54,9 @@ export function TimelineItem({
   sourceMessageIndex,
   onForkFromMessage,
   onOpenTurnChange,
+  onRewindTurn,
+  rewindOutcomes,
+  onUndoRewind,
   scheduledOrigin,
   workspacePath,
   onOpenWorkspaceFileLine,
@@ -63,6 +71,9 @@ export function TimelineItem({
   readonly sourceMessageIndex?: number;
   readonly onForkFromMessage?: (messageIndex: number, preview?: string) => void;
   readonly onOpenTurnChange?: OpenTurnChange;
+  readonly onRewindTurn?: (turn: TurnChangeSummary) => void;
+  readonly rewindOutcomes?: Readonly<Record<string, RewindOutcomeSummary>>;
+  readonly onUndoRewind?: (checkpointId: string) => void;
   readonly scheduledOrigin?: ScheduledTaskOrigin;
   readonly workspacePath?: string;
   readonly onOpenWorkspaceFileLine?: (target: WorkspaceFileLine) => void;
@@ -76,7 +87,15 @@ export function TimelineItem({
     case "working":
       return <TimelineWorkingItem item={item} />;
     case "turn-changes":
-      return <TurnChangesCard turn={item.turn} onOpen={onOpenTurnChange} />;
+      return (
+        <TurnChangesCard
+          rewindOutcome={rewindOutcomes?.[item.turn.checkpointId]}
+          turn={item.turn}
+          onOpen={onOpenTurnChange}
+          onRewind={onRewindTurn}
+          onUndoRewind={onUndoRewind}
+        />
+      );
     case "message":
       return (
         <TimelineMessage
