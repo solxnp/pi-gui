@@ -30,6 +30,12 @@ export interface RewindPreviewResult {
   readonly failure?: RestoreFailure;
 }
 
+export interface RewindUndoRecord {
+  readonly checkpointId: string;
+  readonly restored: number;
+  readonly removed: number;
+}
+
 export interface RewindApplyResult {
   readonly restored: readonly string[];
   readonly removed: readonly string[];
@@ -42,6 +48,7 @@ interface RestoreRun {
   readonly checkoutPath: string;
   readonly beforeTreeOid: string;
   readonly afterTreeOid: string;
+  readonly paths?: readonly string[];
 }
 
 export interface RewindServiceDeps {
@@ -58,8 +65,14 @@ export interface RewindServiceDeps {
 export interface RewindService {
   list(target: RewindTarget): Promise<readonly RewindPoint[]>;
   preview(target: RewindTarget, checkpointId: string): Promise<RewindPreviewResult>;
-  apply(target: RewindTarget, checkpointId: string): Promise<RewindApplyResult>;
+  apply(
+    target: RewindTarget,
+    checkpointId: string,
+    paths?: readonly string[],
+  ): Promise<RewindApplyResult>;
   undo(target: RewindTarget, checkpointId: string): Promise<RewindApplyResult>;
+  /** Applied rewinds still open for undo, so a reopened thread can offer the button again. */
+  applied(target: RewindTarget): Promise<readonly RewindUndoRecord[]>;
 }
 
 function refusal(message: string): RewindApplyResult {
@@ -73,7 +86,7 @@ function refusal(message: string): RewindApplyResult {
 
 export function createRewindService(deps: RewindServiceDeps): RewindService {
   /** Applied restores awaiting undo, keyed by session and turn. One level, as the UI offers one. */
-  const applied = new Map<string, RestoreRun>();
+  const applied = new Map<string, RestoreRun & { restored: number; removed: number }>();
 
   const keyOf = (target: RewindTarget, checkpointId: string): string =>
     `${target.workspaceId}\u0000${target.sessionId}\u0000${checkpointId}`;
@@ -121,17 +134,39 @@ export function createRewindService(deps: RewindServiceDeps): RewindService {
       return deps.preview(run);
     },
 
-    async apply(target, checkpointId) {
+    async apply(target, checkpointId, paths) {
       const run = await runFor(target, checkpointId);
       if (isResult(run)) {
         return run;
       }
-      const result = await deps.restore(run);
+      const scoped = paths && paths.length > 0 ? { ...run, paths } : run;
+      const result = await deps.restore(scoped);
       if (result.failure) {
         return { restored: [], removed: [], undoable: false, failure: result.failure };
       }
-      applied.set(keyOf(target, checkpointId), run);
+      // Undo replays the same path scope: a partial rewind must not revert untouched files.
+      applied.set(keyOf(target, checkpointId), {
+        ...scoped,
+        restored: result.restored.length,
+        removed: result.removed.length,
+      });
       return { restored: result.restored, removed: result.removed, undoable: true };
+    },
+
+    async applied(target) {
+      const prefix = `${target.workspaceId}\u0000${target.sessionId}\u0000`;
+      const records: RewindUndoRecord[] = [];
+      for (const [key, run] of applied) {
+        if (!key.startsWith(prefix)) {
+          continue;
+        }
+        records.push({
+          checkpointId: key.slice(prefix.length),
+          restored: run.restored,
+          removed: run.removed,
+        });
+      }
+      return records;
     },
 
     async undo(target, checkpointId) {

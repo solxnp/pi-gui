@@ -47,6 +47,8 @@ export interface RestoreInput {
   readonly checkoutPath: string;
   readonly beforeTreeOid: string;
   readonly afterTreeOid: string;
+  /** When set, only these paths of the turn are restored; the rest of the turn is left as it is. */
+  readonly paths?: readonly string[];
 }
 
 interface GitResult {
@@ -161,8 +163,12 @@ async function buildPlan(input: RestoreInput): Promise<RestorePreview> {
     return failure("storage-unavailable", "快照存储无法读取，回退已取消。");
   }
 
+  const wanted = input.paths ? new Set(input.paths) : undefined;
   const entries: RestoreEntry[] = [];
   for (const [path, status] of statuses) {
+    if (wanted && !wanted.has(path)) {
+      continue;
+    }
     if (!isSafeRelativePath(path)) {
       return failure("checkpoint-missing", `快照里有一个不安全的路径，回退已取消：${path}`);
     }

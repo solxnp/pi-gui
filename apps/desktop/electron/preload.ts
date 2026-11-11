@@ -22,6 +22,7 @@ import {
   type RewindPointRecord,
   type RewindPreviewRecord,
   type RewindResultRecord,
+  type RewindUndoRecord,
   type NewMcpServerInput,
   type ChangedFilesResult,
   type DesktopNotificationPermissionStatus,
@@ -468,12 +469,18 @@ contextBridge.exposeInMainWorld("piApp", {
       sessionId,
       checkpointId,
     ) as Promise<RewindPreviewRecord>,
-  applyRewind: (workspaceId: string, sessionId: string, checkpointId: string) =>
+  applyRewind: (
+    workspaceId: string,
+    sessionId: string,
+    checkpointId: string,
+    paths?: readonly string[],
+  ) =>
     ipcRenderer.invoke(
       desktopIpc.applyRewind,
       workspaceId,
       sessionId,
       checkpointId,
+      paths,
     ) as Promise<RewindResultRecord>,
   undoRewind: (workspaceId: string, sessionId: string, checkpointId: string) =>
     ipcRenderer.invoke(
@@ -482,6 +489,10 @@ contextBridge.exposeInMainWorld("piApp", {
       sessionId,
       checkpointId,
     ) as Promise<RewindResultRecord>,
+  listRewindUndos: (workspaceId: string, sessionId: string) =>
+    ipcRenderer.invoke(desktopIpc.listRewindUndos, workspaceId, sessionId) as Promise<
+      readonly RewindUndoRecord[]
+    >,
   getCustomInstructions: () =>
     ipcRenderer.invoke(desktopIpc.getCustomInstructions) as Promise<CustomInstructionsSnapshot>,
   setCustomInstructions: (content: string) =>

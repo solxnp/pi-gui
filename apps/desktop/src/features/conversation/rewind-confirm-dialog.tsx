@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { RewindEntryRecord } from "../../../contracts/ipc";
 import { useTranslation } from "../../i18n";
 
@@ -19,12 +20,30 @@ export function RewindConfirmDialog({
 }: {
   readonly state: RewindConfirmState;
   readonly onCancel: () => void;
-  readonly onConfirm: () => void;
+  readonly onConfirm: (paths: readonly string[]) => void;
 }) {
   const { t } = useTranslation();
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 
-  const restored = state.entries.filter((entry) => entry.change === "restore");
-  const removed = state.entries.filter((entry) => entry.change === "remove");
+  // Every file starts selected: rewinding the whole turn is the common case.
+  useEffect(() => {
+    setSelected(new Set(state.entries.map((entry) => entry.path)));
+  }, [state.entries]);
+
+  const toggle = (path: string) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  };
+  const chosen = state.entries.filter((entry) => selected.has(entry.path));
+  const restored = chosen.filter((entry) => entry.change === "restore");
+  const removed = chosen.filter((entry) => entry.change === "remove");
 
   return (
     <div className="extension-dialog-backdrop">
@@ -50,7 +69,15 @@ export function RewindConfirmDialog({
           <ul className="rewind-confirm__files" data-testid="rewind-confirm-files">
             {state.entries.map((entry) => (
               <li key={`${entry.change}:${entry.path}`}>
-                <span className="rewind-confirm__path">{entry.path}</span>
+                <label className="rewind-confirm__pick">
+                  <input
+                    checked={selected.has(entry.path)}
+                    data-testid="rewind-confirm-file"
+                    type="checkbox"
+                    onChange={() => toggle(entry.path)}
+                  />
+                  <span className="rewind-confirm__path">{entry.path}</span>
+                </label>
                 <span className="rewind-confirm__stat">
                   {entry.change === "remove"
                     ? t("rewind.confirm.willDelete")
@@ -82,9 +109,9 @@ export function RewindConfirmDialog({
           <button
             className="button button--primary"
             data-testid="rewind-confirm-apply"
-            disabled={state.loading || Boolean(state.failure) || state.entries.length === 0}
+            disabled={state.loading || Boolean(state.failure) || chosen.length === 0}
             type="button"
-            onClick={onConfirm}
+            onClick={() => onConfirm(chosen.map((entry) => entry.path))}
           >
             {t("rewind.confirm.apply")}
           </button>

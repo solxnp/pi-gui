@@ -223,3 +223,25 @@ test("a turn that changed nothing restores nothing", async () => {
     await expect(stat(join(fixture.checkoutPath, "a.txt"))).resolves.toBeTruthy();
   });
 });
+
+test("a path scope restores only what was picked", async () => {
+  await withFixture(async (fixture) => {
+    const before = await writeTree(fixture, { "a.txt": "one\n", "b.txt": "two\n" });
+    const after = await writeTree(fixture, { "a.txt": "one changed\n", "b.txt": "two changed\n" });
+    await writeCheckoutFile(fixture, "a.txt", "one changed\n");
+    await writeCheckoutFile(fixture, "b.txt", "two changed\n");
+
+    const result = await applyTurnRestore({
+      repositoryPath: fixture.repositoryPath,
+      checkoutPath: fixture.checkoutPath,
+      beforeTreeOid: before,
+      afterTreeOid: after,
+      paths: ["a.txt"],
+    });
+
+    expect(result.restored).toEqual(["a.txt"]);
+    expect(await readCheckoutFile(fixture, "a.txt")).toBe("one\n");
+    // The file that was not picked keeps the turn's change.
+    expect(await readCheckoutFile(fixture, "b.txt")).toBe("two changed\n");
+  });
+});

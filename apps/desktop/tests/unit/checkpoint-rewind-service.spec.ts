@@ -20,7 +20,12 @@ function turn(checkpointId: string, checkoutId = "checkout"): ListedTurnCheckpoi
 }
 
 interface Harness {
-  readonly runs: { beforeTreeOid: string; afterTreeOid: string; checkoutPath: string }[];
+  readonly runs: {
+    beforeTreeOid: string;
+    afterTreeOid: string;
+    checkoutPath: string;
+    paths?: readonly string[];
+  }[];
   readonly service: ReturnType<typeof createRewindService>;
 }
 
@@ -39,6 +44,7 @@ function createHarness(options: {
     }),
     restore: async (run) => {
       runs.push({
+        paths: run.paths,
         beforeTreeOid: run.beforeTreeOid,
         afterTreeOid: run.afterTreeOid,
         checkoutPath: run.checkoutPath,
@@ -118,4 +124,16 @@ test("the preview reports the same entries without applying anything", async () 
   expect(preview.entries).toHaveLength(1);
   expect(preview.entries[0]?.path).toBe("a.txt");
   expect(runs).toEqual([]);
+});
+
+test("a scoped rewind and its undo both keep the scope", async () => {
+  const { service, runs } = createHarness({});
+
+  const applied = await service.apply(target, "turn-1", ["a.txt"]);
+  expect(applied.undoable).toBe(true);
+  expect(runs[0]?.paths).toEqual(["a.txt"]);
+
+  await service.undo(target, "turn-1");
+  // Undo replays the same files, so a partial rewind cannot revert untouched files.
+  expect(runs[1]?.paths).toEqual(["a.txt"]);
 });

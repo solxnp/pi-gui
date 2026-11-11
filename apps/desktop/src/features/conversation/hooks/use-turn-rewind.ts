@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { TurnChangeSummary } from "../../../../contracts/review";
 import type { RewindConfirmState } from "../rewind-confirm-dialog";
 
@@ -27,6 +27,7 @@ interface TurnRewindOptions {
     workspaceId: string,
     sessionId: string,
     checkpointId: string,
+    paths?: readonly string[],
   ) => Promise<{
     restored: readonly string[];
     removed: readonly string[];
@@ -41,6 +42,11 @@ interface TurnRewindOptions {
     removed: readonly string[];
     failure?: { message: string };
   }>;
+  /** Rewinds that are still undoable, so reopening a thread restores the affordance. */
+  readonly listApplied: (
+    workspaceId: string,
+    sessionId: string,
+  ) => Promise<readonly { checkpointId: string; restored: number; removed: number }[]>;
 }
 
 /**
@@ -63,6 +69,29 @@ export function useTurnRewind(options: TurnRewindOptions | undefined) {
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    if (!options) {
+      return;
+    }
+    let live = true;
+    void options
+      .listApplied(options.workspaceId, options.sessionId)
+      .then((records) => {
+        if (!live) {
+          return;
+        }
+        const next: Record<string, RewindOutcome> = {};
+        for (const record of records) {
+          next[record.checkpointId] = { restored: record.restored, removed: record.removed };
+        }
+        setOutcomes(next);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [options]);
 
   const requestRewind = useCallback(
     (turn: TurnChangeSummary) => {
@@ -103,28 +132,31 @@ export function useTurnRewind(options: TurnRewindOptions | undefined) {
 
   const cancelRewind = useCallback(() => setConfirm(null), []);
 
-  const confirmRewind = useCallback(() => {
-    if (!options || !confirm) {
-      return;
-    }
-    const checkpointId = confirm.checkpointId;
-    void options
-      .apply(options.workspaceId, options.sessionId, checkpointId)
-      .then((result) => {
-        if (result.failure) {
-          setConfirm((current) =>
-            current ? { ...current, failure: result.failure?.message } : current,
-          );
-          return;
-        }
-        setConfirm(null);
-        rememberOutcome(checkpointId, {
-          restored: result.restored.length,
-          removed: result.removed.length,
-        });
-      })
-      .catch(() => setError("执行回退失败。"));
-  }, [confirm, options, rememberOutcome]);
+  const confirmRewind = useCallback(
+    (paths: readonly string[]) => {
+      if (!options || !confirm) {
+        return;
+      }
+      const checkpointId = confirm.checkpointId;
+      void options
+        .apply(options.workspaceId, options.sessionId, checkpointId, paths)
+        .then((result) => {
+          if (result.failure) {
+            setConfirm((current) =>
+              current ? { ...current, failure: result.failure?.message } : current,
+            );
+            return;
+          }
+          setConfirm(null);
+          rememberOutcome(checkpointId, {
+            restored: result.restored.length,
+            removed: result.removed.length,
+          });
+        })
+        .catch(() => setError("执行回退失败。"));
+    },
+    [confirm, options, rememberOutcome],
+  );
 
   const undoRewind = useCallback(
     (checkpointId: string) => {

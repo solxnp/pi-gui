@@ -102,6 +102,12 @@ export interface RewindPreviewRecord {
   readonly failure?: RewindFailureRecord;
 }
 
+export interface RewindUndoRecord {
+  readonly checkpointId: string;
+  readonly restored: number;
+  readonly removed: number;
+}
+
 export interface RewindResultRecord {
   readonly restored: readonly string[];
   readonly removed: readonly string[];
@@ -230,6 +236,7 @@ export const desktopIpc = {
   previewRewind: "pi-gui:preview-rewind",
   applyRewind: "pi-gui:apply-rewind",
   undoRewind: "pi-gui:undo-rewind",
+  listRewindUndos: "pi-gui:list-rewind-undos",
   getCustomInstructions: "pi-gui:get-custom-instructions",
   setCustomInstructions: "pi-gui:set-custom-instructions",
   setEnableTransparency: "pi-gui:set-enable-transparency",
@@ -891,12 +898,14 @@ export interface PiDesktopApi {
     workspaceId: string,
     sessionId: string,
     checkpointId: string,
+    paths?: readonly string[],
   ): Promise<RewindResultRecord>;
   undoRewind(
     workspaceId: string,
     sessionId: string,
     checkpointId: string,
   ): Promise<RewindResultRecord>;
+  listRewindUndos(workspaceId: string, sessionId: string): Promise<readonly RewindUndoRecord[]>;
   getCustomInstructions(): Promise<CustomInstructionsSnapshot>;
   setCustomInstructions(content: string): Promise<CustomInstructionsSnapshot>;
   setEnableTransparency(enabled: boolean): Promise<DesktopAppState>;

@@ -29,7 +29,7 @@ export function ConversationTimelineWithRewind(
         <RewindConfirmDialog
           state={rewind.confirm}
           onCancel={rewind.cancelRewind}
-          onConfirm={rewind.confirmRewind}
+          onConfirm={(paths) => rewind.confirmRewind(paths)}
         />
       ) : null}
     </>

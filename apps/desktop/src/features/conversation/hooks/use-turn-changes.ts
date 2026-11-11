@@ -64,6 +64,7 @@ export function useTurnChanges({
             api.applyRewind(workspaceId, sessionId, checkpointId),
           undo: (workspaceId, sessionId, checkpointId) =>
             api.undoRewind(workspaceId, sessionId, checkpointId),
+          listApplied: (workspaceId, sessionId) => api.listRewindUndos(workspaceId, sessionId),
         }
       : undefined,
   );

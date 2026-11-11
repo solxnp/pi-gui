@@ -696,7 +696,13 @@ export function registerDesktopIpc({
   );
   ipcMain.handle(
     desktopIpc.applyRewind,
-    (event, rawWorkspaceId: unknown, rawSessionId: unknown, rawCheckpointId: unknown) => {
+    (
+      event,
+      rawWorkspaceId: unknown,
+      rawSessionId: unknown,
+      rawCheckpointId: unknown,
+      rawPaths: unknown,
+    ) => {
       windows.windowForSender(event.sender);
       return capabilities.rewind.apply(
         {
@@ -704,7 +710,18 @@ export function registerDesktopIpc({
           sessionId: expectNonEmptyString(rawSessionId, "sessionId"),
         },
         expectNonEmptyString(rawCheckpointId, "checkpointId"),
+        rawPaths === undefined ? undefined : expectStringArray(rawPaths, "paths"),
       );
+    },
+  );
+  ipcMain.handle(
+    desktopIpc.listRewindUndos,
+    (event, rawWorkspaceId: unknown, rawSessionId: unknown) => {
+      windows.windowForSender(event.sender);
+      return capabilities.rewind.applied({
+        workspaceId: expectNonEmptyString(rawWorkspaceId, "workspaceId"),
+        sessionId: expectNonEmptyString(rawSessionId, "sessionId"),
+      });
     },
   );
   ipcMain.handle(
