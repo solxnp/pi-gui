@@ -4,6 +4,12 @@ import type { PiDesktopApi } from "../../../contracts/ipc";
 import type { TaskWorkbenchTemplate, ToolRef } from "../../../contracts/workbench";
 import type { FileWorkbenchTabs } from "./file-workbench-state";
 import {
+  chromeOf,
+  readWorkbenchChrome,
+  withWorkbenchChrome,
+  writeWorkbenchChrome,
+} from "./workbench-chrome";
+import {
   activeWorkbenchTool,
   applyWorkbenchActions,
   initialWorkbenchView,
@@ -41,6 +47,8 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
   const [, setRevision] = useState(0);
   const current = useRef({ api, target });
   current.current = { api, target };
+  // Tool strip + visibility are window state: switching conversation keeps them.
+  const chrome = useRef(readWorkbenchChrome());
 
   const publish = useCallback(() => {
     if (mounted.current) setRevision((revision) => revision + 1);
@@ -57,7 +65,7 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
     const key = targetKey(ref);
     const existing = entries.current.get(key);
     if (existing) return existing;
-    const initialView = initialWorkbenchView(ref.workspaceId);
+    const initialView = withWorkbenchChrome(initialWorkbenchView(ref.workspaceId), chrome.current);
     const entry: WorkbenchEntry = {
       view: initialView,
       initialView,
@@ -113,7 +121,7 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
         (saved) => {
           const hasPendingActions = entry.pendingActions.length > 0;
           const restored = restoreWorkbenchView(entry.initialView, saved, entry.pendingActions);
-          entry.view = restored.view;
+          entry.view = withWorkbenchChrome(restored.view, chrome.current);
           entry.error = restored.error;
           entry.pendingActions = [];
           entry.restore = "ready";
@@ -156,6 +164,9 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
         return;
       }
       entry.error = result.error;
+      // Remember the window's tool choice for the next conversation as well.
+      chrome.current = chromeOf(next);
+      writeWorkbenchChrome(chrome.current);
       publish();
       persist(ref, entry);
     },
