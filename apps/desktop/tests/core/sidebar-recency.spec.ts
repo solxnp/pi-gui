@@ -33,7 +33,6 @@ test("caps each time bucket at five and hides workspace headers", async () => {
 
   try {
     const window = await harness.firstWindow();
-    await openThreadOverview(window);
     const workspaceA = await waitForWorkspaceByPath(window, workspaceAPath);
     const workspaceB = await waitForWorkspaceByPath(window, workspaceBPath);
     await createHistoryThreads(window, workspaceA.id, numberedThreadTitles("A", 6));
@@ -42,8 +41,11 @@ test("caps each time bucket at five and hides workspace headers", async () => {
     const customize = window.getByRole("button", { name: "Customize Sidebar" });
     await customize.hover();
     await expect(window.getByRole("tooltip", { name: "Customize Sidebar" })).toBeVisible();
+    await openThreadOverview(window);
     await expectThreadGrouping(window, "time");
+    await openThreadOverview(window);
     const today = recencySection(window, "Today");
+    await openThreadOverview(window);
     await expect(today).toBeVisible();
     await expect(today.locator(".session-row")).toHaveCount(5);
     await expect(window.locator(".workspace-row")).toHaveCount(0);
@@ -70,7 +72,6 @@ test("does not bump Today when a thread is opened", async () => {
 
   try {
     const window = await harness.firstWindow();
-    await openThreadOverview(window);
     const workspace = await waitForWorkspaceByPath(window, workspacePath);
     await createHistoryThreads(window, workspace.id, ["Older today", "Newest today"]);
 
@@ -105,7 +106,6 @@ test("bumps a sent thread to the top of Today", async () => {
 
   try {
     const window = await harness.firstWindow();
-    await openThreadOverview(window);
     const workspace = await waitForWorkspaceByPath(window, workspacePath);
     await createHistoryThreads(window, workspace.id, ["Older today", "Newest today"]);
     await expectTodayTitles(window, ["Newest today", "Older today"]);
@@ -145,7 +145,6 @@ test("selects pinned threads first with 1-9 and paints badges while the modifier
 
   try {
     const window = await harness.firstWindow();
-    await openThreadOverview(window);
     const workspace = await waitForWorkspaceByPath(window, workspacePath);
     await createHistoryThreads(window, workspace.id, ["Alpha", "Bravo", "Charlie"]);
     await expectShortcutBadges(window, ["Charlie", "Bravo", "Alpha"]);
@@ -247,6 +246,7 @@ test("groups seeded Last 7 Days, Last 30 Days, and Older threads", async () => {
     await createHistoryThreads(window, workspaceA.id, ["Today thread", "Week thread"]);
     await createHistoryThreads(window, workspaceB.id, ["Month thread", "Older thread"]);
     const state = await getDesktopState(window);
+    await openThreadOverview(window);
     const today = findSession(state, "Today thread");
     const week = findSession(state, "Week thread");
     const month = findSession(state, "Month thread");
@@ -535,6 +535,8 @@ function recencySection(window: Page, label: string): Locator {
 }
 
 async function expectTodayTitles(window: Page, titles: readonly string[]): Promise<void> {
+  // The list only exists inside 「全部会话」; opening it is idempotent.
+  await openThreadOverview(window);
   await expect(recencySection(window, "Today").locator(".session-row__title")).toHaveText([
     ...titles,
   ]);
@@ -637,6 +639,5 @@ async function seedRecencyTimestamps(
 
 async function captureSidebarProof(window: Page, filename: string): Promise<void> {
   await mkdir(proofDir, { recursive: true });
-  await openThreadOverview(window);
   await window.locator(".sidebar").screenshot({ path: join(proofDir, filename) });
 }
