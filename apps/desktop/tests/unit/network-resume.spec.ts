@@ -94,6 +94,13 @@ test("network failures are told apart from ordinary ones", () => {
     "network error",
     "other side closed",
     "fetch failed: UND_ERR_SOCKET",
+    // The two texts that real outages actually ended on (2026-11-12): a body that stopped
+    // mid-flight, and a request that ran out of time.
+    "terminated",
+    "Request timed out.",
+    "The operation was aborted due to timeout",
+    "connection lost",
+    "stream ended without finish_reason",
   ]) {
     expect(isNetworkErrorMessage(message), message).toBe(true);
   }
@@ -103,8 +110,10 @@ test("network failures are told apart from ordinary ones", () => {
     "429 rate limit exceeded",
     "This model's context window is 200000 tokens",
     "insufficient balance",
+    "GoUsageLimitError: monthly usage limit reached",
     "Request was aborted",
     "AbortError: The user aborted a request.",
+    "Run aborted",
     "",
     "Tool execution failed",
   ]) {
