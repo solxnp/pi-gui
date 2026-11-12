@@ -110,6 +110,19 @@
 - [x] 真机截图确认：选择器「打开工具／任务管理⇧⌘T／项目文件⇧⌘O／审阅⌘R／终端⌘J」、项目文件面板「筛选文件…」、任务面板「任务管理／项目／添加」、终端「新建终端／重启终端」
 - [x] commit + push + 回写本表
 
+### 网络恢复：`terminated` / `Request timed out.` 也算断网
+
+| 项   | 内容                                                                                                                                                                 |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 状态 | 待验证 |
+| 提交 | `3caeeec` |
+| 验收 | 失败文案为 `terminated`、`Request timed out.`、`The operation was aborted due to timeout` 的 run 会进入等待列表并自动补「继续」；401／429／quota／用户中止仍然不重发 |
+
+- [x] 复核真实失败文案：一天内 251 次 `Connection error.`、59 次 `terminated`、9 次 `Request timed out.`、2 次 429
+- [x] `network-error.ts` 按 pi-ai 自己的可重试传输错误补齐（terminated／timed out／connection lost／ended without／reset before headers…），超时判定放在 abort 之前
+- [x] 单测补 5 条正例 + 3 条负例（usage limit、Run aborted、AbortError）
+- [ ] 真机确认：断网 → 失败文案 `terminated` 的会话在恢复后自己收到「继续」
+
 ### 左侧的会话信息放在顶部，就像IDE中打开多个文件一样，一个对话一个tab，允许多行
 
 | 项   | 内容 |
