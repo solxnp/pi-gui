@@ -257,6 +257,7 @@ export const en = {
   "threadTabs.running": "Running",
   "threadTabs.failed": "Failed",
   "threadTabs.unseen": "Has an update",
+  "threadTabs.awaitingInputBadge": "Needs you",
   "threadTabs.awaitingInput": "Waiting for your answer",
   "workbench.chooserTitle": "Open a tool",
   "workbench.chooserBody": "Keep the tools you need alongside your conversation.",

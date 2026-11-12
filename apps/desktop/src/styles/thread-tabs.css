@@ -5,6 +5,8 @@
  */
 .thread-tabs {
   --thread-tab-height: 32px;
+  /* Gaps between tabs drag the window; the tabs themselves do not. */
+  -webkit-app-region: drag;
   display: grid;
   gap: 4px;
   padding: 0 12px 6px;
@@ -20,6 +22,7 @@
 }
 
 .thread-tabs__tab {
+  -webkit-app-region: no-drag;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -88,8 +91,29 @@
   background: var(--accent);
 }
 
-.thread-tabs__dot--input {
+/* A conversation waiting for an answer is the one thing the strip must not
+ * under-state: the whole tab tints, keeps a left bar, and names the state. */
+.thread-tabs__tab--input {
+  background: color-mix(in srgb, var(--warning) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--line));
+  box-shadow: inset 3px 0 0 var(--warning);
+  color: var(--text);
+  font-weight: var(--font-medium);
+}
+
+.thread-tabs__tab--input .thread-tabs__select {
+  padding-left: 12px;
+}
+
+.thread-tabs__badge {
+  flex: none;
+  padding: 1px 6px 2px;
+  border-radius: 999px;
   background: var(--warning);
+  color: var(--button-primary-ink, #fff);
+  font-size: 10.5px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.02em;
 }
 
 .thread-tabs__close {

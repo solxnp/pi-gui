@@ -165,6 +165,12 @@ export default function App() {
     );
   }, [snapshot?.enableTransparency]);
 
+  useEffect(() => {
+    // Styles need the platform: macOS keeps the native traffic lights over the
+    // topbar's left edge, and only Windows/Linux draw their own controls.
+    if (api) document.documentElement.dataset.platform = api.platform;
+  }, [api]);
+
   const activeTheme = useActiveTheme();
   const extensionViewTheme = useMemo<ExtensionViewTheme>(
     () => ({

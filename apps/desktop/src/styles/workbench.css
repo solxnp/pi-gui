@@ -7,6 +7,9 @@
 }
 
 .workbench__tabbar {
+  /* The panel starts at the window's top edge, so its empty strip drags the
+   * window like the topbar does; the tabs and buttons themselves stay clickable. */
+  -webkit-app-region: drag;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -233,4 +236,9 @@
 
 .main:has(.workbench__resize-handle[data-resizing="true"]) iframe {
   pointer-events: none;
+}
+
+.workbench__tabbar button,
+.workbench__tabbar [role="tab"] {
+  -webkit-app-region: no-drag;
 }

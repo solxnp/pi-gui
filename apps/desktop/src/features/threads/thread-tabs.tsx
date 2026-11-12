@@ -137,7 +137,9 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
         const slot = threadTabSlot(index, columns);
         return (
           <div
-            className={`thread-tabs__tab${active ? " thread-tabs__tab--active" : ""}`}
+            className={`thread-tabs__tab${active ? " thread-tabs__tab--active" : ""}${
+              tab.awaitingInput ? " thread-tabs__tab--input" : ""
+            }`}
             data-testid={`thread-tab-${tab.key}`}
             key={tab.key}
             style={{ gridRow: slot.row, gridColumn: slot.column }}
@@ -145,6 +147,9 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
             <button
               aria-keyshortcuts={
                 index < 9 ? `${platform === "darwin" ? "Meta" : "Control"}+${index + 1}` : undefined
+              }
+              aria-label={
+                tab.awaitingInput ? `${tab.title} · ${t("threadTabs.awaitingInput")}` : undefined
               }
               aria-selected={active}
               className="thread-tabs__select"
@@ -160,10 +165,7 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
               type="button"
             >
               {tab.awaitingInput ? (
-                <span
-                  aria-label={t("threadTabs.awaitingInput")}
-                  className="thread-tabs__dot thread-tabs__dot--input"
-                />
+                <span className="thread-tabs__badge">{t("threadTabs.awaitingInputBadge")}</span>
               ) : tab.status !== "none" ? (
                 <span
                   aria-label={

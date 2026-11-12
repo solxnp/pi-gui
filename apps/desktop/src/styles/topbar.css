@@ -16,6 +16,12 @@
   background: var(--main);
 }
 
+/* macOS keeps the native traffic lights at the window's top-left; the topbar is
+ * the whole width now, so its first control has to start after them. */
+html[data-platform="darwin"] .topbar {
+  padding-left: 96px;
+}
+
 .topbar__title {
   display: flex;
   align-items: center;
