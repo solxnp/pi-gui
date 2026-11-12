@@ -274,7 +274,7 @@ test("a form accepts a written answer when no option fits", async () => {
   }
 });
 
-test("a tall form scrolls inside its card and keeps the composer and submit reachable", async () => {
+test("a tall form grows in the conversation instead of scrolling inside itself", async () => {
   test.setTimeout(60_000);
   const userDataDir = await makeUserDataDir();
   const workspacePath = await makeWorkspace("extension-form-tall-workspace");
@@ -295,13 +295,17 @@ test("a tall form scrolls inside its card and keeps the composer and submit reac
 
     const card = window.getByTestId("extension-form");
     await expect(card).toBeVisible();
-    // The questions scroll inside the card, so the composer and the submit button stay on screen.
+    // The card is conversation content, not a dialog: it grows and the transcript scrolls it, so
+    // the wheel never gets stuck inside the card and the composer stays where it was.
     const body = card.getByTestId("extension-form-body");
-    expect(
-      await body.evaluate((element) => element.scrollHeight - element.clientHeight),
-    ).toBeGreaterThan(0);
-    await expect(card.getByTestId("extension-form-submit")).toBeInViewport();
+    expect(await body.evaluate((element) => element.scrollHeight - element.clientHeight)).toBe(0);
     await expect(composer).toBeInViewport();
+    // It reads like a message column: the card is as wide as the transcript, not the whole pane.
+    const cardWidth = (await card.boundingBox())?.width ?? 0;
+    const transcriptWidth = (await window.getByTestId("transcript").boundingBox())?.width ?? 0;
+    expect(Math.abs(cardWidth - transcriptWidth)).toBeLessThan(2);
+    // Taller than the pane, so it opens at its own top: the first question is what you read first.
+    await expect(card.getByRole("group", { name: "第 1 个问题" })).toBeInViewport();
 
     for (const index of [1, 2, 3]) {
       const question = card.getByRole("group", { name: `第 ${index} 个问题` });
@@ -309,6 +313,7 @@ test("a tall form scrolls inside its card and keeps the composer and submit reac
     }
     const submit = card.getByTestId("extension-form-submit");
     await expect(submit).toBeEnabled();
+    await submit.scrollIntoViewIfNeeded();
     await expect(submit).toBeInViewport();
     await submit.click();
     await expect(window.getByTestId("extension-notices")).toContainText("Tall form answered");

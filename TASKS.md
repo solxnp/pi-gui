@@ -158,3 +158,18 @@
 - [x] `extension-card.tsx`：有 `answeredForm` 时丢掉 `rows`（老条目没有题面才走 rows 兜底），删掉 `extension-card__answers` / `answers-label` 样式与两条 `extensionForm.answerLabel` 文案
 - [x] 顺手修掉同文件里已红的用例选择器：`--lang=en-US` 之后「其他」是 `Other — write my own`，改成 `/^(其他|Other)/`
 - [x] core 用例 5 条全绿 + typecheck + prettier；真机截图确认（题面 / ● / 备注回显，无重复条）
+
+### 待答卡按对话宽度、不自己滚（ask_user 别再像弹窗）
+
+| 项   | 内容 |
+| ---- | ---- |
+| 状态 | 已完成 |
+| 提交 | `6bbfd55`（样式 / `alignTop()` / 挂载）/ `PENDING`（用例断言） |
+| 验收 | 待答卡宽度等于 transcript 那一列（768px）而不是整个对话区；卡内没有自己的滚动条，指针停在卡上滚轮滚的是对话；卡片比 pane 高时出现即对齐顶边，第 1 个问题先入眼 |
+
+- [x] `.timeline-pending-form` 加 `max-width: var(--transcript-measure, 768px)` + 居中 + 上边距
+- [x] `.extension-form` / `__body` 删掉 `max-height`、`overflow`、`overscroll-behavior: contain`（滚动陷阱的来源）
+- [x] `use-timeline-viewport.ts` 新增 `alignTop()`：高位卡出现时对齐顶边，且把这次 scrollTop 登记成自己滚的（不翻成阅读态、不弹 New activity）
+- [x] 用例第 3 条改成「卡片长在对话里」：无内部滚动、宽度差 < 2px、第 1 个问题在视口、提交按钮滚过去可点
+- [x] 验证：extension-form-card 5 条 + timeline-pinning / timeline-viewport / timeline-overflow 共 23 条全绿；真机截图 + 滚轮实测（指针在卡上滚轮，`pane.scrollTop` 变化）
+- [!] 踩坑：这几处改动被并行会话的 `6bbfd55`（顶部 tab 条）一起提交了，本单只剩用例断言
