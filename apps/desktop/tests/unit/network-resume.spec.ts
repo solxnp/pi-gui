@@ -1,3 +1,6 @@
+import { mkdtemp, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import type { SessionDriverEvent, SessionRef } from "@pi-gui/session-driver";
 import {
@@ -6,6 +9,7 @@ import {
   isNetworkResumeMaxAttempts,
 } from "../../contracts/network-resume";
 import { isNetworkErrorMessage } from "../../electron/network-resume/network-error";
+import { createNetworkResumeLog } from "../../electron/network-resume/network-resume-log";
 import {
   NetworkResumeService,
   type NetworkResumeSessionState,
@@ -35,6 +39,7 @@ interface Harness {
   service: NetworkResumeService;
   published: { title?: string; attempts: number; exhausted?: boolean }[][];
   delivered: string[];
+  lines: string[];
   setReachable(value: boolean): void;
   setState(value: NetworkResumeSessionState | undefined): void;
   setPreferences(patch: { enabled?: boolean; maxAttempts?: number }): void;
@@ -46,6 +51,7 @@ function createHarness(): Harness {
   let preferences = { ...defaultNetworkResumePreferences };
   const published: Harness["published"] = [];
   const delivered: string[] = [];
+  const lines: string[] = [];
   const service = new NetworkResumeService(
     {
       getPreferences: () => preferences,
@@ -57,6 +63,7 @@ function createHarness(): Harness {
       },
       publish: (waiting) =>
         published.push(waiting.map((record) => ({ ...record, title: undefined }))),
+      log: (line) => lines.push(line),
     },
     {
       probe: async () => (reachable ? "reachable" : "unreachable"),
@@ -71,6 +78,7 @@ function createHarness(): Harness {
     service,
     published,
     delivered,
+    lines,
     setReachable: (value) => {
       reachable = value;
     },
@@ -223,4 +231,45 @@ test("a disabled watcher ignores failures entirely", () => {
   harness.setPreferences({ enabled: false });
   harness.service.handleEvent(failure("fetch failed"));
   expect(harness.service.listWaiting()).toHaveLength(0);
+});
+
+test("every decision leaves a line behind, so a quiet thread can be explained later", async () => {
+  const harness = createHarness();
+  harness.setReachable(true);
+
+  harness.service.handleEvent(failure("terminated"));
+  harness.service.handleEvent(
+    failure("401 invalid api key", { workspaceId: "ws", sessionId: "s2" }),
+  );
+  await harness.service.probeNow();
+  await harness.service.probeNow();
+
+  const joined = harness.lines.join("\n");
+  // The failure that used to be invisible: classified, then resumed.
+  expect(joined).toContain("failure thread=ws:s1 network=true");
+  expect(joined).toContain("message=terminated");
+  // A refusal is logged with the verdict that kept it out of the list.
+  expect(joined).toContain("network=false");
+  expect(joined).toContain("probe result=reachable streak=1 needed=2 waiting=1");
+  expect(joined).toContain("continue thread=ws:s1 attempt=1 maxAttempts=5");
+  // The run the continue started takes the thread off the list.
+  harness.service.handleEvent(running());
+  expect(harness.lines.join("\n")).toContain("drop thread=ws:s1 reason=running");
+  expect(harness.lines.every((line) => /^\d{4}-\d\d-\d\dT/.test(line))).toBe(true);
+});
+
+test("the log writer appends lines in order and never throws into the watcher", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "network-resume-log-"));
+  const logPath = join(dir, "nested", "network-resume.log");
+  const log = createNetworkResumeLog(logPath);
+
+  log("first line");
+  log("second line");
+  await expect
+    .poll(() => readFile(logPath, "utf8").catch(() => ""), { timeout: 5_000 })
+    .toBe("first line\nsecond line\n");
+
+  // A path that cannot be a file must be swallowed, not raised.
+  const broken = createNetworkResumeLog(join(dir, "network-resume.log", "impossible"));
+  expect(() => broken("ignored")).not.toThrow();
 });

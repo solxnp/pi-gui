@@ -22,6 +22,7 @@ import type {
   NetworkResumeWaitingRecord,
 } from "../../contracts/network-resume";
 import { isNetworkErrorMessage } from "./network-error";
+import type { NetworkResumeLog } from "./network-resume-log";
 import type { NetworkProbe } from "./network-probe";
 
 /** One probe per minute, as asked: often enough to feel immediate, cheap enough to run all night. */
@@ -45,6 +46,8 @@ export interface NetworkResumeHost {
   readonly deliverContinue: (ref: SessionRef, text: string) => Promise<void>;
   /** Hands the current waiting list to the app state so Settings can show it. */
   readonly publish: (waiting: readonly NetworkResumeWaitingRecord[]) => void;
+  /** One line per decision, so a thread that never resumed can be explained later. */
+  readonly log?: NetworkResumeLog;
 }
 
 export interface NetworkResumeServiceOptions {
@@ -122,12 +125,12 @@ export class NetworkResumeService {
       case "sessionUpdated":
       case "runCompleted": {
         if (event.snapshot.status === "running") {
-          this.forget(event.sessionRef);
+          this.forget(event.sessionRef, "running");
         }
         return;
       }
       case "sessionClosed": {
-        this.forget(event.sessionRef);
+        this.forget(event.sessionRef, "closed");
         return;
       }
       default:
@@ -142,7 +145,9 @@ export class NetworkResumeService {
 
   /** Settings changed: a switched-off watcher drops what it was holding. */
   preferencesChanged(): void {
-    if (!this.host.getPreferences().enabled && this.waiting.size > 0) {
+    const { enabled, maxAttempts } = this.host.getPreferences();
+    this.note("preferences", { enabled, maxAttempts });
+    if (!enabled && this.waiting.size > 0) {
       this.waiting.clear();
       this.publish();
       this.stopTimer();
@@ -152,9 +157,16 @@ export class NetworkResumeService {
   }
 
   private noteFailure(ref: SessionRef, message: string): void {
-    if (!this.host.getPreferences().enabled || !isNetworkErrorMessage(message)) {
+    const network = isNetworkErrorMessage(message);
+    this.note("failure", {
+      thread: refKey(ref),
+      network,
+      enabled: this.host.getPreferences().enabled,
+      message,
+    });
+    if (!this.host.getPreferences().enabled || !network) {
       // A newer failure that is not about the network means this thread no longer waits for it.
-      this.forget(ref);
+      this.forget(ref, "not-network");
       return;
     }
     const key = refKey(ref);
@@ -174,8 +186,9 @@ export class NetworkResumeService {
     this.schedule();
   }
 
-  private forget(ref: SessionRef): void {
+  private forget(ref: SessionRef, reason: string): void {
     if (this.waiting.delete(refKey(ref))) {
+      this.note("drop", { thread: refKey(ref), reason });
       this.publish();
     }
     this.schedule();
@@ -183,6 +196,22 @@ export class NetworkResumeService {
 
   private publish(): void {
     this.host.publish(this.listWaiting());
+  }
+
+  /** Never throws: the watcher must keep working on a machine that cannot write a log. */
+  private note(event: string, fields: Record<string, string | number | boolean>): void {
+    const log = this.host.log;
+    if (!log) {
+      return;
+    }
+    try {
+      const pairs = Object.entries(fields)
+        .map(([key, value]) => `${key}=${formatLogValue(value)}`)
+        .join(" ");
+      log(`${new Date(this.now()).toISOString()} ${event}${pairs ? ` ${pairs}` : ""}`);
+    } catch {
+      // A logger that throws is worse than no logger.
+    }
   }
 
   private stopTimer(): void {
@@ -228,6 +257,12 @@ export class NetworkResumeService {
         return;
       }
       const result = await this.options.probe();
+      this.note("probe", {
+        result,
+        streak: result === "reachable" ? this.probeStreak + 1 : 0,
+        needed: this.successesRequired,
+        waiting: this.waiting.size,
+      });
       if (result !== "reachable") {
         this.probeStreak = 0;
         return;
@@ -255,11 +290,16 @@ export class NetworkResumeService {
     const ref: SessionRef = { workspaceId: entry.workspaceId, sessionId: entry.sessionId };
     const state = this.host.sessionState(ref);
     if (!state || state.archivedAt) {
+      this.note("drop", {
+        thread: refKey(ref),
+        reason: state ? "archived" : "missing",
+      });
       this.waiting.delete(refKey(ref));
       this.publish();
       return;
     }
     if (state.status === "running") {
+      this.note("skip", { thread: refKey(ref), reason: "running", attempts: entry.attempts });
       return;
     }
     const { maxAttempts } = this.host.getPreferences();
@@ -268,17 +308,25 @@ export class NetworkResumeService {
     }
     if (maxAttempts > 0 && entry.attempts >= maxAttempts) {
       entry.exhausted = true;
+      this.note("exhausted", { thread: refKey(ref), attempts: entry.attempts, maxAttempts });
       this.publish();
       return;
     }
 
     entry.attempts += 1;
+    this.note("continue", { thread: refKey(ref), attempt: entry.attempts, maxAttempts });
     try {
       await this.host.deliverContinue(ref, CONTINUE_MESSAGE);
       entry.deliveryFailures = 0;
       this.publish();
     } catch (error) {
       entry.deliveryFailures += 1;
+      const message = error instanceof Error ? error.message : String(error);
+      this.note("continue-failed", {
+        thread: refKey(ref),
+        error: message,
+        failures: entry.deliveryFailures,
+      });
       console.warn(
         `[network-resume] could not deliver "continue" to ${refKey(ref)}:`,
         error instanceof Error ? error.message : error,
@@ -289,4 +337,11 @@ export class NetworkResumeService {
       this.publish();
     }
   }
+}
+
+/** Keeps one log line readable: spaces and quotes would blur the `key=value` pairs. */
+function formatLogValue(value: string | number | boolean): string {
+  const text = typeof value === "string" ? value.replace(/\s+/g, " ").trim() : String(value);
+  const clipped = text.length > 160 ? `${text.slice(0, 159)}…` : text;
+  return /[\s"]/.test(clipped) ? `"${clipped.replace(/"/g, "'")}"` : clipped || '""';
 }

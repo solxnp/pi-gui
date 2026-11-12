@@ -55,6 +55,7 @@ import {
   permissionGateExtensionName,
 } from "./permissions/permission-gate-extension";
 import { NetworkResumeService } from "./network-resume/network-resume-service";
+import { createNetworkResumeLog } from "./network-resume/network-resume-log";
 import { createHttpProbe } from "./network-resume/network-probe";
 import { createDefaultPermissionPreferences } from "../contracts/permission-preferences";
 import {
@@ -1189,6 +1190,7 @@ app
         sessionState: (sessionRef) => store.networkResumeSessionState(sessionRef),
         deliverContinue: (sessionRef, text) => store.deliverNetworkResumeContinue(sessionRef, text),
         publish: (waiting) => store.setNetworkResumeWaiting(waiting),
+        log: createNetworkResumeLog(path.join(configuredUserDataDir, "logs", "network-resume.log")),
       },
       { probe: createHttpProbe() },
     );
