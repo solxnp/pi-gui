@@ -114,14 +114,15 @@
 
 | 项   | 内容                                                                                                                                                                 |
 | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 状态 | 待验证 |
-| 提交 | `3caeeec` |
+| 状态 | 待验证                                                                                                                                                               |
+| 提交 | `4a2e3c5`                                                                                                                                                            |
 | 验收 | 失败文案为 `terminated`、`Request timed out.`、`The operation was aborted due to timeout` 的 run 会进入等待列表并自动补「继续」；401／429／quota／用户中止仍然不重发 |
 
 - [x] 复核真实失败文案：一天内 251 次 `Connection error.`、59 次 `terminated`、9 次 `Request timed out.`、2 次 429
 - [x] `network-error.ts` 按 pi-ai 自己的可重试传输错误补齐（terminated／timed out／connection lost／ended without／reset before headers…），超时判定放在 abort 之前
 - [x] 单测补 5 条正例 + 3 条负例（usage limit、Run aborted、AbortError）
-- [ ] 真机确认：断网 → 失败文案 `terminated` 的会话在恢复后自己收到「继续」
+- [x] 决策日志：`<userData>/logs/network-resume.log` 记判定／探测／投递／放弃（`4a2e3c5`）
+- [ ] 真机确认：断网 → 失败文案 `terminated` 的会话在恢复后自己收到「继续」；日志里能看到 `failure … network=true` → `probe streak=2` → `continue attempt=1`
 
 ### 左侧的会话信息放在顶部，就像IDE中打开多个文件一样，一个对话一个tab，允许多行
 
@@ -148,10 +149,10 @@
 
 ### ask_user 已答卡：去掉重复的「用户的回答」条，备注留在板上
 
-| 项   | 内容 |
-| ---- | ---- |
-| 状态 | 已完成 |
-| 提交 | `ecb93c3` |
+| 项   | 内容                                                                                         |
+| ---- | -------------------------------------------------------------------------------------------- |
+| 状态 | 已完成                                                                                       |
+| 提交 | `ecb93c3`                                                                                    |
 | 验收 | 答完的卡上只留整张题面（选项 + 已选 ● + 备注那栏回显备注），下面不再有 `用户的回答：` 灰色条 |
 
 - [x] `extension-card.tsx`：有 `answeredForm` 时丢掉 `rows`（老条目没有题面才走 rows 兜底），删掉 `extension-card__answers` / `answers-label` 样式与两条 `extensionForm.answerLabel` 文案
