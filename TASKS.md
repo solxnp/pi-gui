@@ -147,7 +147,7 @@
 | 状态 | 已完成                                                                                                                                                                                                                                     |
 | 提交 | `2ab556a`（实现）、`a62aa6c`（e2e）                                                                                                                                                                                                        |
 | 验收 | 左侧不再占列：顶栏一行放「新会话/全部会话/定时任务/技能/扩展/设置」，第二行是会话 tab；点「全部会话」浮层里的一条 → 顶部开 tab；tab 最多 3 行、溢出横向滚动、当前 tab 滚入可见；⌘W 关当前 tab、⌘1–9 按 tab 顺序、重启后顺序与当前 tab 不变 |
-| 阻塞 | 旧左侧列用例未迁完：`sidebar-recency` 6 条、`sidebar-toggle`（含窄窗抽屉）、`sidebar-layout`（悬浮改宽已不存在）；`thread-switcher` 已转绿                                                                                                 |
+| 阻塞 | 旧布局用例仍红 13 条：`workbench-tabs` 7（3 条断言「右栏默认隐藏」、4 条把终端当右栏 tab）、`sidebar-recency` 5（Today 分组拿不到种子行）、`side-panel-picker` 1（⌘R 从「打开」变「切换」）                                                |
 
 ### P0-08 终端停靠窗口底部（横跨整宽、高度可拖）
 
