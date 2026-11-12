@@ -142,6 +142,17 @@ export function expectSessionTarget(value: unknown, name = "target"): WorkspaceS
   };
 }
 
+/** A list of conversation targets, e.g. the window's open thread tabs. */
+export function expectSessionTargets(
+  value: unknown,
+  name = "targets",
+): readonly WorkspaceSessionTarget[] {
+  if (!Array.isArray(value)) {
+    throw new TypeError(`${name} must be an array`);
+  }
+  return value.map((entry, index) => expectSessionTarget(entry, `${name}[${index}]`));
+}
+
 export function expectAppView(value: unknown, name = "view"): AppView {
   if (
     value !== "threads" &&

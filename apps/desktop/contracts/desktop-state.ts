@@ -519,6 +519,8 @@ export interface DesktopAppState {
   readonly lastInteractedAtBySession: Readonly<Record<string, string>>;
   readonly pinnedAtBySession: Readonly<Record<string, string>>;
   readonly pinnedSessionOrder: readonly string[];
+  /** Conversations open as tabs in this window, in tab-strip order. */
+  readonly openThreadTabs: readonly WorkspaceSessionTarget[];
   readonly workspaceOrder: readonly string[];
   readonly modelSettingsScopeMode: ModelSettingsScopeMode;
   readonly globalModelSettings: ModelSettingsSnapshot;
@@ -579,6 +581,7 @@ export function createEmptyDesktopAppState(): DesktopAppState {
     lastInteractedAtBySession: {},
     pinnedAtBySession: {},
     pinnedSessionOrder: [],
+    openThreadTabs: [],
     workspaceOrder: [],
     modelSettingsScopeMode: "app-global",
     globalModelSettings: {

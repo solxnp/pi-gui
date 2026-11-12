@@ -63,6 +63,7 @@ import {
   expectSendChildThreadFollowUpInput,
   expectSaveTaskWorkbenchTemplateInput,
   expectSessionTarget,
+  expectSessionTargets,
   expectRecord,
   expectSetChildSupervisionLoopInput,
   expectStartThreadInput,
@@ -87,6 +88,7 @@ type StateOwner = Pick<
   | "setActiveView"
   | "setSidebarCollapsed"
   | "setThreadGrouping"
+  | "setOpenThreadTabs"
   | "setWorkspaceCollapsed"
   | "setThemeMode"
   | "setThemePresetId"
@@ -449,6 +451,9 @@ export function registerDesktopIpc({
   );
   ipcMain.handle(desktopIpc.setThreadGrouping, (event, rawGrouping: unknown) =>
     run(event, () => owners.state.setThreadGrouping(expectThreadGrouping(rawGrouping))),
+  );
+  ipcMain.handle(desktopIpc.setOpenThreadTabs, (event, rawTabs: unknown) =>
+    run(event, () => owners.state.setOpenThreadTabs(expectSessionTargets(rawTabs, "tabs"))),
   );
   ipcMain.handle(
     desktopIpc.setWorkspaceCollapsed,

@@ -10,6 +10,7 @@ import type {
   ThemeMode,
   ThemePresetId,
   ThreadGrouping,
+  WorkspaceSessionTarget,
 } from "../../contracts/desktop-state";
 import { isThemeMode, isThemePresetId, isThreadGrouping } from "../../contracts/desktop-state";
 import {
@@ -35,7 +36,7 @@ import { decodeTaskWorkbenchTemplate, type TaskWorkbenchTemplate } from "../../c
 
 export interface PersistedUiState {
   readonly version?:
-    2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19;
+    2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20;
   readonly taskWorkbenchTemplatesBySession?: Record<string, TaskWorkbenchTemplate>;
   readonly selectedWorkspaceId?: string;
   readonly selectedSessionId?: string;
@@ -62,6 +63,8 @@ export interface PersistedUiState {
   readonly lastInteractedAtBySession?: Record<string, string>;
   readonly pinnedAtBySession?: Record<string, string>;
   readonly pinnedSessionOrder?: readonly string[];
+  /** Conversations open as tabs, in tab-strip order; added in ui-state v20. */
+  readonly openThreadTabs?: readonly WorkspaceSessionTarget[];
   readonly workspaceOrder?: readonly string[];
   readonly modelSettingsScopeMode?: ModelSettingsScopeMode;
   readonly appGlobalModelSettings?: ModelSettingsSnapshot;
@@ -133,6 +136,7 @@ export function decodePersistedUiState(parsed: unknown): LegacyPersistedUiState 
     lastInteractedAtBySession: toStringRecord(candidate.lastInteractedAtBySession),
     pinnedAtBySession: toStringRecord(candidate.pinnedAtBySession),
     pinnedSessionOrder: toStringArray(candidate.pinnedSessionOrder),
+    openThreadTabs: toSessionTargetArray(candidate.openThreadTabs),
     workspaceOrder: toStringArray(candidate.workspaceOrder),
     modelSettingsScopeMode:
       candidate.modelSettingsScopeMode === "per-repo" ||
@@ -165,7 +169,7 @@ export async function writePersistedUiState(
   const serialized = `${JSON.stringify(
     {
       ...payload,
-      version: 19,
+      version: 20,
     } satisfies PersistedUiState,
     null,
     2,
@@ -174,12 +178,24 @@ export async function writePersistedUiState(
   await writeFileAtomicQueued(uiStateFilePath, serialized, decodePersistedUiState, {
     preserveExistingAs: (validated) => {
       const existing = validated as LegacyPersistedUiState;
-      if (existing.version === 19) return undefined;
+      if (existing.version === 20) return undefined;
       return join(
         dirname(uiStateFilePath),
         `${basename(uiStateFilePath, ".json")}.pre-workbench-v${existing.version ?? "legacy"}.${randomUUID()}.json`,
       );
     },
+  });
+}
+
+/** Tabs survive a bad entry only as a whole: an invalid item drops the field, not the file. */
+function toSessionTargetArray(value: unknown): readonly WorkspaceSessionTarget[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value.flatMap((entry) => {
+    const target = objectRecord(entry);
+    if (!target) return [];
+    const workspaceId = stringValue(target.workspaceId);
+    const sessionId = stringValue(target.sessionId);
+    return workspaceId && sessionId ? [{ workspaceId, sessionId }] : [];
   });
 }
 
@@ -238,6 +254,7 @@ function validateUiState(value: unknown): Record<string, unknown> {
       "lastInteractedAtBySession",
       "pinnedAtBySession",
       "pinnedSessionOrder",
+      "openThreadTabs",
       "workspaceOrder",
       "modelSettingsScopeMode",
       "appGlobalModelSettings",
@@ -265,6 +282,19 @@ function validateUiState(value: unknown): Record<string, unknown> {
   const string = (v: unknown) => typeof v === "string";
   const boolean = (v: unknown) => typeof v === "boolean";
   const strings = (v: unknown) => Array.isArray(v) && v.every(string);
+  const sessionTargets = (v: unknown) =>
+    Array.isArray(v) &&
+    v.every((entry) => {
+      const target = objectRecord(entry);
+      return (
+        !!target &&
+        Object.keys(target).every((key) => key === "workspaceId" || key === "sessionId") &&
+        typeof target.workspaceId === "string" &&
+        typeof target.sessionId === "string" &&
+        target.workspaceId.length > 0 &&
+        target.sessionId.length > 0
+      );
+    });
   const stringRecord = (v: unknown) => {
     const r = objectRecord(v);
     return !!r && Object.values(r).every(string);
@@ -297,6 +327,7 @@ function validateUiState(value: unknown): Record<string, unknown> {
     "collapsedWorkspaceIds",
   ])
     optional(root, key, strings);
+  optional(root, "openThreadTabs", sessionTargets);
   for (const key of ["sidebarCollapsed", "allowMultiple", "enableTransparency"])
     optional(root, key, boolean);
   optional(root, "activeView", (v) => toAppView(v) !== undefined);
@@ -578,7 +609,7 @@ function toAppView(value: unknown): AppView | undefined {
 }
 
 function toPersistedVersion(value: unknown): NonNullable<PersistedUiState["version"]> | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value >= 2 && value <= 19
+  return typeof value === "number" && Number.isInteger(value) && value >= 2 && value <= 20
     ? (value as NonNullable<PersistedUiState["version"]>)
     : undefined;
 }

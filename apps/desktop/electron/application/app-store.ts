@@ -76,6 +76,7 @@ import {
   type ScheduledTaskRecord,
   type UpdateScheduledTaskInput,
 } from "../../contracts/desktop-state";
+import { reconcileOpenThreadTabs, threadTabKey } from "../../contracts/open-thread-tabs";
 import {
   applyTimelineEvent,
   appendAssistantDelta,
@@ -1416,6 +1417,32 @@ export class DesktopAppStore {
     return this.emit();
   }
 
+  /** `workspaceId:sessionId` for every conversation a tab may point at. */
+  private liveThreadTabKeys(): readonly string[] {
+    return this.state.workspaces.flatMap((workspace) =>
+      workspace.sessions
+        .filter((session) => !session.archivedAt)
+        .map((session) => threadTabKey({ workspaceId: workspace.id, sessionId: session.id })),
+    );
+  }
+
+  async setOpenThreadTabs(tabs: readonly WorkspaceSessionTarget[]): Promise<DesktopAppState> {
+    await this.initialize();
+    const live = new Set(this.liveThreadTabKeys());
+    const openThreadTabs = reconcileOpenThreadTabs(tabs, (key) => live.has(key));
+    if (sameThreadTabs(this.state.openThreadTabs, openThreadTabs)) {
+      return structuredClone(this.state);
+    }
+    this.state = {
+      ...this.state,
+      openThreadTabs,
+      lastError: undefined,
+      revision: this.state.revision + 1,
+    };
+    await this.persistUiState();
+    return this.emit();
+  }
+
   async setWorkspaceCollapsed(workspaceId: string, collapsed: boolean): Promise<DesktopAppState> {
     await this.initialize();
     const collapsedWorkspaceIds = new Set(this.state.collapsedWorkspaceIds);
@@ -2435,6 +2462,7 @@ export class DesktopAppStore {
       lastInteractedAtBySession: persisted.lastInteractedAtBySession ?? {},
       pinnedAtBySession: persisted.pinnedAtBySession ?? {},
       pinnedSessionOrder: persisted.pinnedSessionOrder ?? [],
+      openThreadTabs: [...(persisted.openThreadTabs ?? [])],
       workspaceOrder: persisted.workspaceOrder ?? [],
       themeMode: persisted.themeMode ?? this.state.themeMode,
       themePresetId: persisted.themePresetId ?? this.state.themePresetId,
@@ -2621,6 +2649,14 @@ export class DesktopAppStore {
         worktreeEntries,
       );
       const liveWorkspaceIds = new Set(workspaces.map((w) => w.id));
+      // An archived conversation keeps its transcript but leaves the tab strip.
+      const liveThreadTabKeys = new Set(
+        workspaces.flatMap((workspace) =>
+          workspace.sessions
+            .filter((session) => !session.archivedAt)
+            .map((session) => `${workspace.id}:${session.id}`),
+        ),
+      );
       for (const wsId of this.runtimeByWorkspace.keys()) {
         if (!liveWorkspaceIds.has(wsId)) {
           this.runtimeByWorkspace.delete(wsId);
@@ -2746,6 +2782,9 @@ export class DesktopAppStore {
         workspaceOrder: this.state.workspaceOrder,
         collapsedWorkspaceIds: this.state.collapsedWorkspaceIds.filter((id) =>
           liveWorkspaceIds.has(id),
+        ),
+        openThreadTabs: reconcileOpenThreadTabs(this.state.openThreadTabs, (key) =>
+          liveThreadTabKeys.has(key),
         ),
         modelSettingsScopeMode: this.state.modelSettingsScopeMode,
         globalModelSettings,
@@ -4295,6 +4334,7 @@ export class DesktopAppStore {
         this.sessionState.pinnedSessionOrder.length > 0
           ? this.sessionState.pinnedSessionOrder
           : undefined,
+      openThreadTabs: this.state.openThreadTabs.length > 0 ? this.state.openThreadTabs : undefined,
       workspaceOrder: this.state.workspaceOrder.length > 0 ? this.state.workspaceOrder : undefined,
       modelSettingsScopeMode: this.state.modelSettingsScopeMode,
       appGlobalModelSettings: hasStoredModelSettings(this.state.globalModelSettings)
@@ -5217,6 +5257,19 @@ function mergeEnabledModelPatterns(
     merged.push(pattern);
   }
   return merged;
+}
+
+function sameThreadTabs(
+  left: readonly WorkspaceSessionTarget[],
+  right: readonly WorkspaceSessionTarget[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every(
+      (tab, index) =>
+        tab.workspaceId === right[index]?.workspaceId && tab.sessionId === right[index]?.sessionId,
+    )
+  );
 }
 
 function reconcilePinnedSessionOrder(

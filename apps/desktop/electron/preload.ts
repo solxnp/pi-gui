@@ -258,6 +258,8 @@ contextBridge.exposeInMainWorld("piApp", {
       desktopIpc.reorderPinnedSessions,
       pinnedSessionOrder,
     ) as Promise<DesktopAppState>,
+  setOpenThreadTabs: (tabs: readonly WorkspaceSessionTarget[]) =>
+    ipcRenderer.invoke(desktopIpc.setOpenThreadTabs, tabs) as Promise<DesktopAppState>,
   openWorkspaceInFinder: (workspaceId: string) =>
     ipcRenderer.invoke(desktopIpc.openWorkspaceInFinder, workspaceId) as Promise<void>,
   listEditors: () => ipcRenderer.invoke(desktopIpc.listEditors) as Promise<DesktopEditorList>,

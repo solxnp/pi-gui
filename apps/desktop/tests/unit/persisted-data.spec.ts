@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import {
+  decodePersistedUiState,
   readPersistedUiState,
   writePersistedUiState,
 } from "../../electron/persistence/app-store-persistence";
@@ -39,6 +40,38 @@ for (const invalid of [
   });
 }
 
+test("reads and writes the window's open thread tabs", async () => {
+  const path = join(await mkdtemp(join(tmpdir(), "ui-state-tabs-")), "ui-state.json");
+  await writeFile(
+    path,
+    JSON.stringify({
+      version: 19,
+      openThreadTabs: [
+        { workspaceId: "ws", sessionId: "one" },
+        { workspaceId: "ws", sessionId: "two" },
+      ],
+    }),
+  );
+  const decoded = await readPersistedUiState(path);
+  expect(decoded.openThreadTabs).toEqual([
+    { workspaceId: "ws", sessionId: "one" },
+    { workspaceId: "ws", sessionId: "two" },
+  ]);
+  await writePersistedUiState(path, { openThreadTabs: decoded.openThreadTabs });
+  const written = JSON.parse(await readFile(path, "utf8")) as { version: number };
+  expect(written.version).toBe(20);
+});
+
+test("a malformed open thread tab rejects the file instead of dropping tabs silently", () => {
+  expect(() =>
+    decodePersistedUiState({
+      version: 19,
+      composerDraft: "kept",
+      openThreadTabs: [{ workspaceId: "ws", sessionId: "one" }, { sessionId: "no-workspace" }],
+    }),
+  ).toThrow(/openThreadTabs/);
+});
+
 test("reads v15 ui-state without lastInteractedAt and writes v18", async () => {
   const path = join(await mkdtemp(join(tmpdir(), "ui-state-recency-")), "ui-state.json");
   await writeFile(path, JSON.stringify({ version: 15, composerDraft: "kept" }));
@@ -53,7 +86,7 @@ test("reads v15 ui-state without lastInteractedAt and writes v18", async () => {
     version: number;
     lastInteractedAtBySession: Record<string, string>;
   };
-  expect(written.version).toBe(19);
+  expect(written.version).toBe(20);
   expect(written.lastInteractedAtBySession).toEqual({ "ws:sess": "2026-09-21T12:00:00.000Z" });
 });
 
@@ -71,7 +104,7 @@ test("reads v16 ui-state without threadGrouping and writes the saved choice as v
     version: number;
     threadGrouping: string;
   };
-  expect(written.version).toBe(19);
+  expect(written.version).toBe(20);
   expect(written.threadGrouping).toBe("workspace");
 });
 
@@ -97,7 +130,7 @@ test("reads ui-state without folded folders and writes the collapsed ids", async
     version: number;
     collapsedWorkspaceIds: readonly string[];
   };
-  expect(written.version).toBe(19);
+  expect(written.version).toBe(20);
   expect(written.collapsedWorkspaceIds).toEqual(["alpha"]);
   expect((await readPersistedUiState(path)).collapsedWorkspaceIds).toEqual(["alpha"]);
 });

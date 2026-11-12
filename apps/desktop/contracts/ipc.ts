@@ -237,6 +237,7 @@ export const desktopIpc = {
   removeWorkspace: "pi-gui:remove-workspace",
   reorderWorkspaces: "pi-gui:reorder-workspaces",
   reorderPinnedSessions: "pi-gui:reorder-pinned-sessions",
+  setOpenThreadTabs: "pi-gui:set-open-thread-tabs",
   openWorkspaceInFinder: "pi-gui:open-workspace-in-finder",
   listEditors: "pi-gui:list-editors",
   setPreferredEditor: "pi-gui:set-preferred-editor",
@@ -937,6 +938,7 @@ export interface PiDesktopApi {
   setActiveView(view: AppView): Promise<DesktopAppState>;
   setSidebarCollapsed(collapsed: boolean): Promise<DesktopAppState>;
   setThreadGrouping(grouping: ThreadGrouping): Promise<DesktopAppState>;
+  setOpenThreadTabs(tabs: readonly WorkspaceSessionTarget[]): Promise<DesktopAppState>;
   setWorkspaceCollapsed(workspaceId: string, collapsed: boolean): Promise<DesktopAppState>;
   refreshRuntime(workspaceId?: string): Promise<DesktopAppState>;
   setModelSettingsScopeMode(mode: ModelSettingsScopeMode): Promise<DesktopAppState>;
