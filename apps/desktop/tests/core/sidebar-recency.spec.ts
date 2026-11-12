@@ -288,6 +288,8 @@ test("groups seeded Last 7 Days, Last 30 Days, and Older threads", async () => {
   try {
     const window = await secondRun.firstWindow();
     await waitForWorkspaceByPath(window, workspaceAPath);
+    // The list lives in 「全部会话」; every seeded case below asserts inside it.
+    await openThreadOverview(window);
     await expect(recencySection(window, "Today").locator(".session-row__title")).toHaveText([
       "Today thread",
     ]);
