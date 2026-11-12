@@ -32,22 +32,30 @@ test("settings follows the platform modifier", () => {
   ).toBeUndefined();
 });
 
-test("Cmd+N and Shift+Cmd+O open a new thread, Shift+Cmd+N does not", () => {
+test("Cmd+N opens a new thread; Shift+Cmd+O opens project files instead", () => {
   const press = (key: string, shift: boolean) =>
     getDesktopCommandFromShortcut({ modifier: true, shift, key, code: `Key${key.toUpperCase()}` });
   expect(press("n", false)).toBe(desktopCommands.openNewThread);
-  expect(press("O", true)).toBe(desktopCommands.openNewThread);
+  expect(press("O", true)).toBe(desktopCommands.toggleFiles);
   // Shift+Cmd+N is New Window, which main handles before commands.
   expect(press("N", true)).toBeUndefined();
   expect(press("o", false)).toBeUndefined();
 });
 
-test("Cmd+T opens a new side panel tab once per press; Shift+Cmd+T and Alt chords do not", () => {
+test("Shift+Cmd+T toggles the task manager once per press", () => {
+  const press = (input: { key: string; code?: string; shift?: boolean; alt?: boolean }) =>
+    getDesktopCommandFromShortcut({ modifier: true, shift: false, ...input });
+  expect(press({ key: "T", code: "KeyT", shift: true })).toBe(desktopCommands.toggleTasks);
+  expect(press({ key: "t", code: "KeyT", alt: true })).toBeUndefined();
+  expect(isSinglePressCommand(desktopCommands.toggleTasks)).toBe(true);
+  expect(isSinglePressCommand(desktopCommands.toggleFiles)).toBe(true);
+});
+
+test("Cmd+T opens a new side panel tab once per press; Alt chords do not", () => {
   const press = (input: { key: string; code?: string; shift?: boolean; alt?: boolean }) =>
     getDesktopCommandFromShortcut({ modifier: true, shift: false, ...input });
   expect(press({ key: "t", code: "KeyT" })).toBe(desktopCommands.newSidePanelTab);
   expect(press({ key: "Unidentified", code: "KeyT" })).toBe(desktopCommands.newSidePanelTab);
-  expect(press({ key: "T", code: "KeyT", shift: true })).toBeUndefined();
   expect(press({ key: "t", code: "KeyT", alt: true })).toBeUndefined();
   expect(
     getDesktopCommandFromShortcut({ modifier: false, shift: false, key: "t", code: "KeyT" }),

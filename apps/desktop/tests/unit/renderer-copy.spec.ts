@@ -39,6 +39,7 @@ const sourceRoot = resolve(__dirname, "../../src");
  */
 const translatedSurfaces = [
   "features/settings",
+  "features/workbench",
   "app/secondary-surface.tsx",
   "app/secondary-surfaces.tsx",
 ];

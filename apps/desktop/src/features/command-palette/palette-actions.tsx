@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { formatShortcut } from "../../../contracts/ipc";
 import type { BuiltinToolKind } from "../../../contracts/workbench";
+import type { Translate } from "../../i18n";
 import type { ThreadAction } from "../threads/thread-actions";
 import { BUILTIN_TOOL_ENTRIES } from "../workbench/builtin-tools";
 import type { SettingsSection } from "../settings/settings-view";
@@ -69,6 +70,8 @@ export interface PaletteActionContext {
   }[];
   readonly findInThread: () => void;
   readonly openPaletteMode: (mode: PaletteMode) => void;
+  /** Translates the tool names this list shares with the side panel. */
+  readonly t: Translate;
 }
 
 export function buildPaletteActions(context: PaletteActionContext): readonly PaletteAction[] {
@@ -116,12 +119,14 @@ export function buildPaletteActions(context: PaletteActionContext): readonly Pal
         run: () => context.openPaletteMode("models"),
       });
     }
-    for (const { kind, label, Icon, shortcutKey } of BUILTIN_TOOL_ENTRIES) {
+    for (const { kind, labelKey, Icon, shortcut } of BUILTIN_TOOL_ENTRIES) {
       actions.push({
         id: `toggle-${kind}`,
-        title: `Toggle ${label.toLowerCase()}`,
+        title: context.t("workbench.toggleTool", { name: context.t(labelKey) }),
         icon: <Icon />,
-        hint: shortcutKey ? formatShortcut(platform, shortcutKey) : undefined,
+        hint: shortcut
+          ? formatShortcut(platform, shortcut.key, { shift: shortcut.shift })
+          : undefined,
         run: () => context.toggleTool(kind),
       });
     }

@@ -370,6 +370,8 @@ export const desktopCommands = {
   toggleTerminal: "toggle-terminal",
   toggleSidePanel: "toggle-side-panel",
   toggleReview: "toggle-review",
+  toggleFiles: "toggle-files",
+  toggleTasks: "toggle-tasks",
   newSidePanelTab: "new-side-panel-tab",
   closeFocusedSurface: "close-focused-surface",
   toggleSidebar: "toggle-sidebar",
@@ -756,6 +758,7 @@ export function getDesktopCommandFromShortcut(
   const isShiftO = input.shift && (lowerKey === "o" || input.code === "KeyO");
   const isShiftR = input.shift && isR;
   const isShiftA = input.shift && (lowerKey === "a" || input.code === "KeyA");
+  const isShiftT = input.shift && (lowerKey === "t" || input.code === "KeyT");
 
   if (input.alt) {
     if (!input.shift && isB) {
@@ -792,7 +795,17 @@ export function getDesktopCommandFromShortcut(
     return desktopCommands.newSidePanelTab;
   }
 
-  if ((!input.shift && isN) || isShiftO) {
+  // The side panel's own tools: Files and Tasks open with Shift, so the plain
+  // chords stay with the tab action and the open-folder menu item.
+  if (isShiftO) {
+    return desktopCommands.toggleFiles;
+  }
+
+  if (isShiftT) {
+    return desktopCommands.toggleTasks;
+  }
+
+  if (!input.shift && isN) {
     return desktopCommands.openNewThread;
   }
 
@@ -837,6 +850,8 @@ export function isSinglePressCommand(command: PiDesktopCommand | undefined): boo
   return (
     isPaletteCommand(command) ||
     command === desktopCommands.toggleReview ||
+    command === desktopCommands.toggleFiles ||
+    command === desktopCommands.toggleTasks ||
     command === desktopCommands.newSidePanelTab ||
     command === desktopCommands.renameThread ||
     command === desktopCommands.archiveThread

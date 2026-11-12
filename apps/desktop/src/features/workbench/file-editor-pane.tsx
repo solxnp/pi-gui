@@ -4,6 +4,7 @@ import type { PiDesktopApi, WorkspaceFilePreview } from "../../../contracts/ipc"
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CloseIcon, CopyIcon, WorktreeIcon } from "../../ui/icons";
+import { useTranslation, type Translate } from "../../i18n";
 import { HighlightedLine } from "../../ui/highlighted-line";
 import { MAX_HIGHLIGHTED_LINES, extensionToLanguage } from "../../ui/syntax-highlight";
 import {
@@ -23,7 +24,7 @@ interface FileEditorPaneProps {
   readonly onClose: (path: string) => void;
 }
 
-const FILE_MARKDOWN_COMPONENTS = {
+const FILE_MARKDOWN_COMPONENTS = (t: Translate) => ({
   code: ({ className, children }: { className?: string; children?: ReactNode }) => {
     const code = String(children).replace(/\n$/, "");
     return <code className={className}>{code}</code>;
@@ -39,9 +40,11 @@ const FILE_MARKDOWN_COMPONENTS = {
     </div>
   ),
   img: ({ alt }: { alt?: string }) => (
-    <span className="file-editor__blocked-image">{alt ? `[image: ${alt}]` : "[image]"}</span>
+    <span className="file-editor__blocked-image">
+      {alt ? t("fileEditor.imageNamed", { alt }) : t("fileEditor.image")}
+    </span>
   ),
-};
+});
 
 const FILE_MARKDOWN_PLUGINS = [remarkGfm];
 
@@ -53,6 +56,7 @@ export function FileEditorPane({
   onActivate,
   onClose,
 }: FileEditorPaneProps) {
+  const { t } = useTranslation();
   const activePath = tabs.active;
   const lineMark = tabs.line;
   const [preview, setPreview] = useState<WorkspaceFilePreview | null>(null);
@@ -107,7 +111,7 @@ export function FileEditorPane({
   const showSource = !markdown || sourceMode;
 
   return (
-    <section className="file-editor" data-testid="file-editor" aria-label="Open file">
+    <section className="file-editor" data-testid="file-editor" aria-label={t("fileEditor.label")}>
       <div className="file-editor__tab-strip">
         {worktreeLabel ? (
           <span className="file-editor__worktree-chip" data-testid="file-editor-worktree-chip">
@@ -133,7 +137,7 @@ export function FileEditorPane({
                   {fileNameFromPath(path)}
                 </button>
                 <button
-                  aria-label={`Close ${fileNameFromPath(path)}`}
+                  aria-label={t("fileEditor.closeTab", { name: fileNameFromPath(path) })}
                   className="file-editor__tab-close"
                   type="button"
                   onClick={() => onClose(path)}
@@ -157,11 +161,11 @@ export function FileEditorPane({
                 type="button"
                 onClick={() => setSourceMode((current) => !current)}
               >
-                View source
+                {t("fileEditor.viewSource")}
               </button>
             ) : null}
             <button
-              aria-label="Copy file"
+              aria-label={t("fileEditor.copy")}
               className="icon-button"
               disabled={!preview || preview.binary || Boolean(viewerError)}
               type="button"
@@ -185,14 +189,14 @@ export function FileEditorPane({
                 });
               }}
             >
-              Open
+              {t("fileEditor.reveal")}
             </button>
           </div>
         ) : null}
       </div>
       {activePath ? (
         <nav
-          aria-label="File path"
+          aria-label={t("fileEditor.path")}
           className="file-editor__breadcrumb"
           data-testid="file-editor-breadcrumb"
         >
@@ -208,6 +212,7 @@ export function FileEditorPane({
       ) : null}
       <div className="file-editor__body">
         {renderEditorBody({
+          t,
           activePath,
           lineMark: showSource ? lineMark : null,
           markdown,
@@ -222,6 +227,7 @@ export function FileEditorPane({
 }
 
 function renderEditorBody({
+  t,
   activePath,
   lineMark,
   markdown,
@@ -230,6 +236,7 @@ function renderEditorBody({
   viewerError,
   viewerLoading,
 }: {
+  readonly t: Translate;
   readonly activePath: string | null;
   readonly lineMark: FileLineMark | null;
   readonly markdown: boolean;
@@ -239,19 +246,19 @@ function renderEditorBody({
   readonly viewerLoading: boolean;
 }): ReactNode {
   if (!activePath) {
-    return <div className="diff-panel__empty">Select a file from the explorer.</div>;
+    return <div className="diff-panel__empty">{t("fileEditor.selectFile")}</div>;
   }
   if (viewerLoading) {
-    return <div className="diff-panel__empty">Loading file...</div>;
+    return <div className="diff-panel__empty">{t("fileEditor.loading")}</div>;
   }
   if (viewerError) {
     return <div className="diff-panel__empty">{viewerError}</div>;
   }
   if (!preview) {
-    return <div className="diff-panel__empty">No preview available.</div>;
+    return <div className="diff-panel__empty">{t("fileEditor.noPreview")}</div>;
   }
   if (preview.binary) {
-    return <div className="diff-panel__empty">Binary or directory preview is not available.</div>;
+    return <div className="diff-panel__empty">{t("fileEditor.binary")}</div>;
   }
   return (
     <>
@@ -262,7 +269,7 @@ function renderEditorBody({
       )}
       {preview.truncated ? (
         <div className="file-editor__truncated" role="status">
-          Preview truncated
+          {t("fileEditor.truncated")}
         </div>
       ) : null}
     </>
@@ -270,9 +277,11 @@ function renderEditorBody({
 }
 
 function FileMarkdown({ text }: { readonly text: string }) {
+  const { t } = useTranslation();
+  const components = useMemo(() => FILE_MARKDOWN_COMPONENTS(t), [t]);
   return (
     <div className="file-editor__markdown message__content" data-testid="file-workbench-preview">
-      <ReactMarkdown remarkPlugins={FILE_MARKDOWN_PLUGINS} components={FILE_MARKDOWN_COMPONENTS}>
+      <ReactMarkdown remarkPlugins={FILE_MARKDOWN_PLUGINS} components={components}>
         {text}
       </ReactMarkdown>
     </div>

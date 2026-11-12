@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { WorkspaceRecord, WorktreeRecord } from "../../../contracts/desktop-state";
 import type { PiDesktopApi } from "../../../contracts/ipc";
+import { useTranslation, type MessageKey } from "../../i18n";
 import { FileEditorPane } from "./file-editor-pane";
 import { FileExplorer } from "./file-explorer";
 import { activateFile, closeFile, openFile, type FileWorkbenchTabs } from "./file-workbench-state";
@@ -29,9 +30,10 @@ export function FileWorkbench({
   tabs,
   onTabsChange,
 }: FileWorkbenchProps) {
+  const { t } = useTranslation();
   const [files, setFiles] = useState<readonly string[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [listError, setListError] = useState<string | null>(null);
+  const [listError, setListError] = useState<MessageKey | null>(null);
   const requestIdRef = useRef(0);
 
   const refresh = useCallback(
@@ -52,7 +54,7 @@ export function FileWorkbench({
             return;
           }
           console.error("[renderer] listWorkspaceFiles failed", error);
-          setListError("Couldn't load files");
+          setListError("fileExplorer.loadFailed");
         })
         .finally(() => {
           if (requestIdRef.current !== requestId) {
@@ -96,7 +98,7 @@ export function FileWorkbench({
         onClose={(path) => onTabsChange((current) => closeFile(current, path))}
       />
       <FileExplorer
-        error={listError}
+        error={listError ? t(listError) : null}
         files={files}
         loading={loading}
         selectedPath={tabs.active}

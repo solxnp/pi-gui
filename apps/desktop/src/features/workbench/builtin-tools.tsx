@@ -1,35 +1,49 @@
 import type { ComponentType, ReactNode } from "react";
 import { BUILTIN_TOOL_KINDS, type BuiltinToolKind } from "../../../contracts/workbench";
+import type { MessageKey } from "../../i18n";
 import { CheckIcon, DiffIcon, FileIcon, TerminalIcon } from "../../ui/icons";
 
+/** The platform-modifier chord that toggles a tool, formatted by `formatShortcut`. */
+export interface BuiltinToolShortcut {
+  readonly key: string;
+  readonly shift?: boolean;
+}
+
 interface BuiltinToolDefinition {
-  readonly label: string;
+  /** Name shown on the tab, in the chooser and in the command palette. */
+  readonly labelKey: MessageKey;
   /** Shown in the tool chooser. */
-  readonly description: string;
+  readonly descriptionKey: MessageKey;
   readonly Icon: ComponentType;
   /** Key that toggles the tool with the platform modifier, when it has one. */
-  readonly shortcutKey?: string;
+  readonly shortcut?: BuiltinToolShortcut;
 }
 
 /** Presentation for every built-in tool; a missing kind fails the build. */
 export const BUILTIN_TOOLS = {
   tasks: {
-    label: "Tasks",
-    description: "Keep this project's task list beside the conversation",
+    labelKey: "workbench.tool.tasks",
+    descriptionKey: "workbench.tool.tasks.description",
     Icon: CheckIcon,
+    shortcut: { key: "T", shift: true },
   },
-  files: { label: "Files", description: "Browse files in this checkout", Icon: FileIcon },
+  files: {
+    labelKey: "workbench.tool.files",
+    descriptionKey: "workbench.tool.files.description",
+    Icon: FileIcon,
+    shortcut: { key: "O", shift: true },
+  },
   changes: {
-    label: "Review",
-    description: "Review uncommitted, branch or turn changes",
+    labelKey: "workbench.tool.review",
+    descriptionKey: "workbench.tool.review.description",
     Icon: DiffIcon,
-    shortcutKey: "R",
+    shortcut: { key: "R" },
   },
   terminal: {
-    label: "Terminal",
-    description: "Run commands in this task's checkout",
+    labelKey: "workbench.tool.terminal",
+    descriptionKey: "workbench.tool.terminal.description",
     Icon: TerminalIcon,
-    shortcutKey: "J",
+    shortcut: { key: "J" },
   },
 } as const satisfies Record<BuiltinToolKind, BuiltinToolDefinition>;
 

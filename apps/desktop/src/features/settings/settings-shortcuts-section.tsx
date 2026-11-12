@@ -56,6 +56,8 @@ const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
       { titleKey: "settings.shortcuts.toggleTerminal", modifiers: ["Mod"], key: "J" },
       { titleKey: "settings.shortcuts.newTerminalTab", modifiers: ["Mod"], key: "T" },
       { titleKey: "settings.shortcuts.toggleReview", modifiers: ["Mod"], key: "R" },
+      { titleKey: "settings.shortcuts.toggleFiles", modifiers: ["Mod", "Shift"], key: "O" },
+      { titleKey: "settings.shortcuts.toggleTasks", modifiers: ["Mod", "Shift"], key: "T" },
       { titleKey: "settings.shortcuts.switchSidePanelTab", modifiers: ["TabMod"], key: "1–9" },
       { titleKey: "settings.shortcuts.closeWorkbenchTab", modifiers: ["Mod"], key: "W" },
     ],

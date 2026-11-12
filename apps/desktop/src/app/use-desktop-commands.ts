@@ -33,6 +33,7 @@ import {
   type PiDesktopCommand,
 } from "../../contracts/ipc";
 import { toolRefId, type BuiltinToolKind } from "../../contracts/workbench";
+import { useTranslation } from "../i18n";
 import {
   buildPaletteActions,
   type PaletteAction,
@@ -107,6 +108,7 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
     sidePanelVisible,
     selectedToolId,
   } = input;
+  const { t } = useTranslation();
   const [paletteMode, setPaletteMode] = useState<PaletteMode | null>(null);
   const sidebarToggleStateRef = useRef({
     api,
@@ -231,6 +233,8 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
       // that same-tick pair while preserving a deliberate second press.
       if (reviewToggleGate.current(performance.now())) toggleWorkbenchTool("changes");
     },
+    [desktopCommands.toggleFiles]: () => toggleWorkbenchTool("files"),
+    [desktopCommands.toggleTasks]: () => toggleWorkbenchTool("tasks"),
     [desktopCommands.newSidePanelTab]: newSidePanelTab,
     [desktopCommands.closeFocusedSurface]: closeFocusedSurface,
     [desktopCommands.toggleSidebar]: togglePrimarySidebar,
@@ -446,6 +450,7 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
     paletteMode && threadSidebarModel && api
       ? buildPaletteActions({
           platform: api.platform,
+          t,
           hasWorkspace: input.hasWorkspace,
           thread: selectedThread,
           canToggleSidebar: canTogglePrimarySidebar(snapshot?.activeView),
