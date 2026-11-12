@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { expect, test, type Locator, type Page } from "@playwright/test";
@@ -633,6 +633,7 @@ async function seedRecencyTimestamps(
     sessions: Array<{
       sessionRef: { workspaceId: string; sessionId: string };
       updatedAt: string;
+      sessionFilePath?: string;
     }>;
   };
   catalogs.sessions = catalogs.sessions.map((session) => {
@@ -641,6 +642,15 @@ async function seedRecencyTimestamps(
     return updatedAt ? { ...session, updatedAt } : session;
   });
   await writeFile(catalogsPath, `${JSON.stringify(catalogs, null, 2)}\n`, "utf8");
+  // The app rebuilds its catalog from the session files' mtimes on startup, so the
+  // timestamps have to be on disk as well; patching catalogs.json alone is lost.
+  for (const session of catalogs.sessions) {
+    const key = `${session.sessionRef.workspaceId}:${session.sessionRef.sessionId}`;
+    const stamp = stamps[key];
+    if (!stamp || !session.sessionFilePath) continue;
+    const when = new Date(stamp);
+    await utimes(session.sessionFilePath, when, when).catch(() => undefined);
+  }
 }
 
 async function captureSidebarProof(window: Page, filename: string): Promise<void> {
