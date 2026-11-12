@@ -55,11 +55,14 @@ test("one icon and keyboard shortcuts toggle the selected workspace tool", async
     await window.keyboard.press(desktopShortcut("Alt+B"));
     await expect(window.locator(".diff-panel")).toBeVisible();
 
+    // ⌘B opens the conversation list, which is an overlay now rather than a column.
+    const overview = window.getByTestId("thread-overview");
+    await expect(overview).toHaveCount(0);
     await window.keyboard.press(desktopShortcut("B"));
-    await expect(window.locator(".sidebar")).toHaveCount(0);
+    await expect(overview).toBeVisible();
     await expect(window.locator(".diff-panel")).toBeVisible();
     await window.keyboard.press(desktopShortcut("B"));
-    await expect(window.locator(".sidebar")).toHaveCount(1);
+    await expect(overview).toHaveCount(0);
 
     await window.keyboard.press(desktopShortcut("J"));
     const terminal = window.getByTestId("integrated-terminal");

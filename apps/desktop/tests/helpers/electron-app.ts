@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { _electron as electron, type ElectronApplication } from "playwright";
 import type { SessionDriverEvent, SessionRef } from "@pi-gui/session-driver";
 import type { PiDesktopApi } from "../../contracts/ipc";
@@ -1839,8 +1839,21 @@ export function reviewScopeButton(window: Page) {
   return window.getByRole("button", { name: "Review scope", exact: true });
 }
 
+/** Opens 「全部会话」 if it is not already showing and returns the panel. */
+export async function openThreadOverview(window: Page): Promise<Locator> {
+  const overview = window.getByTestId("thread-overview");
+  if (!(await overview.isVisible().catch(() => false))) {
+    await window.getByTestId("topbar-threads").click();
+  }
+  await expect(overview).toBeVisible({ timeout: 15_000 });
+  return overview;
+}
+
+/** Opens a conversation from 「全部会话」, which also closes the panel. */
 export async function clickSession(window: Page, sessionTitle: string): Promise<void> {
-  await window.locator(".session-row__select", { hasText: sessionTitle }).click();
+  const overview = await openThreadOverview(window);
+  await overview.locator(".session-row__select", { hasText: sessionTitle }).click();
+  await expect(window.getByTestId("thread-overview")).toHaveCount(0);
 }
 
 export async function openNewThread(window: Page): Promise<void> {
@@ -1848,9 +1861,7 @@ export async function openNewThread(window: Page): Promise<void> {
   if (await composer.isVisible().catch(() => false)) {
     return;
   }
-  const button = window
-    .locator(".sidebar")
-    .getByRole("button", { name: "New thread", exact: true });
+  const button = window.getByTestId("topbar-new-thread");
   await expect(button).toBeVisible({ timeout: 15_000 });
   await expect(button).toBeEnabled({ timeout: 15_000 });
   await button.click();
@@ -2027,6 +2038,7 @@ export async function chooseThreadGrouping(
   grouping: "time" | "workspace",
 ): Promise<void> {
   const label = grouping === "time" ? "Time" : "Workspace";
+  await openThreadOverview(window);
   await window.getByRole("button", { name: "Customize Sidebar" }).click();
   await window.getByRole("menuitem", { name: "Grouping" }).click();
   await window.getByRole("menuitemradio", { name: label, exact: true }).click();
@@ -2038,6 +2050,7 @@ export async function expectThreadGrouping(
   grouping: "time" | "workspace",
 ): Promise<void> {
   const label = grouping === "time" ? "Time" : "Workspace";
+  await openThreadOverview(window);
   await window.getByRole("button", { name: "Customize Sidebar" }).click();
   await window.getByRole("menuitem", { name: "Grouping" }).click();
   await expect(window.getByRole("menuitemradio", { name: label, exact: true })).toHaveAttribute(
@@ -2096,9 +2109,12 @@ export async function createSessionViaIpc(
     { workspaceTarget: workspaceIdOrPath, targetTitle: title },
   );
 
-  await expect(window.locator(".session-row__select", { hasText: title })).toBeVisible({
+  const overview = await openThreadOverview(window);
+  await expect(overview.locator(".session-row__select", { hasText: title })).toBeVisible({
     timeout: 15_000,
   });
+  await window.keyboard.press("Escape");
+  await expect(window.getByTestId("thread-overview")).toHaveCount(0);
 }
 
 export const HYDRATE_TEST_SENTINEL = "hydrate-test-sentinel-token=/private/secret-path";
