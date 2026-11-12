@@ -157,10 +157,9 @@ export function TasksBoardPanel({
     askAbout(group.title ? `${group.title} — ${text}` : text);
 
   return (
-    <section className="tasks-board" data-testid="tasks-board">
+    <section className="tasks-board" data-testid="tasks-board" aria-label={t("tasksBoard.title")}>
       <header className="tasks-board__header">
         <div className="tasks-board__heading">
-          <h2>{t("tasksBoard.title")}</h2>
           {state.kind === "ready" ? (
             <span className="tasks-board__path" title={state.path}>
               {state.path}

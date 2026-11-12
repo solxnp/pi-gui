@@ -30,17 +30,13 @@
   gap: 2px;
 }
 
-.tasks-board__heading h2 {
-  margin: 0;
-  color: var(--text-strong);
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-}
-
+/* The panel's own tab already names it, so the header only shows which file it
+ * reads (TASKS.md) and the refresh control. */
 .tasks-board__path {
   overflow: hidden;
-  color: var(--muted-soft);
+  color: var(--muted-strong);
   font-size: var(--text-xs);
+  font-weight: var(--font-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
