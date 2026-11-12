@@ -91,7 +91,7 @@ import { applySnapshotIfNewer } from "../../app/desktop-app-state";
  */
 const PendingApprovalContext = createContext<ReadonlySet<string>>(new Set<string>());
 
-interface SidebarProps {
+export interface SidebarProps {
   readonly activeView: AppView;
   readonly selectedWorkspace: WorkspaceRecord | undefined;
   readonly selectedSession: SessionRecord | undefined;
@@ -123,6 +123,11 @@ interface SidebarProps {
   /** Extension UI per session; a session with a pending dialog is marked in the list. */
   readonly pendingApprovalsBySession: DesktopAppState["sessionExtensionUiBySession"] | undefined;
   readonly threadShortcutOrderRef: MutableRefObject<readonly ThreadListEntry[] | null>;
+  /**
+   * "docked" keeps the resize handle and the nav block; "overview" renders the
+   * same list inside the 「全部会话」overlay, where the topbar owns navigation.
+   */
+  readonly mode?: "docked" | "overview";
 }
 
 const SIDEBAR_WIDTH_RANGE = { min: 200, max: 520 } as const;
@@ -177,6 +182,7 @@ export function Sidebar(props: SidebarProps) {
     onUnarchiveSession,
     pendingApprovalsBySession,
     threadShortcutOrderRef,
+    mode = "docked",
   } = props;
 
   const { t } = useTranslation();
@@ -215,17 +221,19 @@ export function Sidebar(props: SidebarProps) {
     collapsedThreadKeys: collapsedThreads,
   });
   threadShortcutOrderRef.current = shortcutOrder;
-  const shortcutByKey = commandHeld
-    ? new Map(
-        shortcutOrder.slice(0, THREAD_SHORTCUT_SLOT_COUNT).map((thread, index) => {
-          const slot = index + 1;
-          return [
-            sessionThreadKey(thread),
-            { slot, label: getDesktopShortcutLabel(api.platform, String(slot)) },
-          ] as const;
-        }),
-      )
-    : undefined;
+  // ⌘1-9 belong to the open tabs now; numbering recency rows here would lie.
+  const shortcutByKey =
+    commandHeld && mode === "docked"
+      ? new Map(
+          shortcutOrder.slice(0, THREAD_SHORTCUT_SLOT_COUNT).map((thread, index) => {
+            const slot = index + 1;
+            return [
+              sessionThreadKey(thread),
+              { slot, label: getDesktopShortcutLabel(api.platform, String(slot)) },
+            ] as const;
+          }),
+        )
+      : undefined;
 
   useEffect(() => {
     return () => {
@@ -468,77 +476,85 @@ export function Sidebar(props: SidebarProps) {
 
   return (
     <PendingApprovalContext.Provider value={pendingApprovalKeys}>
-      <aside className="sidebar" id="primary-sidebar" style={sidebarWidthStyle}>
-        <PaneResizeHandle
-          className="sidebar__resize-handle"
-          label={t("sidebar.width")}
-          controls="primary-sidebar"
-          edge="right"
-          bounds={sidebarWidthBounds}
-          onResize={setSidebarWidth}
-          onReset={() => setSidebarWidth(undefined)}
-        />
-        <div className="sidebar__top">
-          <button
-            className="sidebar__new"
-            type="button"
-            disabled={!selectedWorkspace}
-            onClick={() => onNewThread()}
-          >
-            <PlusIcon />
-            <span>{t("sidebar.newThread")}</span>
-          </button>
+      <aside
+        className={`sidebar${mode === "overview" ? " sidebar--overview" : ""}`}
+        id="primary-sidebar"
+        style={sidebarWidthStyle}
+      >
+        {mode === "docked" ? (
+          <PaneResizeHandle
+            className="sidebar__resize-handle"
+            label={t("sidebar.width")}
+            controls="primary-sidebar"
+            edge="right"
+            bounds={sidebarWidthBounds}
+            onResize={setSidebarWidth}
+            onReset={() => setSidebarWidth(undefined)}
+          />
+        ) : null}
+        {mode === "docked" ? (
+          <div className="sidebar__top">
+            <button
+              className="sidebar__new"
+              type="button"
+              disabled={!selectedWorkspace}
+              onClick={() => onNewThread()}
+            >
+              <PlusIcon />
+              <span>{t("sidebar.newThread")}</span>
+            </button>
 
-          <div className="sidebar__nav">
-            <button
-              className={`sidebar__nav-item ${activeView === "threads" ? "sidebar__nav-item--active" : ""}`}
-              type="button"
-              onClick={() => onSetActiveView("threads")}
-            >
-              <FolderIcon />
-              <span>{t("sidebar.navThreads")}</span>
-            </button>
-            <button
-              className={`sidebar__nav-item ${activeView === "scheduled" ? "sidebar__nav-item--active" : ""}`}
-              type="button"
-              data-testid="sidebar-scheduled"
-              onClick={() => onSetActiveView("scheduled")}
-            >
-              <ClockIcon />
-              <span>{t("sidebar.navScheduled")}</span>
-            </button>
-            <button
-              className="sidebar__nav-item"
-              type="button"
-              onClick={() =>
-                onOpenSkills(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
-              }
-            >
-              <SkillIcon />
-              <span>{t("sidebar.navSkills")}</span>
-            </button>
-            <button
-              className="sidebar__nav-item"
-              type="button"
-              onClick={() =>
-                onOpenExtensions(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
-              }
-            >
-              <ExtensionIcon />
-              <span>{t("sidebar.navExtensions")}</span>
-            </button>
-            <button
-              className="sidebar__nav-item"
-              type="button"
-              onClick={() =>
-                onOpenSettings(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
-              }
-            >
-              <SettingsIcon />
-              <span>{t("sidebar.navSettings")}</span>
-            </button>
+            <div className="sidebar__nav">
+              <button
+                className={`sidebar__nav-item ${activeView === "threads" ? "sidebar__nav-item--active" : ""}`}
+                type="button"
+                onClick={() => onSetActiveView("threads")}
+              >
+                <FolderIcon />
+                <span>{t("sidebar.navThreads")}</span>
+              </button>
+              <button
+                className={`sidebar__nav-item ${activeView === "scheduled" ? "sidebar__nav-item--active" : ""}`}
+                type="button"
+                data-testid="sidebar-scheduled"
+                onClick={() => onSetActiveView("scheduled")}
+              >
+                <ClockIcon />
+                <span>{t("sidebar.navScheduled")}</span>
+              </button>
+              <button
+                className="sidebar__nav-item"
+                type="button"
+                onClick={() =>
+                  onOpenSkills(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
+                }
+              >
+                <SkillIcon />
+                <span>{t("sidebar.navSkills")}</span>
+              </button>
+              <button
+                className="sidebar__nav-item"
+                type="button"
+                onClick={() =>
+                  onOpenExtensions(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
+                }
+              >
+                <ExtensionIcon />
+                <span>{t("sidebar.navExtensions")}</span>
+              </button>
+              <button
+                className="sidebar__nav-item"
+                type="button"
+                onClick={() =>
+                  onOpenSettings(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
+                }
+              >
+                <SettingsIcon />
+                <span>{t("sidebar.navSettings")}</span>
+              </button>
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="sidebar__section">
           <div className="section__head">

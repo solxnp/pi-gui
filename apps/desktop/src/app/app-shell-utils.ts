@@ -28,3 +28,17 @@ export function isEventInsideTerminal(event: globalThis.KeyboardEvent): boolean 
 export function canTogglePrimarySidebar(view: AppView | undefined): boolean {
   return view === "threads" || view === "new-thread" || view === "scheduled";
 }
+
+/** The main pane's classes: the side panel and startup diagnostics widen or narrow it. */
+export function mainPaneClassName(input: {
+  readonly sidePanelVisible: boolean;
+  readonly hasStartupDiagnostics: boolean;
+}): string {
+  return [
+    "main",
+    input.sidePanelVisible ? "main--with-side-panel" : "",
+    input.hasStartupDiagnostics ? "main--with-startup-diagnostics" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}

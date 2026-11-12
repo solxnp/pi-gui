@@ -315,3 +315,83 @@
     display: none;
   }
 }
+
+/* =============================================================================
+ * Topbar navigation — the app's only nav row since the left column went away.
+ * ========================================================================== */
+
+.topbar__nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  -webkit-app-region: no-drag;
+}
+
+.topbar__new,
+.topbar__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 520;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.topbar__new {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.topbar__new:hover:not(:disabled),
+.topbar__nav-item:hover {
+  background: var(--surface-overlay-hover);
+  color: var(--text);
+}
+
+.topbar__new:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.topbar__nav-item--active {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.topbar__new svg,
+.topbar__nav-item svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.topbar__new span[aria-hidden="true"] {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* Narrow windows keep the icons and drop the labels before anything wraps. */
+@media (max-width: 1180px) {
+  .topbar__nav-label {
+    display: none;
+  }
+
+  .topbar__new,
+  .topbar__nav-item {
+    padding: 0 7px;
+  }
+
+  .topbar__workspace {
+    max-width: 90px;
+  }
+}

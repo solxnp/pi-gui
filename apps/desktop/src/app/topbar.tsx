@@ -1,7 +1,14 @@
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import type { AppView, WorkspaceRecord, WorktreeRecord } from "../../contracts/desktop-state";
 import { getSidePanelToggleShortcutLabel, type PiDesktopApi } from "../../contracts/ipc";
-import { SidePanelIcon } from "../ui/icons";
+import {
+  ClockIcon,
+  ExtensionIcon,
+  FolderIcon,
+  SettingsIcon,
+  SidePanelIcon,
+  SkillIcon,
+} from "../ui/icons";
 import { useTranslation } from "../i18n";
 
 interface TopbarProps {
@@ -17,8 +24,21 @@ interface TopbarProps {
   /** Rendered in the actions cluster, next to the side-panel toggle. */
   readonly editorControl?: ReactNode;
   readonly onTogglePanel: () => void;
+  /** Whether the 「全部会话」overlay is showing, for the pressed state. */
+  readonly threadsOpen: boolean;
+  readonly onNewThread: () => void;
+  readonly onOpenThreads: () => void;
+  readonly onOpenScheduled: () => void;
+  readonly onOpenSkills: () => void;
+  readonly onOpenExtensions: () => void;
+  readonly onOpenSettings: () => void;
 }
 
+/**
+ * The app's only navigation row: new thread, the conversation overview, and the
+ * four secondary views that used to sit in the left column. Labels hide first
+ * when the window narrows; the icons stay.
+ */
 export function Topbar({
   activeView,
   sessionTitle,
@@ -31,6 +51,13 @@ export function Topbar({
   panelVisible,
   editorControl,
   onTogglePanel,
+  threadsOpen,
+  onNewThread,
+  onOpenThreads,
+  onOpenScheduled,
+  onOpenSkills,
+  onOpenExtensions,
+  onOpenSettings,
 }: TopbarProps) {
   const { t } = useTranslation();
   const handleDoubleClick = (event: ReactMouseEvent<HTMLElement>) => {
@@ -44,9 +71,68 @@ export function Topbar({
     selectedWorkspace?.kind === "worktree"
       ? (selectedWorktree?.name ?? selectedWorkspace.branchName ?? selectedWorkspace.name)
       : selectedWorkspace?.branchName;
+  const navItem = (
+    label: string,
+    active: boolean,
+    Icon: () => ReactNode,
+    onClick: () => void,
+    testId: string,
+  ) => (
+    <button
+      aria-pressed={active}
+      className={`topbar__nav-item${active ? " topbar__nav-item--active" : ""}`}
+      data-testid={testId}
+      onClick={onClick}
+      title={label}
+      type="button"
+    >
+      <Icon />
+      <span className="topbar__nav-label">{label}</span>
+    </button>
+  );
 
   return (
     <header className="topbar" data-testid="topbar" onDoubleClick={handleDoubleClick}>
+      <nav aria-label={t("topbar.nav")} className="topbar__nav">
+        <button
+          className="topbar__new"
+          data-testid="topbar-new-thread"
+          disabled={!selectedWorkspace}
+          onClick={onNewThread}
+          title={t("sidebar.newThread")}
+          type="button"
+        >
+          <span aria-hidden="true">+</span>
+          <span className="topbar__nav-label">{t("sidebar.newThread")}</span>
+        </button>
+        <button
+          aria-expanded={threadsOpen}
+          className={`topbar__nav-item${threadsOpen ? " topbar__nav-item--active" : ""}`}
+          data-testid="topbar-threads"
+          onClick={onOpenThreads}
+          title={t("topbar.allThreads")}
+          type="button"
+        >
+          <FolderIcon />
+          <span className="topbar__nav-label">{t("topbar.allThreads")}</span>
+        </button>
+        {navItem(
+          t("sidebar.navScheduled"),
+          activeView === "scheduled",
+          ClockIcon,
+          onOpenScheduled,
+          "sidebar-scheduled",
+        )}
+        {navItem(t("sidebar.navSkills"), false, SkillIcon, onOpenSkills, "topbar-skills")}
+        {navItem(
+          t("sidebar.navExtensions"),
+          false,
+          ExtensionIcon,
+          onOpenExtensions,
+          "topbar-extensions",
+        )}
+        {navItem(t("sidebar.navSettings"), false, SettingsIcon, onOpenSettings, "topbar-settings")}
+      </nav>
       <div className="topbar__title">
         <span
           className="topbar__workspace"

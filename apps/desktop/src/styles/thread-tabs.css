@@ -12,6 +12,7 @@
   overflow-y: hidden;
   scrollbar-width: thin;
   max-width: 100%;
+  grid-auto-columns: minmax(120px, 168px);
 }
 
 .thread-tabs::-webkit-scrollbar {
@@ -29,11 +30,11 @@
   border: 1px solid transparent;
   border-radius: 8px;
   background: var(--surface-muted);
-  color: var(--text-muted);
+  color: var(--muted);
 }
 
 .thread-tabs__tab:hover {
-  background: var(--surface-hover);
+  background: var(--surface-overlay-hover);
   color: var(--text);
 }
 
@@ -72,23 +73,23 @@
   height: 6px;
   flex: none;
   border-radius: 50%;
-  background: var(--text-muted);
+  background: var(--muted);
 }
 
 .thread-tabs__dot--running {
-  background: var(--accent-green, #2f9e44);
+  background: var(--success);
 }
 
 .thread-tabs__dot--failed {
-  background: var(--accent-red, #e03131);
+  background: var(--error);
 }
 
 .thread-tabs__dot--unseen {
-  background: var(--accent, #4c6ef5);
+  background: var(--accent);
 }
 
 .thread-tabs__dot--input {
-  background: var(--accent-amber, #f08c00);
+  background: var(--warning);
 }
 
 .thread-tabs__close {
@@ -107,4 +108,46 @@
 .thread-tabs__close svg {
   width: 12px;
   height: 12px;
+}
+
+/* =============================================================================
+ * 「全部会话」 — the conversation list, shown over the transcript on demand.
+ * ========================================================================== */
+
+.thread-overview {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  padding: 0 0 0 16px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.thread-overview__panel {
+  display: flex;
+  flex-direction: column;
+  width: min(320px, 90vw);
+  max-height: min(70vh, 720px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.thread-overview__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-strong);
+  font-size: 12.5px;
+  font-weight: 560;
+}
+
+.thread-overview__body {
+  min-height: 0;
+  overflow-y: auto;
 }

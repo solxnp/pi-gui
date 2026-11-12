@@ -604,17 +604,18 @@ function createWindow(): BrowserWindow {
     });
     const webContentsId = window.webContents.id;
     const terminalFocused = terminalFocusedWebContentsIds.has(webContentsId);
-    const closeFocusedSurface =
-      isCloseFocusedSurfaceShortcut({
-        meta: input.meta,
-        control: input.control,
-        alt: input.alt,
-        shift: input.shift,
-        key: input.key,
-        code: input.code,
-        platform: process.platform,
-      }) &&
-      (terminalFocused || sidePanelFocusedWebContentsIds.has(webContentsId));
+    // The renderer owns ⌘W: it closes the shown conversation's tab, or the
+    // window when there is none. Intercepting here keeps the File > Close menu
+    // item from closing the window first.
+    const closeFocusedSurface = isCloseFocusedSurfaceShortcut({
+      meta: input.meta,
+      control: input.control,
+      alt: input.alt,
+      shift: input.shift,
+      key: input.key,
+      code: input.code,
+      platform: process.platform,
+    });
     if (terminalFocused) {
       // Control chords belong to the shell, so only macOS Command chords open
       // a palette or act on the thread from the terminal. New Tab stays with the

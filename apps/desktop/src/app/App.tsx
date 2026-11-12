@@ -14,7 +14,6 @@ import {
 import { updateSnapshot, useDesktopAppState } from "./desktop-app-state";
 import { DesktopStartupSurface, toStartupSurfaceState } from "./desktop-recovery";
 import { buildFileWorkbenchContexts } from "./file-workbench-contexts";
-import { canTogglePrimarySidebar } from "./app-shell-utils";
 import { useDesktopCommands } from "./use-desktop-commands";
 import { useRunningLabel } from "../features/conversation/hooks/use-running-label";
 import { useTimelineViewport } from "../features/conversation/hooks/use-timeline-viewport";
@@ -42,7 +41,6 @@ import { renderBuiltinToolPanel } from "../features/workbench/builtin-tools";
 import { useWorkbenchWidth } from "../features/workbench/use-workbench-width";
 import type { WorkspaceFileLine } from "../features/conversation/workspace-file-line";
 import { buildModelOptions } from "../features/conversation/composer-commands";
-import { getDesktopShortcutLabel } from "../../contracts/ipc";
 import { CommandPaletteSurface } from "../features/command-palette/command-palette-surface";
 import { deriveModelOnboardingState } from "../features/settings/model-onboarding";
 import type { SettingsSection } from "../features/settings/settings-view";
@@ -62,10 +60,15 @@ import {
   touchThreadSwitcherOrder,
 } from "../features/threads/thread-switcher-order";
 import { useThreadSwitcher } from "../features/threads/hooks/use-thread-switcher";
-import { SidebarToggleButton } from "../features/threads/sidebar-toggle-button";
+import { ThreadListPanel } from "../features/threads/thread-list-panel";
+import { ThreadTabs } from "../features/threads/thread-tabs";
+import { useThreadTabs } from "../features/threads/use-open-thread-tabs";
 import { OpenInEditorButton } from "../features/threads/open-in-editor-button";
 import { useOpenInEditor } from "../features/threads/hooks/use-open-in-editor";
+import { mainPaneClassName } from "./app-shell-utils";
+import { useSessionModelActions } from "./use-session-model-actions";
 import { Topbar } from "./topbar";
+import { useTopbarNavigation } from "./use-topbar-navigation";
 import { TerminalPanel } from "../features/workbench/terminal-panel";
 import { ConversationTimelineWithRewind } from "../features/conversation/conversation-timeline-with-rewind";
 import { ConversationTimeline } from "../features/conversation/conversation-timeline";
@@ -74,6 +77,7 @@ import {
   ScheduledTaskEditor,
   type ScheduledEditorState,
 } from "../features/scheduled-tasks/scheduled-task-editor";
+import { useScheduledTaskActions } from "../features/scheduled-tasks/use-scheduled-task-actions";
 import { ScheduledTaskChip } from "../features/scheduled-tasks/scheduled-task-chip";
 import { useSlashMenu } from "../features/conversation/hooks/use-slash-menu";
 import { useMentionMenu } from "../features/conversation/hooks/use-mention-menu";
@@ -98,7 +102,6 @@ import { useTreeForkModals } from "../features/conversation/hooks/use-tree-fork-
 import { useComposerDraftSync } from "../features/conversation/hooks/use-composer-draft-sync";
 import { useSessionComposer } from "../features/conversation/hooks/use-session-composer";
 import { useTranscriptAnnotations } from "../features/conversation/annotations/use-transcript-annotations";
-import { SidebarDrawerBackdrop, useNarrowSidebarDrawer } from "../features/threads/sidebar-drawer";
 import { useTranslation } from "../i18n";
 
 export default function App() {
@@ -678,8 +681,7 @@ export default function App() {
     );
   }, [rootWorkspaceOptions]);
 
-  const primarySidebarToggleVisible = canTogglePrimarySidebar(snapshot?.activeView);
-  const sidebarToggleShortcutLabel = api ? getDesktopShortcutLabel(api.platform, "B") : "";
+  const [threadOverviewOpen, setThreadOverviewOpen] = useState(false);
 
   const setActiveView = (view: AppView) => {
     if (!api) return;
@@ -722,6 +724,22 @@ export default function App() {
         })
       : undefined;
   const selectedRootWorkspaceId = selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id;
+  const closeThreadOverview = () => setThreadOverviewOpen(false);
+  const topbarNav = useTopbarNavigation({
+    selectedWorkspace,
+    threadOverviewOpen,
+    setThreadOverviewOpen,
+    closeThreadOverview,
+    openNewThreadSurface: newThread.openSurface,
+    setActiveView,
+    openSkills: () => openSkills(),
+    openExtensions: () => openExtensions(),
+    openSettings: () => openSettings(),
+  });
+
+  const closeThreadTabRef = useRef<(target: { workspaceId: string; sessionId: string }) => boolean>(
+    () => false,
+  );
   const commands = useDesktopCommands({
     api,
     snapshot,
@@ -735,6 +753,8 @@ export default function App() {
     threadShortcutOrderRef,
     selectThread: (target) => selectThreadRef.current(target),
     threadSearch,
+    toggleThreadList: () => setThreadOverviewOpen((current) => !current),
+    closeThreadTab: (target) => closeThreadTabRef.current(target),
     workbench,
     sidePanelAvailable,
     sidePanelVisible,
@@ -746,11 +766,6 @@ export default function App() {
     openExtensions,
     setActiveView,
   });
-  const sidebarDrawer = useNarrowSidebarDrawer(
-    primarySidebarToggleVisible && snapshot?.sidebarCollapsed === false,
-    commands.collapsePrimarySidebar,
-    `${snapshot?.activeView}:${selectedSessionKey}`,
-  );
 
   useEffect(() => {
     const removeWorkspacePickedListener = window.piApp?.onWorkspacePicked?.((workspaceId) => {
@@ -773,6 +788,32 @@ export default function App() {
     if (!restoreTopmostDialogFocus()) composerRef.current?.focus();
   }, [selectedSessionKey, snapshot?.activeView]);
 
+  // Hooks must run before the early return below, so these take the nullable
+  // window state and the select-thread indirection the shell fills in later.
+  const threadTabs = useThreadTabs({
+    api,
+    snapshot,
+    setSnapshot,
+    threadSidebarModel,
+    sessionKey: selectedSessionKey,
+    selectThread: (target) => selectThreadRef.current(target),
+    setActiveView,
+  });
+  closeThreadTabRef.current = threadTabs.closeTabIfOpen;
+  const scheduledTaskActions = useScheduledTaskActions({
+    api,
+    setSnapshot,
+    scheduledEditor,
+    setScheduledEditor,
+    selectThread: (target) => selectThreadRef.current(target),
+  });
+  const sessionModelActions = useSessionModelActions({
+    api,
+    setSnapshot,
+    workspaceId: selectedWorkspace?.id,
+    sessionId: selectedSession?.id,
+  });
+
   if (!api || desktop.view.kind !== "ready" || !snapshot) {
     return (
       <DesktopStartupSurface
@@ -792,41 +833,11 @@ export default function App() {
   const filesWorkspace = snapshot.workspaces.find(
     (workspace) => workspace.id === workbench.view.files.workspaceId,
   );
-  const filesWorktree = filesWorkspace
-    ? linkedWorktreeByWorkspaceId.get(filesWorkspace.id)
-    : undefined;
-  const mainClassName = [
-    "main",
-    sidePanelVisible ? "main--with-side-panel" : "",
-    snapshot.startupDiagnostics.length > 0 ? "main--with-startup-diagnostics" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-  const handleSetSessionModel = (provider: string, modelId: string) => {
-    if (!selectedWorkspace || !selectedSession) {
-      return;
-    }
-    void updateSnapshot(setSnapshot, () =>
-      api.setSessionModel(selectedWorkspace.id, selectedSession.id, provider, modelId),
-    ).catch((error: unknown) => {
-      console.error("[renderer] updateSnapshot failed", error);
-    });
-  };
-
-  const handleSetSessionThinking = (level: string) => {
-    if (!selectedWorkspace || !selectedSession) {
-      return;
-    }
-    void updateSnapshot(setSnapshot, () =>
-      api.setSessionThinkingLevel(
-        selectedWorkspace.id,
-        selectedSession.id,
-        level as NonNullable<RuntimeSnapshot["settings"]["defaultThinkingLevel"]>,
-      ),
-    ).catch((error: unknown) => {
-      console.error("[renderer] updateSnapshot failed", error);
-    });
-  };
+  const filesWorktree = filesWorkspace && linkedWorktreeByWorkspaceId.get(filesWorkspace.id);
+  const mainClassName = mainPaneClassName({
+    sidePanelVisible,
+    hasStartupDiagnostics: snapshot.startupDiagnostics.length > 0,
+  });
 
   const handleTrySkill = (command: string) => {
     void updateSnapshot(setSnapshot, () => api.setActiveView("threads")).catch((error: unknown) => {
@@ -878,35 +889,6 @@ export default function App() {
     });
   };
 
-  const handleCreateScheduledTaskWithPi = () => {
-    void updateSnapshot(setSnapshot, () => api.beginScheduledTaskInterview()).catch(
-      (error: unknown) => {
-        console.error("[renderer] beginScheduledTaskInterview failed", error);
-      },
-    );
-  };
-
-  const handleSubmitScheduledTask = (input: CreateScheduledTaskInput) => {
-    const action =
-      scheduledEditor?.mode === "edit"
-        ? () => api.updateScheduledTask(scheduledEditor.taskId, input)
-        : () => api.createScheduledTask(input);
-    void updateSnapshot(setSnapshot, action)
-      .then((state) => {
-        if (!state.lastError) {
-          setScheduledEditor(null);
-        }
-      })
-      .catch((error: unknown) => {
-        console.error("[renderer] save scheduled task failed", error);
-      });
-  };
-
-  const handleOpenScheduledChat = (target: { workspaceId: string; sessionId: string }) => {
-    setScheduledEditor(null);
-    handleSelectSession(target);
-  };
-
   const commandPalette =
     commands.paletteMode && threadSidebarModel ? (
       <CommandPaletteSurface
@@ -950,7 +932,7 @@ export default function App() {
               console.error("[renderer] open file from palette failed", error);
             });
         }}
-        onSelectModel={handleSetSessionModel}
+        onSelectModel={sessionModelActions.setModel}
       />
     ) : null;
 
@@ -980,53 +962,52 @@ export default function App() {
     );
   }
 
-  const shellClassName = `shell${snapshot.sidebarCollapsed ? " shell--sidebar-collapsed" : ""}`;
+  const threadList = (
+    <ThreadListPanel
+      pendingApprovalsBySession={snapshot.sessionExtensionUiBySession}
+      activeView={snapshot.activeView}
+      selectedWorkspace={selectedWorkspace}
+      selectedSession={selectedSession}
+      visibleWorkspaces={visibleWorkspaces}
+      threadSidebarModel={threadSidebarModel ?? buildThreadSidebarModel(snapshot)}
+      threadShortcutOrderRef={threadShortcutOrderRef}
+      threadGrouping={snapshot.threadGrouping}
+      collapsedWorkspaceIds={snapshot.collapsedWorkspaceIds}
+      linkedWorktreeByWorkspaceId={linkedWorktreeByWorkspaceId}
+      wsMenu={wsMenu}
+      threadMenu={threadMenu}
+      api={api}
+      setSnapshot={setSnapshot}
+      updateSnapshot={updateSnapshot}
+      onNewThread={(workspaceId?: string) => {
+        setThreadOverviewOpen(false);
+        newThread.openSurface(
+          workspaceId ?? selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id,
+        );
+      }}
+      onSetActiveView={setActiveView}
+      onOpenSkills={openSkills}
+      onOpenExtensions={openExtensions}
+      onOpenSettings={openSettings}
+      onArchiveSession={threadMenu.archive}
+      onSelectSession={(target) => {
+        setThreadOverviewOpen(false);
+        threadTabs.openTab(target);
+      }}
+      onSetSessionPinned={threadMenu.setPinned}
+      onUnarchiveSession={threadMenu.restore}
+      open={threadOverviewOpen}
+      onClose={closeThreadOverview}
+    />
+  );
 
   return (
-    <div className={shellClassName}>
-      {primarySidebarToggleVisible ? (
-        <SidebarToggleButton
-          collapsed={snapshot.sidebarCollapsed}
-          shortcutLabel={sidebarToggleShortcutLabel}
-          onToggle={commands.togglePrimarySidebar}
-          ref={sidebarDrawer.toggleRef}
-        />
-      ) : null}
-      {!snapshot.sidebarCollapsed ? (
-        <Sidebar
-          pendingApprovalsBySession={snapshot?.sessionExtensionUiBySession}
-          activeView={snapshot.activeView}
-          selectedWorkspace={selectedWorkspace}
-          selectedSession={selectedSession}
-          visibleWorkspaces={visibleWorkspaces}
-          threadSidebarModel={threadSidebarModel ?? buildThreadSidebarModel(snapshot)}
-          threadShortcutOrderRef={threadShortcutOrderRef}
-          threadGrouping={snapshot.threadGrouping}
-          collapsedWorkspaceIds={snapshot.collapsedWorkspaceIds}
-          linkedWorktreeByWorkspaceId={linkedWorktreeByWorkspaceId}
-          wsMenu={wsMenu}
-          threadMenu={threadMenu}
-          api={api}
-          setSnapshot={setSnapshot}
-          updateSnapshot={updateSnapshot}
-          onNewThread={sidebarDrawer.thenDismiss((workspaceId?: string) =>
-            newThread.openSurface(
-              workspaceId ?? selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id,
-            ),
-          )}
-          onSetActiveView={setActiveView}
-          onOpenSkills={openSkills}
-          onOpenExtensions={openExtensions}
-          onOpenSettings={openSettings}
-          onArchiveSession={threadMenu.archive}
-          onSelectSession={sidebarDrawer.thenDismiss(handleSelectSession)}
-          onSetSessionPinned={threadMenu.setPinned}
-          onUnarchiveSession={threadMenu.restore}
-        />
-      ) : null}
+    <div className="shell shell--single-column">
+      {threadList}
 
       <main className={mainClassName} style={workbenchWidth.style}>
         <Topbar
+          {...topbarNav}
           activeView={snapshot.activeView}
           rootWorkspace={
             snapshot.activeView === "new-thread"
@@ -1058,6 +1039,20 @@ export default function App() {
           ) : null}
         </Topbar>
 
+        {snapshot.activeView === "threads" || snapshot.activeView === "new-thread" ? (
+          <ThreadTabs
+            activeKey={
+              snapshot.activeView === "threads" && selectedSessionKey
+                ? selectedSessionKey
+                : undefined
+            }
+            onClose={threadTabs.closeTab}
+            onSelect={threadTabs.openTab}
+            platform={api.platform}
+            tabs={threadTabs.tabs}
+          />
+        ) : null}
+
         {snapshot.startupDiagnostics.length > 0 ? (
           <div className="startup-diagnostics" role="status" data-testid="startup-diagnostics">
             <strong>{t("app.workspacesRefreshFailed")}</strong>
@@ -1083,7 +1078,7 @@ export default function App() {
               api={api}
               setSnapshot={setSnapshot}
               updateSnapshot={updateSnapshot}
-              onCreateWithPi={handleCreateScheduledTaskWithPi}
+              onCreateWithPi={scheduledTaskActions.createWithPi}
               onOpenEditor={setScheduledEditor}
             />
           ) : snapshot.activeView === "new-thread" ? (
@@ -1243,8 +1238,8 @@ export default function App() {
                 onSelectSlashOption={(option) => {
                   slashMenu.applySlashOptionSelection(option);
                 }}
-                onSetModel={handleSetSessionModel}
-                onSetThinking={handleSetSessionThinking}
+                onSetModel={sessionModelActions.setModel}
+                onSetThinking={sessionModelActions.setThinking}
                 modelOnboarding={selectedSessionModelOnboarding}
                 onOpenModelSettings={(section) =>
                   openSettings(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id, section)
@@ -1418,7 +1413,6 @@ export default function App() {
           </Workbench>
         ) : null}
       </main>
-      <SidebarDrawerBackdrop drawer={sidebarDrawer} />
       {scheduledEditor ? (
         <ScheduledTaskEditor
           editor={scheduledEditor}
@@ -1432,8 +1426,8 @@ export default function App() {
           busy={false}
           error={snapshot.lastError}
           onClose={() => setScheduledEditor(null)}
-          onSubmit={handleSubmitScheduledTask}
-          onOpenChat={handleOpenScheduledChat}
+          onSubmit={scheduledTaskActions.submit}
+          onOpenChat={scheduledTaskActions.openChat}
         />
       ) : null}
       {threadSwitcher.state?.overlayVisible ? (

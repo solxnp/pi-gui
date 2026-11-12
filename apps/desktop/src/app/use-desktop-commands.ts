@@ -32,6 +32,7 @@ import {
   type PiDesktopApi,
   type PiDesktopCommand,
 } from "../../contracts/ipc";
+import { threadTabAt } from "../../contracts/open-thread-tabs";
 import { toolRefId, type BuiltinToolKind } from "../../contracts/workbench";
 import { useTranslation } from "../i18n";
 import {
@@ -77,6 +78,10 @@ interface DesktopCommandsInput {
     readonly open: () => void;
     readonly close: () => void;
   };
+  /** Opens or closes 「全部会话」; ⌘B and the palette entry both land here. */
+  readonly toggleThreadList: () => void;
+  /** Closes one conversation's tab; false when the window has no such tab. */
+  readonly closeThreadTab: (target: WorkspaceSessionTarget) => boolean;
   readonly workbench: ReturnType<typeof useWorkbench>;
   readonly sidePanelAvailable: boolean;
   readonly sidePanelVisible: boolean;
@@ -161,58 +166,34 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
     const tool = sidePanelAvailable ? workbench.view.tools[index] : undefined;
     if (tool) workbench.activateTool(toolRefId(tool));
   };
-  const closeFocusedSurface = () => {
-    if (!closableSurfaceFromTarget(document.activeElement)) return;
-    if (workbench.view.selection.kind === "tool")
-      workbench.closeTool(workbench.view.selection.toolId);
-    else workbench.setVisibility("hidden");
-    window.requestAnimationFrame(() => {
-      document
-        .querySelector<HTMLElement>(
-          '#task-workbench [role="tab"][aria-selected="true"], #task-workbench [data-testid="workbench-add-tab"]',
-        )
-        ?.focus();
-    });
-  };
-  const setPrimarySidebarCollapsed = useCallback((collapsed: boolean) => {
-    const sidebarState = sidebarToggleStateRef.current;
-    const sidebarApi = sidebarState.api;
-    if (!sidebarApi || !canTogglePrimarySidebar(sidebarState.activeView)) {
-      return false;
-    }
-    void updateSnapshot(setSnapshot, () => sidebarApi.setSidebarCollapsed(collapsed)).catch(
-      (error: unknown) => {
-        console.error("[renderer] updateSnapshot failed", error);
-      },
+  /**
+   * ⌘W closes the conversation's tab when the window shows one, otherwise it
+   * closes the window itself — the macOS meaning it keeps on Settings and Sketches.
+   * Side panel tools close from their own × so one chord never means two things.
+   */
+  const closeThreadTabOrWindow = () => {
+    const shown = snapshot?.openThreadTabs.find(
+      (tab) => tab.sessionId === snapshot?.selectedSessionId,
     );
+    if (shown && input.closeThreadTab(shown)) return true;
+    if (snapshot?.activeView === "threads" && shown) return true;
+    api?.closeWindow();
     return true;
-  }, []);
-  const togglePrimarySidebar = useCallback(
-    () => setPrimarySidebarCollapsed(!sidebarToggleStateRef.current.sidebarCollapsed),
-    [setPrimarySidebarCollapsed],
-  );
-  const collapsePrimarySidebar = useCallback(
-    () => setPrimarySidebarCollapsed(true),
-    [setPrimarySidebarCollapsed],
-  );
+  };
   const togglePalette = (mode: "commands" | "files", source: ChordSource) => {
     if (threadSidebarModel && paletteGates.current[mode](source, performance.now())) {
       setPaletteMode((current) => (current === mode ? null : mode));
     }
   };
-  const selectRecentThread = (index: number) => {
-    const threads =
-      threadShortcutOrderRef.current ??
-      (threadSidebarModel
-        ? visibleThreadShortcutOrder({
-            grouping: snapshot?.threadGrouping ?? "time",
-            model: threadSidebarModel,
-            collapsedWorkspaceIds: snapshot?.collapsedWorkspaceIds ?? [],
-          })
-        : []);
-    const thread = threads[index];
-    if (thread)
-      input.selectThread({ workspaceId: thread.workspaceId, sessionId: thread.session.id });
+  /**
+   * ⌘1-9 select the open tabs by position; a slot past the strip does nothing, so
+   * an open tab list of two never switches to a third conversation by number.
+   */
+  const selectThreadTab = (index: number) => {
+    const target = threadTabAt(snapshot?.openThreadTabs ?? [], index + 1);
+    if (!target) return false;
+    input.selectThread(target);
+    return true;
   };
 
   /** Runs one of the open thread's menu actions; false when it has none by that id. */
@@ -236,21 +217,21 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
     [desktopCommands.toggleFiles]: () => toggleWorkbenchTool("files"),
     [desktopCommands.toggleTasks]: () => toggleWorkbenchTool("tasks"),
     [desktopCommands.newSidePanelTab]: newSidePanelTab,
-    [desktopCommands.closeFocusedSurface]: closeFocusedSurface,
-    [desktopCommands.toggleSidebar]: togglePrimarySidebar,
+    [desktopCommands.closeFocusedSurface]: closeThreadTabOrWindow,
+    [desktopCommands.toggleSidebar]: () => input.toggleThreadList(),
     [desktopCommands.openCommandPalette]: (source) => togglePalette("commands", source),
     [desktopCommands.openFilePalette]: (source) => togglePalette("files", source),
     [desktopCommands.renameThread]: () => runThreadAction("rename-thread"),
     [desktopCommands.archiveThread]: () => runThreadAction("archive-thread"),
-    [desktopCommands.selectRecentThread1]: () => selectRecentThread(0),
-    [desktopCommands.selectRecentThread2]: () => selectRecentThread(1),
-    [desktopCommands.selectRecentThread3]: () => selectRecentThread(2),
-    [desktopCommands.selectRecentThread4]: () => selectRecentThread(3),
-    [desktopCommands.selectRecentThread5]: () => selectRecentThread(4),
-    [desktopCommands.selectRecentThread6]: () => selectRecentThread(5),
-    [desktopCommands.selectRecentThread7]: () => selectRecentThread(6),
-    [desktopCommands.selectRecentThread8]: () => selectRecentThread(7),
-    [desktopCommands.selectRecentThread9]: () => selectRecentThread(8),
+    [desktopCommands.selectRecentThread1]: () => selectThreadTab(0),
+    [desktopCommands.selectRecentThread2]: () => selectThreadTab(1),
+    [desktopCommands.selectRecentThread3]: () => selectThreadTab(2),
+    [desktopCommands.selectRecentThread4]: () => selectThreadTab(3),
+    [desktopCommands.selectRecentThread5]: () => selectThreadTab(4),
+    [desktopCommands.selectRecentThread6]: () => selectThreadTab(5),
+    [desktopCommands.selectRecentThread7]: () => selectThreadTab(6),
+    [desktopCommands.selectRecentThread8]: () => selectThreadTab(7),
+    [desktopCommands.selectRecentThread9]: () => selectThreadTab(8),
     [desktopCommands.selectSidePanelTab1]: () => selectSidePanelTab(0),
     [desktopCommands.selectSidePanelTab2]: () => selectSidePanelTab(1),
     [desktopCommands.selectSidePanelTab3]: () => selectSidePanelTab(2),
@@ -284,9 +265,9 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
       code: event.code,
       platform: api?.platform ?? "linux",
     });
-    if (closeSurfaceShortcut && closableSurfaceFromTarget(event.target)) {
+    if (closeSurfaceShortcut) {
       event.preventDefault();
-      closeFocusedSurface();
+      closeThreadTabOrWindow();
       return;
     }
     // Main forwards these chords without consuming them, so this repeats its
@@ -453,7 +434,7 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
           t,
           hasWorkspace: input.hasWorkspace,
           thread: selectedThread,
-          canToggleSidebar: canTogglePrimarySidebar(snapshot?.activeView),
+          canToggleSidebar: true,
           newThread: openNewThread,
           openFolder: () => {
             void updateSnapshot(setSnapshot, () => api.pickWorkspace()).catch((error: unknown) => {
@@ -464,7 +445,7 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
           openSkills: () => input.openSkills(selectedRootWorkspaceId),
           openExtensions: () => input.openExtensions(selectedRootWorkspaceId),
           openScheduledTasks: () => input.setActiveView("scheduled"),
-          toggleSidebar: togglePrimarySidebar,
+          toggleSidebar: input.toggleThreadList,
           toggleTool: toggleWorkbenchTool,
           toggleSidePanel,
           extensionViews: input.extensionViews
@@ -491,7 +472,5 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
     setPaletteMode,
     paletteActions,
     toggleSidePanel,
-    togglePrimarySidebar,
-    collapsePrimarySidebar,
   };
 }
