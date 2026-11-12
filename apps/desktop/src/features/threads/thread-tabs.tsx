@@ -9,8 +9,8 @@ const THREAD_TAB_ROW_HEIGHT = 32;
 const THREAD_TAB_GAP = 4;
 /** Bottom padding under the last row, so the strip height matches its box. */
 const THREAD_TAB_PADDING = 6;
-/** One tab's width including the 4px gap; the strip wraps once a row is full. */
-const THREAD_TAB_SLOT_WIDTH = 168;
+/** One tab plus the gap between tabs; a row holds as many as the strip's width allows. */
+const THREAD_TAB_SLOT_WIDTH = 172;
 
 export interface ThreadTabEntry {
   readonly target: WorkspaceSessionTarget;
@@ -64,12 +64,16 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
   const stripRef = useRef<HTMLDivElement | null>(null);
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
   const [availableWidth, setAvailableWidth] = useState(0);
+  // Without a measurement the strip is unknown, so keep the tabs on one row
+  // rather than wrapping into a second row the width does not require.
   const { rows, columns } = threadTabLayout(
     tabs.length,
-    availableWidth || THREAD_TAB_SLOT_WIDTH * tabs.length,
+    availableWidth || tabs.length * THREAD_TAB_SLOT_WIDTH,
   );
 
   useEffect(() => {
+    // The strip is not in the document until the first tab exists, and its width
+    // changes with the side panel, so re-measure whenever either can differ.
     const strip = stripRef.current;
     if (!strip) return undefined;
     const measure = () => setAvailableWidth(strip.clientWidth);
@@ -77,7 +81,7 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
     const observer = new ResizeObserver(measure);
     observer.observe(strip);
     return () => observer.disconnect();
-  }, []);
+  }, [tabs.length]);
 
   const stripHeight =
     rows > 0 ? rows * THREAD_TAB_ROW_HEIGHT + (rows - 1) * THREAD_TAB_GAP + THREAD_TAB_PADDING : 0;
