@@ -2801,20 +2801,15 @@
 .extension-form {
   display: flex;
   flex-direction: column;
-  /* A tall question must never push the composer off screen: the body scrolls instead. */
-  max-height: min(58vh, 520px);
   border: 1px solid var(--line);
   border-radius: var(--radius-2xl);
   background: var(--surface);
-  overflow: hidden;
 }
 
 .extension-form__body {
   display: grid;
   gap: 12px;
   padding: 4px 16px 14px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .extension-form__header {

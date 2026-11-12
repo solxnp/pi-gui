@@ -1,0 +1,110 @@
+/*
+ * The window's open conversations as IDE-style tabs above the transcript.
+ * Rows and grid slots are computed in thread-tabs.tsx; this file only draws
+ * them, so a strip past three rows scrolls sideways instead of growing.
+ */
+.thread-tabs {
+  --thread-tab-height: 32px;
+  display: grid;
+  gap: 4px;
+  padding: 0 12px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  max-width: 100%;
+}
+
+.thread-tabs::-webkit-scrollbar {
+  height: 6px;
+}
+
+.thread-tabs__tab {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: var(--thread-tab-height);
+  min-width: 96px;
+  max-width: 220px;
+  padding-right: 2px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+.thread-tabs__tab:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.thread-tabs__tab--active {
+  background: var(--main);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.thread-tabs__select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  padding: 0 6px 0 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.thread-tabs__title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.thread-tabs__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.thread-tabs__dot--running {
+  background: var(--accent-green, #2f9e44);
+}
+
+.thread-tabs__dot--failed {
+  background: var(--accent-red, #e03131);
+}
+
+.thread-tabs__dot--unseen {
+  background: var(--accent, #4c6ef5);
+}
+
+.thread-tabs__dot--input {
+  background: var(--accent-amber, #f08c00);
+}
+
+.thread-tabs__close {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  opacity: 0;
+  border-radius: 6px;
+}
+
+.thread-tabs__tab:hover .thread-tabs__close,
+.thread-tabs__tab--active .thread-tabs__close {
+  opacity: 1;
+}
+
+.thread-tabs__close svg {
+  width: 12px;
+  height: 12px;
+}

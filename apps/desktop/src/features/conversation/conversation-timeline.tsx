@@ -1,6 +1,7 @@
 import {
   memo,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -138,6 +139,19 @@ export function ConversationTimeline({
     for (const item of transcript) if (item.kind === "message") indices.set(item.id, index++);
     return indices;
   }, [transcript]);
+  // A question card taller than the pane opens at its top edge: the ask comes before the controls.
+  // A card that fits keeps the normal follow-the-latest position, so this rarely runs.
+  const pendingFormRef = useRef<HTMLDivElement | null>(null);
+  const alignedFormId = useRef<string | null>(null);
+  useEffect(() => {
+    const element = pendingFormRef.current;
+    if (!pendingForm || !element) return;
+    if (alignedFormId.current === pendingForm.requestId) return;
+    const pane = element.parentElement;
+    if (!pane || element.offsetHeight <= pane.clientHeight) return;
+    alignedFormId.current = pendingForm.requestId;
+    viewport.alignTop(element);
+  }, [pendingForm, viewport]);
   return (
     <ExtensionToolLabelsContext.Provider value={extensionToolLabels}>
       <div className="timeline-surface" ref={surfaceRef}>
@@ -218,7 +232,7 @@ export function ConversationTimeline({
               </div>
             )}
             {!transcriptFailed && pendingForm ? (
-              <div className="timeline-pending-form">
+              <div className="timeline-pending-form" ref={pendingFormRef}>
                 <ExtensionFormCard
                   form={pendingForm}
                   onSubmit={(values) =>

@@ -72,6 +72,14 @@
   scrollbar-gutter: stable;
 }
 
+.timeline-pending-form {
+  /* The question card is conversation content, not a dialog: it keeps the transcript measure
+   * and sits in the flow, so one scroll position moves the whole thread. */
+  width: 100%;
+  max-width: var(--transcript-measure, 768px);
+  margin: 16px auto 0;
+}
+
 .timeline-empty {
   color: var(--muted);
   font-size: 14px;

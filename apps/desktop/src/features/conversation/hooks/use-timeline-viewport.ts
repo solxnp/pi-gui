@@ -477,12 +477,38 @@ export function useTimelineViewport({
     },
     [paneRef, schedule],
   );
+  /**
+   * Opens something that is not a virtual row (the pending question card) at its top edge, so a
+   * card taller than the pane reads question first and controls below. The write is marked as ours,
+   * so it does not turn a follower into a reader or raise the "new activity" pill.
+   */
+  const alignTop = useCallback(
+    (element: HTMLElement) => {
+      const pane = paneRef.current;
+      if (!pane || !pane.contains(element)) return;
+      const top =
+        pane.scrollTop + element.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+      const maximum = Math.max(0, pane.scrollHeight - pane.clientHeight);
+      const next = Math.max(0, Math.min(maximum, top));
+      const current = model.current;
+      const anchor = anchorAt(current.layout, next);
+      if (anchor) current.state = { kind: "reading", anchor };
+      current.pendingNavigation = false;
+      current.userIntent = 0;
+      current.expectedScrollTop = next;
+      current.newActivity = false;
+      pane.scrollTop = next;
+      schedule();
+    },
+    [paneRef, schedule],
+  );
   return {
     totalHeight,
     railTicks,
     railScrolling,
     jumpToRow,
     scrollByDelta,
+    alignTop,
     visibleRows: placements,
     layoutGeneration: current.generation,
     showJumpToLatest,
