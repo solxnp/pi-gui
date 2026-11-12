@@ -218,8 +218,9 @@ test("a form asked by an extension is answered inline in the conversation", asyn
     await expect(answeredCard.getByTestId("extension-card-answered")).toHaveText(
       /^(Answered|已回答)$/,
     );
-    // The answers stay in their own strip under the board, as the reference UI draws them.
-    await expect(answeredCard.getByText(/^(The user answered:|用户的回答：)$/)).toBeVisible();
+    // The board is the whole answer: no answer strip repeats the question and the pick under it.
+    await expect(answeredCard.getByText(/^(The user answered:|用户的回答：)$/)).toHaveCount(0);
+    await expect(answeredCard.locator(".extension-card__row")).toHaveCount(0);
     await expect(window.getByTestId("extension-notices")).toContainText(
       "Form answers 标识可查可删 / 关",
     );
@@ -257,7 +258,8 @@ test("a form accepts a written answer when no option fits", async () => {
       .first()
       .check();
     const secondQuestion = card.getByRole("group", { name: "先审后用要不要开？" });
-    await secondQuestion.getByRole("radio", { name: /^其他/ }).check();
+    // The "write my own" row is app copy, so it follows the UI language the harness pins.
+    await secondQuestion.getByRole("radio", { name: /^(其他|Other)/ }).check();
     await expect(submit).toBeDisabled();
     const otherInput = secondQuestion.getByTestId("extension-form-other-input");
     await otherInput.click();
@@ -353,7 +355,11 @@ test("a question carries an optional note that comes back with the answer", asyn
     const answeredCard = window.getByTestId("extension-card").last();
     await expect(answeredCard).toContainText("下一步先做哪件？");
     await expect(answeredCard).toContainText("备注（可选）");
-    await expect(answeredCard).toContainText("多选对我更顺手");
+    // The note is echoed in its own row of the board, not repeated in a strip below it.
+    await expect(answeredCard.getByTestId("extension-card-board-note")).toHaveText(
+      "多选对我更顺手",
+    );
+    await expect(answeredCard.locator(".extension-card__row")).toHaveCount(0);
   } finally {
     await harness.close();
   }

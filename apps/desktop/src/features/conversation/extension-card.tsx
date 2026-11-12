@@ -31,8 +31,11 @@ export function ExtensionCardItem({
   const { t } = useTranslation();
   const toneLabel = cardToneLabel(card.tone);
   const board = card.answeredForm;
-  const hasBody =
-    !collapsed && (board !== undefined || card.rows.length > 0 || card.actions.length > 0);
+  // The board already marks the picked option of every question, so the answer rows are dropped
+  // under it: they repeat the answers and repeat each question as a row label. Rows still draw
+  // for entries written before the board existed.
+  const rows = board ? [] : card.rows;
+  const hasBody = !collapsed && (board !== undefined || rows.length > 0 || card.actions.length > 0);
   return (
     <section
       className={`turn-changes extension-card extension-card--${card.tone}`}
@@ -58,11 +61,8 @@ export function ExtensionCardItem({
       </header>
       {!collapsed && board ? <AnsweredBoard board={board} /> : null}
       {hasBody ? (
-        <ul className={`turn-changes__files ${board ? "extension-card__answers" : ""}`}>
-          {board ? (
-            <li className="extension-card__answers-label">{t("extensionForm.answerLabel")}</li>
-          ) : null}
-          {card.rows.map((row, index) => (
+        <ul className="turn-changes__files">
+          {rows.map((row, index) => (
             <li className="extension-card__row" key={`row:${index}`}>
               <span className="extension-card__label">{row.label}</span>
               <span className="extension-card__value">{row.value}</span>

@@ -29,7 +29,6 @@ export const zhCN: Partial<Messages> = {
   "ui.editCustomEndpoint": "编辑自定义端点",
   "ui.addCustomEndpoint": "添加自定义端点",
   "extensionDialog.recommended": "推荐",
-  "extensionForm.answerLabel": "用户的回答：",
   "extensionForm.answered": "已回答",
   "extensionForm.submit": "提交回答",
   "extensionForm.other": "其他 —— 我自己写",

@@ -1211,21 +1211,6 @@
   white-space: nowrap;
 }
 
-/* The answer lines under an answered board, in the muted strip the reference UI uses. */
-.extension-card__answers {
-  gap: 6px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--line);
-  background: var(--surface-muted);
-}
-
-.extension-card__answers-label {
-  color: var(--muted-strong);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
 .extension-card__board {
   display: grid;
   gap: 14px;
