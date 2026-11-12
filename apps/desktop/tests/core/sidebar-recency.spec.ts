@@ -13,6 +13,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
   seedAgentDir,
   waitForWorkspaceByPath,
 } from "../helpers/electron-app";
@@ -32,6 +33,7 @@ test("caps each time bucket at five and hides workspace headers", async () => {
 
   try {
     const window = await harness.firstWindow();
+    await openThreadOverview(window);
     const workspaceA = await waitForWorkspaceByPath(window, workspaceAPath);
     const workspaceB = await waitForWorkspaceByPath(window, workspaceBPath);
     await createHistoryThreads(window, workspaceA.id, numberedThreadTitles("A", 6));
@@ -68,6 +70,7 @@ test("does not bump Today when a thread is opened", async () => {
 
   try {
     const window = await harness.firstWindow();
+    await openThreadOverview(window);
     const workspace = await waitForWorkspaceByPath(window, workspacePath);
     await createHistoryThreads(window, workspace.id, ["Older today", "Newest today"]);
 
@@ -102,6 +105,7 @@ test("bumps a sent thread to the top of Today", async () => {
 
   try {
     const window = await harness.firstWindow();
+    await openThreadOverview(window);
     const workspace = await waitForWorkspaceByPath(window, workspacePath);
     await createHistoryThreads(window, workspace.id, ["Older today", "Newest today"]);
     await expectTodayTitles(window, ["Newest today", "Older today"]);
@@ -141,6 +145,7 @@ test("selects pinned threads first with 1-9 and paints badges while the modifier
 
   try {
     const window = await harness.firstWindow();
+    await openThreadOverview(window);
     const workspace = await waitForWorkspaceByPath(window, workspacePath);
     await createHistoryThreads(window, workspace.id, ["Alpha", "Bravo", "Charlie"]);
     await expectShortcutBadges(window, ["Charlie", "Bravo", "Alpha"]);
@@ -632,5 +637,6 @@ async function seedRecencyTimestamps(
 
 async function captureSidebarProof(window: Page, filename: string): Promise<void> {
   await mkdir(proofDir, { recursive: true });
+  await openThreadOverview(window);
   await window.locator(".sidebar").screenshot({ path: join(proofDir, filename) });
 }

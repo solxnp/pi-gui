@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
   createNamedThread,
+  openThreadOverview,
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
@@ -96,6 +97,7 @@ test("Ctrl-Tab switches threads in most-recently-used order and keeps it across 
     await expect(threadTitle(window)).toHaveText("Thread three");
 
     // Archived threads leave the list.
+    await openThreadOverview(window);
     const threadTwoRow = window
       .locator(".session-list > .session-row")
       .filter({ hasText: "Thread two" })
