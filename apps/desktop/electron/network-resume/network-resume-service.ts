@@ -25,7 +25,7 @@ import { isNetworkErrorMessage } from "./network-error";
 import type { NetworkResumeLog } from "./network-resume-log";
 import type { NetworkProbe } from "./network-probe";
 
-/** One probe per minute, as asked: often enough to feel immediate, cheap enough to run all night. */
+/** One probe per minute unless the settings say otherwise; see `probeIntervalMs`. */
 export const DEFAULT_NETWORK_RESUME_INTERVAL_MS = 60_000;
 /** Two clear answers before resuming, so a one-off blip does not restart every thread. */
 export const DEFAULT_NETWORK_RESUME_SUCCESSES = 2;
@@ -52,8 +52,6 @@ export interface NetworkResumeHost {
 
 export interface NetworkResumeServiceOptions {
   readonly probe: NetworkProbe;
-  readonly intervalMs?: number;
-  readonly successesRequired?: number;
   readonly now?: () => number;
 }
 
@@ -63,6 +61,8 @@ interface WaitingEntry {
   readonly since: string;
   attempts: number;
   deliveryFailures: number;
+  /** Probes that came back empty since the last success; the give-up rule counts these. */
+  failedProbes: number;
   errorMessage: string;
   exhausted: boolean;
 }
@@ -73,11 +73,10 @@ function refKey(ref: SessionRef): string {
 
 export class NetworkResumeService {
   private readonly waiting = new Map<string, WaitingEntry>();
-  private readonly intervalMs: number;
-  private readonly successesRequired: number;
   private readonly now: () => number;
   private timer: NodeJS.Timeout | undefined;
   private probeStreak = 0;
+  private failedProbes = 0;
   private ticking = false;
   private stopped = false;
 
@@ -85,8 +84,6 @@ export class NetworkResumeService {
     private readonly host: NetworkResumeHost,
     private readonly options: NetworkResumeServiceOptions,
   ) {
-    this.intervalMs = options.intervalMs ?? DEFAULT_NETWORK_RESUME_INTERVAL_MS;
-    this.successesRequired = options.successesRequired ?? DEFAULT_NETWORK_RESUME_SUCCESSES;
     this.now = options.now ?? (() => Date.now());
   }
 
@@ -109,6 +106,7 @@ export class NetworkResumeService {
       sessionId: entry.sessionId,
       since: entry.since,
       attempts: entry.attempts,
+      failedProbes: entry.failedProbes,
       errorMessage: entry.errorMessage,
       ...(entry.exhausted ? { exhausted: true } : {}),
     }));
@@ -143,16 +141,30 @@ export class NetworkResumeService {
     await this.tick();
   }
 
-  /** Settings changed: a switched-off watcher drops what it was holding. */
+  /**
+   * Settings changed: the new interval and streak apply on the next probe, not after a restart,
+   * and a switched-off watcher drops what it was holding.
+   */
   preferencesChanged(): void {
-    const { enabled, maxAttempts } = this.host.getPreferences();
-    this.note("preferences", { enabled, maxAttempts });
+    const { enabled, maxAttempts, probeIntervalMs, consecutiveSuccesses, giveUpAfterFailedProbes } =
+      this.host.getPreferences();
+    this.note("preferences", {
+      enabled,
+      maxAttempts,
+      probeIntervalMs,
+      consecutiveSuccesses,
+      giveUpAfterFailedProbes,
+    });
     if (!enabled && this.waiting.size > 0) {
       this.waiting.clear();
       this.publish();
       this.stopTimer();
+      return;
     }
     this.probeStreak = 0;
+    this.failedProbes = 0;
+    // The old timer still carries the old interval, so it has to go before rescheduling.
+    this.stopTimer();
     this.schedule();
   }
 
@@ -178,6 +190,8 @@ export class NetworkResumeService {
       // A person typing again after the cap was hit gets a fresh budget.
       attempts: existing?.exhausted ? 0 : (existing?.attempts ?? 0),
       deliveryFailures: existing?.exhausted ? 0 : (existing?.deliveryFailures ?? 0),
+      // A fresh failure is a fresh reason to wait, so the give-up count starts over.
+      failedProbes: 0,
       errorMessage: message,
       exhausted: false,
     });
@@ -226,7 +240,8 @@ export class NetworkResumeService {
     if (this.stopped || this.timer || this.waiting.size === 0) {
       return;
     }
-    if (!this.host.getPreferences().enabled) {
+    const { enabled, probeIntervalMs } = this.host.getPreferences();
+    if (!enabled) {
       return;
     }
     this.timer = setTimeout(() => {
@@ -242,7 +257,7 @@ export class NetworkResumeService {
           () => this.schedule(),
           () => this.schedule(),
         );
-    }, this.intervalMs);
+    }, probeIntervalMs);
     // Node keeps the process alive for a pending timer; this one must not hold the app open.
     this.timer.unref?.();
   }
@@ -253,22 +268,34 @@ export class NetworkResumeService {
     }
     this.ticking = true;
     try {
-      if (!this.host.getPreferences().enabled || this.waiting.size === 0) {
+      const { enabled, consecutiveSuccesses, giveUpAfterFailedProbes } = this.host.getPreferences();
+      if (!enabled || this.waiting.size === 0) {
         return;
       }
       const result = await this.options.probe();
       this.note("probe", {
         result,
         streak: result === "reachable" ? this.probeStreak + 1 : 0,
-        needed: this.successesRequired,
+        failed: result === "reachable" ? 0 : this.failedProbes + 1,
+        needed: consecutiveSuccesses,
         waiting: this.waiting.size,
       });
       if (result !== "reachable") {
         this.probeStreak = 0;
+        this.failedProbes += 1;
+        for (const entry of [...this.waiting.values()]) {
+          entry.failedProbes += 1;
+        }
+        this.dropGaveUp(giveUpAfterFailedProbes);
+        this.publish();
         return;
       }
+      this.failedProbes = 0;
+      for (const entry of this.waiting.values()) {
+        entry.failedProbes = 0;
+      }
       this.probeStreak += 1;
-      if (this.probeStreak < this.successesRequired) {
+      if (this.probeStreak < consecutiveSuccesses) {
         return;
       }
       await this.resumeWaiting();
@@ -283,6 +310,20 @@ export class NetworkResumeService {
         return;
       }
       await this.resume(entry);
+    }
+  }
+
+  /** The settings cap on failed probes: unbounded by default, and 0 means never give up. */
+  private dropGaveUp(limit: number): void {
+    if (limit <= 0) {
+      return;
+    }
+    for (const [key, entry] of this.waiting) {
+      if (entry.failedProbes < limit) {
+        continue;
+      }
+      this.note("gave-up", { thread: key, failedProbes: entry.failedProbes, limit });
+      this.waiting.delete(key);
     }
   }
 

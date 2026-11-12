@@ -1,8 +1,14 @@
 import {
+  networkResumeGiveUpOptions,
+  networkResumeIntervalOptions,
   networkResumeMaxAttemptOptions,
+  networkResumeSuccessOptions,
+  type NetworkResumeGiveUpAfter,
+  type NetworkResumeIntervalMs,
   type NetworkResumeMaxAttempts,
   type NetworkResumePreferences,
   type NetworkResumePreferencesPatch,
+  type NetworkResumeSuccesses,
   type NetworkResumeWaitingRecord,
 } from "../../../contracts/network-resume";
 import { useTranslation } from "../../i18n";
@@ -18,6 +24,9 @@ interface SettingsNetworkResumeSectionProps {
 /**
  * The watcher's settings and the threads it is currently holding. The waiting list is the point:
  * without it an automatic "continue" would look like the app typing on its own.
+ *
+ * Every select writes straight through to the main process, which restarts the probe loop on the
+ * spot, so a change here is in effect on the next check rather than after a restart.
  */
 export function SettingsNetworkResumeSection({
   preferences,
@@ -25,6 +34,10 @@ export function SettingsNetworkResumeSection({
   onSetPreferences,
 }: SettingsNetworkResumeSectionProps) {
   const { t } = useTranslation();
+  const intervalLabel = (ms: NetworkResumeIntervalMs): string =>
+    ms < 60_000
+      ? t("settings.networkResume.interval.seconds", { count: ms / 1000 })
+      : t("settings.networkResume.interval.minutes", { count: ms / 60_000 });
 
   return (
     <>
@@ -40,6 +53,59 @@ export function SettingsNetworkResumeSection({
             checked={preferences.enabled}
             label={t("settings.networkResume.enabled.title")}
             onChange={(enabled) => onSetPreferences({ enabled })}
+          />
+        </Row>
+        <Row
+          title={t("settings.networkResume.interval.title")}
+          description={t("settings.networkResume.interval.description")}
+        >
+          <SettingsSelect
+            label={t("settings.networkResume.interval.title")}
+            options={networkResumeIntervalOptions.map((ms) => ({
+              value: String(ms),
+              label: intervalLabel(ms),
+            }))}
+            value={String(preferences.probeIntervalMs)}
+            onChange={(value) =>
+              onSetPreferences({ probeIntervalMs: Number(value) as NetworkResumeIntervalMs })
+            }
+          />
+        </Row>
+        <Row
+          title={t("settings.networkResume.streak.title")}
+          description={t("settings.networkResume.streak.description")}
+        >
+          <SettingsSelect
+            label={t("settings.networkResume.streak.title")}
+            options={networkResumeSuccessOptions.map((count) => ({
+              value: String(count),
+              label: t("settings.networkResume.streak.count", { count }),
+            }))}
+            value={String(preferences.consecutiveSuccesses)}
+            onChange={(value) =>
+              onSetPreferences({ consecutiveSuccesses: Number(value) as NetworkResumeSuccesses })
+            }
+          />
+        </Row>
+        <Row
+          title={t("settings.networkResume.giveUp.title")}
+          description={t("settings.networkResume.giveUp.description")}
+        >
+          <SettingsSelect
+            label={t("settings.networkResume.giveUp.title")}
+            options={networkResumeGiveUpOptions.map((count) => ({
+              value: String(count),
+              label:
+                count === 0
+                  ? t("settings.networkResume.giveUp.never")
+                  : t("settings.networkResume.giveUp.count", { count }),
+            }))}
+            value={String(preferences.giveUpAfterFailedProbes)}
+            onChange={(value) =>
+              onSetPreferences({
+                giveUpAfterFailedProbes: Number(value) as NetworkResumeGiveUpAfter,
+              })
+            }
           />
         </Row>
         <Row
@@ -82,6 +148,11 @@ export function SettingsNetworkResumeSection({
                   : t("settings.networkResume.waiting.attempts", {
                       count: record.attempts,
                     })}
+                {(record.failedProbes ?? 0) > 0
+                  ? ` · ${t("settings.networkResume.waiting.probes", {
+                      count: record.failedProbes ?? 0,
+                    })}`
+                  : ""}
               </span>
             </SettingsRow>
           ))

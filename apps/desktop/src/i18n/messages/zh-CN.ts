@@ -472,15 +472,39 @@ export const zhCN: Partial<Messages> = {
   "settings.permissions.rules.collapse": "收起",
   "settings.permissions.rules.loadFailed": "没能从应用里读到规则，收起后再展开试一次。",
   "settings.permissions.offSummary": "{count} 个类别不再询问。把总开关重新打开可以全部恢复。",
+  "startup.loading.title": "正在载入会话",
+  "startup.loading.body": "桌面端正在从主进程恢复文件夹和会话状态。",
+  "startup.failed.title": "没能恢复会话",
+  "startup.failed.body": "桌面端读不到文件夹和会话状态。重试一次，或重新打开 pi-gui。",
+  "startup.bridgeFailed.body": "桌面端没连上主进程。退出 pi-gui 再打开一次。",
+  "startup.crashed.title": "出了点问题",
+  "startup.crashed.body": "窗口遇到了意外错误。重试可以重新挂载，或者重新打开 pi-gui。",
+  "startup.retry": "重试",
+  "startup.retrying": "正在重试…",
+  "startup.relaunch": "重新打开 pi-gui",
   "settings.nav.networkResume": "网络恢复",
   "settings.section.networkResume.description":
     "断网导致中断的会话，网络回来后自动替你发「继续」。",
   "settings.networkResume.group": "自动续跑",
   "settings.networkResume.group.description":
-    "只在有会话真的在等待时才探测，每分钟一次，不消耗模型调用。",
+    "只在有会话真的在等待时才探测，间隔按下面的设置，不消耗模型调用。",
   "settings.networkResume.enabled.title": "网络恢复后自动续跑",
   "settings.networkResume.enabled.description":
     "连接出错导致中断的会话会进入等待列表；网络一通，pi-gui 就在那个对话里发一条「继续」。关掉则全部等你手动继续。",
+  "settings.networkResume.interval.title": "探测间隔",
+  "settings.networkResume.interval.description":
+    "每次探测就是一个 HEAD 请求，不调模型。改完下一次探测就按新间隔跑，不用重启。",
+  "settings.networkResume.interval.seconds": "{count} 秒",
+  "settings.networkResume.interval.minutes": "{count} 分钟",
+  "settings.networkResume.streak.title": "连续成功几次算网络恢复",
+  "settings.networkResume.streak.description":
+    "要连续这么多次探测成功；中间断一次就从头数。按 1 分钟一次，10 次就是连续稳定 10 分钟。",
+  "settings.networkResume.streak.count": "连续 {count} 次",
+  "settings.networkResume.giveUp.title": "探测失败多少次后放弃",
+  "settings.networkResume.giveUp.description":
+    "连续失败到这个次数就把这个对话从等待列表里去掉。选「一直等」则网络一天不回也一直等。",
+  "settings.networkResume.giveUp.count": "失败 {count} 次",
+  "settings.networkResume.giveUp.never": "一直等",
   "settings.networkResume.limit.title": "每个对话最多续跑",
   "settings.networkResume.limit.description":
     "防止一直失败的会话整晚反复重试。到上限后停在等待列表里，等你处理。",
@@ -492,6 +516,7 @@ export const zhCN: Partial<Messages> = {
   "settings.networkResume.waiting.empty": "没有对话在等待。",
   "settings.networkResume.waiting.untitled": "未命名对话",
   "settings.networkResume.waiting.attempts": "已续跑 {count} 次",
+  "settings.networkResume.waiting.probes": "{count} 次探测失败",
   "settings.networkResume.waiting.exhausted": "已达上限，等你处理",
   "settings.networkResume.note":
     "只在这台机器上生效：pi-gui 开着、电脑不睡眠才会轮询。合盖睡眠期间不会探测，整夜依赖它的话记得别让电脑睡过去。",

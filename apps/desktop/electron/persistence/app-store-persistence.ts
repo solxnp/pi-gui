@@ -16,7 +16,10 @@ import { isThemeMode, isThemePresetId, isThreadGrouping } from "../../contracts/
 import {
   applyNetworkResumePreferencesPatch,
   defaultNetworkResumePreferences,
+  isNetworkResumeGiveUpAfter,
+  isNetworkResumeIntervalMs,
   isNetworkResumeMaxAttempts,
+  isNetworkResumeSuccesses,
   type NetworkResumePreferences,
 } from "../../contracts/network-resume";
 import {
@@ -361,13 +364,41 @@ function validateUiState(value: unknown): Record<string, unknown> {
   if (root.networkResumePreferences !== undefined) {
     const preferences =
       objectRecord(root.networkResumePreferences) ?? fail("networkResumePreferences");
-    knownKeys(preferences, ["enabled", "maxAttempts"], "networkResumePreferences");
+    knownKeys(
+      preferences,
+      [
+        "enabled",
+        "maxAttempts",
+        "probeIntervalMs",
+        "consecutiveSuccesses",
+        "giveUpAfterFailedProbes",
+      ],
+      "networkResumePreferences",
+    );
     optional(preferences, "enabled", boolean, "networkResumePreferences.enabled");
     optional(
       preferences,
       "maxAttempts",
       (value) => isNetworkResumeMaxAttempts(value),
       "networkResumePreferences.maxAttempts",
+    );
+    optional(
+      preferences,
+      "probeIntervalMs",
+      (value) => isNetworkResumeIntervalMs(value),
+      "networkResumePreferences.probeIntervalMs",
+    );
+    optional(
+      preferences,
+      "consecutiveSuccesses",
+      (value) => isNetworkResumeSuccesses(value),
+      "networkResumePreferences.consecutiveSuccesses",
+    );
+    optional(
+      preferences,
+      "giveUpAfterFailedProbes",
+      (value) => isNetworkResumeGiveUpAfter(value),
+      "networkResumePreferences.giveUpAfterFailedProbes",
     );
   }
   if (root.appGlobalModelSettings !== undefined) {
@@ -874,6 +905,15 @@ function toNetworkResumePreferences(value: unknown): NetworkResumePreferences | 
   return applyNetworkResumePreferencesPatch(defaultNetworkResumePreferences, {
     ...(typeof candidate.enabled === "boolean" ? { enabled: candidate.enabled } : {}),
     ...(typeof candidate.maxAttempts === "number" ? { maxAttempts: candidate.maxAttempts } : {}),
+    ...(typeof candidate.probeIntervalMs === "number"
+      ? { probeIntervalMs: candidate.probeIntervalMs }
+      : {}),
+    ...(typeof candidate.consecutiveSuccesses === "number"
+      ? { consecutiveSuccesses: candidate.consecutiveSuccesses }
+      : {}),
+    ...(typeof candidate.giveUpAfterFailedProbes === "number"
+      ? { giveUpAfterFailedProbes: candidate.giveUpAfterFailedProbes }
+      : {}),
   });
 }
 

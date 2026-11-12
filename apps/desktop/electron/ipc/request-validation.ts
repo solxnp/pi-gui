@@ -27,9 +27,15 @@ import {
   isThreadGrouping,
 } from "../../contracts/desktop-state";
 import {
+  isNetworkResumeGiveUpAfter,
+  isNetworkResumeIntervalMs,
   isNetworkResumeMaxAttempts,
+  isNetworkResumeSuccesses,
+  type NetworkResumeGiveUpAfter,
+  type NetworkResumeIntervalMs,
   type NetworkResumeMaxAttempts,
   type NetworkResumePreferencesPatch,
+  type NetworkResumeSuccesses,
 } from "../../contracts/network-resume";
 import {
   isPermissionCategoryId,
@@ -380,9 +386,36 @@ export function expectNetworkResumePreferencesPatch(value: unknown): NetworkResu
     }
     maxAttempts = attempts;
   }
+  let probeIntervalMs: NetworkResumeIntervalMs | undefined;
+  if (Object.hasOwn(record, "probeIntervalMs")) {
+    const interval = record.probeIntervalMs;
+    if (!isNetworkResumeIntervalMs(interval)) {
+      throw new TypeError("patch.probeIntervalMs must be 15000, 30000, 60000 or 120000");
+    }
+    probeIntervalMs = interval;
+  }
+  let consecutiveSuccesses: NetworkResumeSuccesses | undefined;
+  if (Object.hasOwn(record, "consecutiveSuccesses")) {
+    const successes = record.consecutiveSuccesses;
+    if (!isNetworkResumeSuccesses(successes)) {
+      throw new TypeError("patch.consecutiveSuccesses must be 1, 2, 5 or 10");
+    }
+    consecutiveSuccesses = successes;
+  }
+  let giveUpAfterFailedProbes: NetworkResumeGiveUpAfter | undefined;
+  if (Object.hasOwn(record, "giveUpAfterFailedProbes")) {
+    const giveUp = record.giveUpAfterFailedProbes;
+    if (!isNetworkResumeGiveUpAfter(giveUp)) {
+      throw new TypeError("patch.giveUpAfterFailedProbes must be 0, 10, 20 or 60");
+    }
+    giveUpAfterFailedProbes = giveUp;
+  }
   return {
     ...(enabled === undefined ? {} : { enabled }),
     ...(maxAttempts === undefined ? {} : { maxAttempts }),
+    ...(probeIntervalMs === undefined ? {} : { probeIntervalMs }),
+    ...(consecutiveSuccesses === undefined ? {} : { consecutiveSuccesses }),
+    ...(giveUpAfterFailedProbes === undefined ? {} : { giveUpAfterFailedProbes }),
   };
 }
 

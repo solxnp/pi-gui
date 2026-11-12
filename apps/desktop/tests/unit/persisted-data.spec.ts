@@ -25,6 +25,9 @@ for (const invalid of [
   { version: 19, permissionPreferences: { categories: { futureCategory: true } } },
   { version: 19, permissionPreferences: { enabled: "yes" } },
   { version: 19, networkResumePreferences: { maxAttempts: 7 } },
+  { version: 19, networkResumePreferences: { probeIntervalMs: 45_000 } },
+  { version: 19, networkResumePreferences: { consecutiveSuccesses: 3 } },
+  { version: 19, networkResumePreferences: { giveUpAfterFailedProbes: 5 } },
   { version: 19, networkResumePreferences: { futureKey: true } },
   [],
 ]) {
@@ -231,8 +234,32 @@ test("permission category switches round-trip and default missing keys", async (
 test("network resume settings round-trip and reject choices Settings never offers", async () => {
   const path = join(await mkdtemp(join(tmpdir(), "ui-state-network-resume-")), "ui-state.json");
   await writePersistedUiState(path, {
-    networkResumePreferences: { enabled: false, maxAttempts: 10 },
+    networkResumePreferences: {
+      enabled: false,
+      maxAttempts: 10,
+      probeIntervalMs: 30_000,
+      consecutiveSuccesses: 5,
+      giveUpAfterFailedProbes: 0,
+    },
   });
   const decoded = await readPersistedUiState(path);
-  expect(decoded.networkResumePreferences).toEqual({ enabled: false, maxAttempts: 10 });
+  expect(decoded.networkResumePreferences).toEqual({
+    enabled: false,
+    maxAttempts: 10,
+    probeIntervalMs: 30_000,
+    consecutiveSuccesses: 5,
+    giveUpAfterFailedProbes: 0,
+  });
+
+  // A file written before the timing knobs existed keeps its two fields and gains the defaults.
+  await writePersistedUiState(path, {
+    networkResumePreferences: { enabled: false, maxAttempts: 10 },
+  });
+  expect((await readPersistedUiState(path)).networkResumePreferences).toEqual({
+    enabled: false,
+    maxAttempts: 10,
+    probeIntervalMs: 60_000,
+    consecutiveSuccesses: 10,
+    giveUpAfterFailedProbes: 10,
+  });
 });

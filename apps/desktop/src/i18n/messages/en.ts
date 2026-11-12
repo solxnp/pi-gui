@@ -497,15 +497,42 @@ export const en = {
     "Could not load the rules from the app. Try expanding again.",
   "settings.permissions.offSummary":
     "{count} categories will not ask. Turn the master switch back on to restore all of them.",
+  "startup.loading.title": "Loading sessions",
+  "startup.loading.body":
+    "The desktop shell is restoring folder and thread state from the main process.",
+  "startup.failed.title": "Couldn't restore sessions",
+  "startup.failed.body":
+    "The desktop shell couldn't read folder and thread state. Retry, or relaunch the app.",
+  "startup.bridgeFailed.body": "The desktop shell isn't connected. Quit pi-gui and reopen it.",
+  "startup.crashed.title": "Something went wrong",
+  "startup.crashed.body":
+    "The desktop window hit an unexpected error. Retry to remount, or relaunch the app.",
+  "startup.retry": "Retry",
+  "startup.retrying": "Retrying…",
+  "startup.relaunch": "Relaunch pi-gui",
   "settings.nav.networkResume": "Network recovery",
   "settings.section.networkResume.description":
     'Finish runs that a network outage cut short, without typing "continue" yourself.',
   "settings.networkResume.group": "Automatic resume",
   "settings.networkResume.group.description":
-    "While pi-gui is open, it checks the network once a minute and only while a run is actually waiting.",
+    "While pi-gui is open, it checks the network on a fixed interval and only while a run is actually waiting.",
   "settings.networkResume.enabled.title": "Resume after the network is back",
   "settings.networkResume.enabled.description":
     'A run that failed with a connection error joins the waiting list; once the network answers, pi-gui sends "continue" into that thread for you. Off means every thread waits for you.',
+  "settings.networkResume.interval.title": "How often to check",
+  "settings.networkResume.interval.description":
+    "Each check is one HEAD request, no model call. A change applies to the next check, without a restart.",
+  "settings.networkResume.interval.seconds": "{count} s",
+  "settings.networkResume.interval.minutes": "{count} min",
+  "settings.networkResume.streak.title": "Clean checks before resuming",
+  "settings.networkResume.streak.description":
+    "This many successful checks in a row; a link that keeps flapping starts over. At 1 minute each, 10 means ten minutes of stable network.",
+  "settings.networkResume.streak.count": "{count} in a row",
+  "settings.networkResume.giveUp.title": "Stop waiting after",
+  "settings.networkResume.giveUp.description":
+    "Failed checks in a row before the thread is dropped from the waiting list. Keep waiting means it stays until the network comes back.",
+  "settings.networkResume.giveUp.count": "{count} failed checks",
+  "settings.networkResume.giveUp.never": "Keep waiting",
   "settings.networkResume.limit.title": "Continues per thread",
   "settings.networkResume.limit.description":
     "Stops a thread that keeps failing from spending all night. Hitting the cap leaves the thread waiting for you.",
@@ -517,6 +544,7 @@ export const en = {
   "settings.networkResume.waiting.empty": "No thread is waiting.",
   "settings.networkResume.waiting.untitled": "Untitled thread",
   "settings.networkResume.waiting.attempts": "{count} continues sent",
+  "settings.networkResume.waiting.probes": "{count} failed checks",
   "settings.networkResume.waiting.exhausted": "Cap reached; waiting for you",
   "settings.networkResume.note":
     "This runs on this machine only: pi-gui has to be open and the computer awake. A sleeping Mac pauses the check, so keep the machine awake if you rely on it overnight.",

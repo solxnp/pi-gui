@@ -6,7 +6,13 @@ import type { SessionDriverEvent, SessionRef } from "@pi-gui/session-driver";
 import {
   applyNetworkResumePreferencesPatch,
   defaultNetworkResumePreferences,
+  isNetworkResumeGiveUpAfter,
+  isNetworkResumeIntervalMs,
   isNetworkResumeMaxAttempts,
+  isNetworkResumeSuccesses,
+  type NetworkResumePreferences,
+  type NetworkResumePreferencesPatch,
+  type NetworkResumeWaitingRecord,
 } from "../../contracts/network-resume";
 import { isNetworkErrorMessage } from "../../electron/network-resume/network-error";
 import { createNetworkResumeLog } from "../../electron/network-resume/network-resume-log";
@@ -37,18 +43,22 @@ function running(target: SessionRef = ref): SessionDriverEvent {
 
 interface Harness {
   service: NetworkResumeService;
-  published: { title?: string; attempts: number; exhausted?: boolean }[][];
+  published: NetworkResumeWaitingRecord[][];
   delivered: string[];
   lines: string[];
   setReachable(value: boolean): void;
   setState(value: NetworkResumeSessionState | undefined): void;
-  setPreferences(patch: { enabled?: boolean; maxAttempts?: number }): void;
+  setPreferences(patch: NetworkResumePreferencesPatch): void;
 }
 
 function createHarness(): Harness {
   let reachable = false;
   let state: NetworkResumeSessionState | undefined = { status: "failed" };
-  let preferences = { ...defaultNetworkResumePreferences };
+  // Two clean checks in a row keep the specs short; what ships defaults to ten.
+  let preferences: NetworkResumePreferences = {
+    ...defaultNetworkResumePreferences,
+    consecutiveSuccesses: 2,
+  };
   const published: Harness["published"] = [];
   const delivered: string[] = [];
   const lines: string[] = [];
@@ -67,9 +77,6 @@ function createHarness(): Harness {
     },
     {
       probe: async () => (reachable ? "reachable" : "unreachable"),
-      // The timer never fires in specs; probeNow() drives the loop.
-      intervalMs: 60 * 60 * 1000,
-      successesRequired: 2,
       now: () => Date.parse("2026-11-12T00:00:00.000Z"),
     },
   );
@@ -132,16 +139,43 @@ test("network failures are told apart from ordinary ones", () => {
 test("preference patches only accept the offered choices", () => {
   expect(isNetworkResumeMaxAttempts(0)).toBe(true);
   expect(isNetworkResumeMaxAttempts(7)).toBe(false);
-  expect(defaultNetworkResumePreferences).toEqual({ enabled: true, maxAttempts: 5 });
+  expect(isNetworkResumeIntervalMs(15_000)).toBe(true);
+  expect(isNetworkResumeIntervalMs(45_000)).toBe(false);
+  expect(isNetworkResumeSuccesses(10)).toBe(true);
+  expect(isNetworkResumeSuccesses(3)).toBe(false);
+  expect(isNetworkResumeGiveUpAfter(0)).toBe(true);
+  expect(isNetworkResumeGiveUpAfter(5)).toBe(false);
+  // Ten clean checks a minute apart before resuming, and stop after ten empty ones.
+  expect(defaultNetworkResumePreferences).toEqual({
+    enabled: true,
+    maxAttempts: 5,
+    probeIntervalMs: 60_000,
+    consecutiveSuccesses: 10,
+    giveUpAfterFailedProbes: 10,
+  });
   expect(
-    applyNetworkResumePreferencesPatch(defaultNetworkResumePreferences, { maxAttempts: 7 }),
+    applyNetworkResumePreferencesPatch(defaultNetworkResumePreferences, {
+      maxAttempts: 7,
+      probeIntervalMs: 45_000,
+      consecutiveSuccesses: 3,
+      giveUpAfterFailedProbes: 5,
+    }),
   ).toEqual(defaultNetworkResumePreferences);
   expect(
     applyNetworkResumePreferencesPatch(defaultNetworkResumePreferences, {
       enabled: false,
       maxAttempts: 10,
+      probeIntervalMs: 30_000,
+      consecutiveSuccesses: 5,
+      giveUpAfterFailedProbes: 0,
     }),
-  ).toEqual({ enabled: false, maxAttempts: 10 });
+  ).toEqual({
+    enabled: false,
+    maxAttempts: 10,
+    probeIntervalMs: 30_000,
+    consecutiveSuccesses: 5,
+    giveUpAfterFailedProbes: 0,
+  });
 });
 
 test("a network failure joins the waiting list, an ordinary failure leaves it", () => {
@@ -250,7 +284,7 @@ test("every decision leaves a line behind, so a quiet thread can be explained la
   expect(joined).toContain("message=terminated");
   // A refusal is logged with the verdict that kept it out of the list.
   expect(joined).toContain("network=false");
-  expect(joined).toContain("probe result=reachable streak=1 needed=2 waiting=1");
+  expect(joined).toContain("probe result=reachable streak=1 failed=0 needed=2 waiting=1");
   expect(joined).toContain("continue thread=ws:s1 attempt=1 maxAttempts=5");
   // The run the continue started takes the thread off the list.
   harness.service.handleEvent(running());
@@ -272,4 +306,51 @@ test("the log writer appends lines in order and never throws into the watcher", 
   // A path that cannot be a file must be swallowed, not raised.
   const broken = createNetworkResumeLog(join(dir, "network-resume.log", "impossible"));
   expect(() => broken("ignored")).not.toThrow();
+});
+
+test("the streak setting decides how many clean checks a resume needs", async () => {
+  const harness = createHarness();
+  harness.setPreferences({ consecutiveSuccesses: 10 });
+  harness.service.handleEvent(failure("terminated"));
+  harness.setReachable(true);
+
+  for (let check = 0; check < 9; check += 1) {
+    await harness.service.probeNow();
+  }
+  expect(harness.delivered).toHaveLength(0);
+
+  // Lowering the streak takes effect on the next check, not after a restart.
+  harness.setPreferences({ consecutiveSuccesses: 1 });
+  harness.service.preferencesChanged();
+  await harness.service.probeNow();
+  expect(harness.delivered).toEqual(["继续"]);
+  expect(harness.lines.join("\n")).toContain("preferences enabled=true maxAttempts=5");
+  expect(harness.lines.join("\n")).toContain("consecutiveSuccesses=1");
+});
+
+test("failed checks are counted, capped, and cleared by one that answers", async () => {
+  const harness = createHarness();
+  harness.setPreferences({ giveUpAfterFailedProbes: 10 });
+  harness.service.handleEvent(failure("Connection error."));
+
+  for (let check = 0; check < 10; check += 1) {
+    await harness.service.probeNow();
+  }
+  // Ten empty checks is the setting, so the thread leaves the list instead of waiting all night.
+  expect(harness.service.listWaiting()).toHaveLength(0);
+  expect(harness.lines.join("\n")).toContain("gave-up thread=ws:s1 failedProbes=10 limit=10");
+
+  // 0 means the watcher never gives up on its own.
+  harness.setPreferences({ giveUpAfterFailedProbes: 0 });
+  harness.service.handleEvent(failure("Connection error."));
+  for (let check = 0; check < 30; check += 1) {
+    await harness.service.probeNow();
+  }
+  expect(harness.service.listWaiting()).toHaveLength(1);
+  expect(harness.service.listWaiting()[0]?.failedProbes).toBe(30);
+
+  // One clean check wipes the count, so a flapping link is not punished for the outage before it.
+  harness.setReachable(true);
+  await harness.service.probeNow();
+  expect(harness.service.listWaiting()[0]?.failedProbes).toBe(0);
 });

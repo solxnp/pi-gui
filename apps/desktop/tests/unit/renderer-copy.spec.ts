@@ -20,6 +20,8 @@ const technicalCopy = new Set([
   "/v1",
   "~/.pi/agent/models.json",
   "/bin/zsh",
+  // The product's own name, drawn as the eyebrow on the startup and crash card.
+  "pi-gui",
 ]);
 const attributes = new Set([
   "title",
@@ -38,6 +40,7 @@ const sourceRoot = resolve(__dirname, "../../src");
  * it, so a new Settings section is checked without anyone adding it here.
  */
 const translatedSurfaces = [
+  "app/desktop-recovery.tsx",
   "features/settings",
   "features/workbench",
   "app/secondary-surface.tsx",
