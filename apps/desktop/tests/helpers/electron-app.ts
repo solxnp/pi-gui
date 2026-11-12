@@ -1855,6 +1855,12 @@ export async function openThreadOverview(window: Page): Promise<Locator> {
     await window.getByTestId("topbar-threads").click();
   }
   await expect(overview).toBeVisible({ timeout: 15_000 });
+  // The list builds from the state the window already holds; asking once makes
+  // the render happen before a caller asserts, instead of racing the first paint.
+  await window.evaluate(() => globalThis.window.piApp?.getState());
+  await expect(overview.locator("[data-recency-bucket], .session-row").first()).toBeVisible({
+    timeout: 15_000,
+  });
   return overview;
 }
 
