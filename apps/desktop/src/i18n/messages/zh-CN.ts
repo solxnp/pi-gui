@@ -344,6 +344,8 @@ export const zhCN: Partial<Messages> = {
   "review.conflicted": "有冲突",
   "review.reviewedCount": "已审阅 {reviewed} / {total}",
   "review.noMatchingFiles": "没有匹配的文件。",
+  "terminal.panel": "终端",
+  "terminal.resize": "调整终端高度",
   "terminal.sessions": "终端会话",
   "terminal.close": "关闭“{title}”",
   "terminal.new": "新建终端",

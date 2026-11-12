@@ -16,5 +16,6 @@
 @import "./styles/scheduled-tasks.css";
 @import "./styles/thread-switch.css";
 @import "./styles/thread-tabs.css";
+@import "./styles/bottom-terminal.css";
 @import "./styles/command-palette.css";
 @import "./styles/annotations.css";

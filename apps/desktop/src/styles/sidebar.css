@@ -1060,6 +1060,8 @@
 
 .shell--single-column {
   grid-template-columns: minmax(0, 1fr);
+  /* The transcript column, then the terminal dock spanning both columns. */
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .sidebar--overview {

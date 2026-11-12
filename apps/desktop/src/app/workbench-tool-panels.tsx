@@ -19,7 +19,8 @@ interface WorkbenchToolPanelsProps {
   readonly tasks: ComponentProps<typeof TasksBoardPanel>;
   readonly changes: ComponentProps<typeof DiffPanel>;
   readonly files: FilesPanelProps;
-  readonly terminal: ComponentProps<typeof TerminalPanel>;
+  /** Optional: the terminal is docked under the window, not in the rail. */
+  readonly terminal?: ComponentProps<typeof TerminalPanel>;
 }
 
 /** The composition root for built-in side panel tools, kept out of App's render body. */
@@ -50,6 +51,15 @@ export function WorkbenchToolPanels({
           This file checkout is unavailable.
         </p>
       ),
-    terminal: () => <TerminalPanel key={sessionKey} {...terminal} />,
+    // The terminal moved to the bottom bar; a saved layout that still points here
+    // shows a note instead of an empty panel.
+    terminal: () =>
+      terminal ? (
+        <TerminalPanel key={sessionKey} {...terminal} />
+      ) : (
+        <p className="workbench__unavailable" role="status">
+          The terminal is docked at the bottom of the window.
+        </p>
+      ),
   });
 }

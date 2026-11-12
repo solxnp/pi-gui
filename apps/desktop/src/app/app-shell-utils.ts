@@ -42,3 +42,8 @@ export function mainPaneClassName(input: {
     .filter(Boolean)
     .join(" ");
 }
+
+/** Views that take over the whole window instead of the transcript column. */
+export function secondarySurfaceViewOf(view: AppView): "settings" | "skills" | "extensions" | null {
+  return view === "settings" || view === "skills" || view === "extensions" ? view : null;
+}

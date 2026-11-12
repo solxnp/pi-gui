@@ -80,6 +80,8 @@ interface DesktopCommandsInput {
   };
   /** Opens or closes 「全部会话」; ⌘B and the palette entry both land here. */
   readonly toggleThreadList: () => void;
+  /** Shows or hides the terminal docked under the window. */
+  readonly toggleTerminal: () => void;
   /** Closes one conversation's tab; false when the window has no such tab. */
   readonly closeThreadTab: (target: WorkspaceSessionTarget) => boolean;
   readonly workbench: ReturnType<typeof useWorkbench>;
@@ -207,7 +209,9 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
   const handlers: Record<PiDesktopCommand, CommandHandler> = {
     [desktopCommands.openSettings]: () => input.openSettings(selectedRootWorkspaceId),
     [desktopCommands.openNewThread]: openNewThread,
-    [desktopCommands.toggleTerminal]: () => toggleWorkbenchTool("terminal"),
+    [desktopCommands.toggleTerminal]: () => {
+      input.toggleTerminal();
+    },
     [desktopCommands.toggleSidePanel]: toggleSidePanel,
     [desktopCommands.toggleReview]: () => {
       // A chord replayed from the early buffer can also arrive over IPC. Collapse

@@ -37,6 +37,7 @@ import { useExtensionHostActions } from "../features/extensions/use-extension-ho
 import { useExtensionToolLabels } from "../features/extensions/extension-tool-labels";
 import { useSidePanelTabHintsVisible } from "../features/workbench/side-panel-tab-hints";
 import { Workbench } from "../features/workbench/workbench";
+import { TerminalDock } from "../features/workbench/bottom-terminal";
 import { renderBuiltinToolPanel } from "../features/workbench/builtin-tools";
 import { useWorkbenchWidth } from "../features/workbench/use-workbench-width";
 import type { WorkspaceFileLine } from "../features/conversation/workspace-file-line";
@@ -65,7 +66,7 @@ import { ThreadTabs } from "../features/threads/thread-tabs";
 import { useThreadTabs } from "../features/threads/use-open-thread-tabs";
 import { OpenInEditorButton } from "../features/threads/open-in-editor-button";
 import { useOpenInEditor } from "../features/threads/hooks/use-open-in-editor";
-import { mainPaneClassName } from "./app-shell-utils";
+import { mainPaneClassName, secondarySurfaceViewOf } from "./app-shell-utils";
 import { useSessionModelActions } from "./use-session-model-actions";
 import { Topbar } from "./topbar";
 import { useTopbarNavigation } from "./use-topbar-navigation";
@@ -688,6 +689,7 @@ export default function App() {
   }, [rootWorkspaceOptions]);
 
   const [threadOverviewOpen, setThreadOverviewOpen] = useState(false);
+  const [terminalOpen, setTerminalOpen] = useState(false);
 
   const setActiveView = (view: AppView) => {
     if (!api) return;
@@ -760,6 +762,7 @@ export default function App() {
     selectThread: (target) => selectThreadRef.current(target),
     threadSearch,
     toggleThreadList: () => setThreadOverviewOpen((current) => !current),
+    toggleTerminal: () => setTerminalOpen((current) => !current),
     closeThreadTab: (target) => closeThreadTabRef.current(target),
     workbench,
     sidePanelAvailable,
@@ -830,12 +833,7 @@ export default function App() {
     );
   }
 
-  const secondarySurfaceView =
-    snapshot.activeView === "settings" ||
-    snapshot.activeView === "skills" ||
-    snapshot.activeView === "extensions"
-      ? snapshot.activeView
-      : null;
+  const secondarySurfaceView = secondarySurfaceViewOf(snapshot.activeView);
   const filesWorkspace = snapshot.workspaces.find(
     (workspace) => workspace.id === workbench.view.files.workspaceId,
   );
@@ -1409,16 +1407,17 @@ export default function App() {
                   worktree: filesWorktree,
                   workspace: filesWorkspace,
                 }}
-                terminal={{
-                  workspace: selectedWorkspace,
-                  sessionId: selectedSession.id,
-                  onHide: () => workbench.closeTool("terminal"),
-                }}
               />
             ) : null}
           </Workbench>
         ) : null}
       </main>
+      <TerminalDock
+        onHide={() => setTerminalOpen(false)}
+        open={terminalOpen}
+        sessionId={selectedSession?.id}
+        workspace={selectedWorkspace}
+      />
       {scheduledEditor ? (
         <ScheduledTaskEditor
           editor={scheduledEditor}

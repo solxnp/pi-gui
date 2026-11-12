@@ -356,6 +356,8 @@ export const en = {
   "review.conflicted": "Conflicted",
   "review.reviewedCount": "Reviewed {reviewed} of {total}",
   "review.noMatchingFiles": "No files match.",
+  "terminal.panel": "Terminal",
+  "terminal.resize": "Resize terminal",
   "terminal.sessions": "Terminal sessions",
   "terminal.close": "Close {title}",
   "terminal.new": "New terminal",
