@@ -48,7 +48,9 @@ test("Settings switches to Simplified Chinese and back, and the choice survives 
   test.setTimeout(90_000);
   const userDataDir = await makeUserDataDir();
   const workspacePath = await makeWorkspace("settings-language");
-  const launch = () => launchDesktop(userDataDir, { initialWorkspaces: [workspacePath] });
+  // This spec is about the OS language, so it opts out of the harness's English pin.
+  const launch = () =>
+    launchDesktop(userDataDir, { initialWorkspaces: [workspacePath], locale: "system" });
 
   const firstRun = await launch();
   try {
@@ -106,7 +108,10 @@ test("a language picked in one window applies to the other open windows", async 
   test.setTimeout(60_000);
   const userDataDir = await makeUserDataDir();
   const workspacePath = await makeWorkspace("settings-language-windows");
-  const harness = await launchDesktop(userDataDir, { initialWorkspaces: [workspacePath] });
+  const harness = await launchDesktop(userDataDir, {
+    initialWorkspaces: [workspacePath],
+    locale: "system",
+  });
   try {
     const first = await harness.firstWindow();
     const second = await openSecondWindow(harness);

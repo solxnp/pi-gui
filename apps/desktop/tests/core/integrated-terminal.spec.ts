@@ -77,8 +77,13 @@ test("opens task terminals with persistent output and independent shell tabs", a
     await window.getByTestId("integrated-terminal").locator(".xterm").click();
     await window.keyboard.press(desktopShortcut(","));
     await expect(window.getByTestId("settings-surface")).toHaveCount(0);
+    // Command+Shift+O opens project files outside the terminal; inside it the
+    // shell keeps the chord, so neither the composer nor a Files tab shows up.
     await window.keyboard.press(desktopShortcut("Shift+O"));
     await expect(window.getByTestId("new-thread-composer")).toHaveCount(0);
+    await expect(
+      window.getByTestId("workbench").getByRole("tab", { name: "Files", exact: true }),
+    ).toHaveCount(0);
     await harness.electronApp.evaluate(({ clipboard, nativeImage }, pngBase64) => {
       clipboard.writeImage(nativeImage.createFromDataURL(`data:image/png;base64,${pngBase64}`));
     }, TINY_PNG_BASE64);

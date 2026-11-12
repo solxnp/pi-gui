@@ -137,7 +137,7 @@ test("reads TASKS.md, ranks in-progress first, and puts a row in the composer", 
     const project = window.getByTestId("tasks-board-project");
     await expect(project.locator("option")).toHaveCount(2);
     await expect(project.locator("option", { hasText: "tasks-other" })).toContainText(
-      /待做 2|to do 2/,
+      /待做 2|2 to do/,
     );
 
     const doing = window.getByTestId("tasks-board-section-doing");

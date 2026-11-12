@@ -96,7 +96,7 @@ test("opens /tree from the composer, navigates branches, and blocks it on the ne
     await expect(window.getByTestId("transcript")).toContainText("Branch beta");
     await expect(window.getByTestId("transcript")).toContainText("Beta answer");
 
-    await window.keyboard.press(desktopShortcut("Shift+O"));
+    await window.keyboard.press(desktopShortcut("N"));
     const newThreadComposer = window.getByTestId("new-thread-composer");
     await expect(newThreadComposer).toBeVisible();
     await newThreadComposer.fill("/tree");

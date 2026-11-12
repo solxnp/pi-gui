@@ -83,6 +83,12 @@ export interface LaunchDesktopOptions {
   readonly scrubProviderEnv?: boolean;
   readonly envOverrides?: Readonly<Record<string, string | undefined>>;
   readonly inheritParentEnv?: boolean;
+  /**
+   * The OS language the renderer reports; "system" keeps the machine's.
+   * Defaults to English so assertions about copy do not depend on the machine
+   * that runs them: specs that check locale switching opt back into "system".
+   */
+  readonly locale?: "en" | "system";
   readonly recordVideoDir?: string;
   readonly recordVideoSize?: { readonly width: number; readonly height: number };
 }
@@ -133,8 +139,16 @@ function normalizeLaunchOptions(
   return isWorkspacePaths(options) ? { initialWorkspaces: options } : options;
 }
 
-function electronCliArgs(entry?: string): string[] {
+function electronCliArgs(
+  entry: string | undefined,
+  locale: LaunchDesktopOptions["locale"],
+): string[] {
   const args = entry ? [entry] : [];
+  // Chromium's UI language, which navigator.languages reports, follows this switch.
+  // Pin it so a Chinese macOS does not translate the copy an English spec asserts.
+  if (locale !== "system") {
+    args.push("--lang=en-US");
+  }
   if (process.platform === "linux") {
     // A never-shown X11 window draws ~1.5 frames/s, which starves rAF-driven layout
     // and native wheel scrolling in background test mode.
@@ -163,7 +177,7 @@ export async function launchDesktop(
         }
       : {};
   const electronApp = await electron.launch({
-    args: electronCliArgs(desktopDir),
+    args: electronCliArgs(desktopDir, normalized.locale),
     cwd: desktopDir,
     env,
     ...recordVideo,
@@ -179,7 +193,7 @@ export async function spawnDesktopProcess(
   const normalized = normalizeLaunchOptions(options);
   const agentDir = await prepareAgentDir(userDataDir, normalized);
   const env = buildDesktopLaunchEnv(userDataDir, agentDir, normalized);
-  return spawn(electronExecutablePath, electronCliArgs(desktopDir), {
+  return spawn(electronExecutablePath, electronCliArgs(desktopDir, normalized.locale), {
     cwd: desktopDir,
     env,
     stdio: "ignore",
@@ -195,7 +209,7 @@ export async function launchPackagedDesktop(
   const env = buildDesktopLaunchEnv(userDataDir, agentDir, normalized);
   const releaseDir = resolvePackagedReleaseDir(process.env.PI_APP_TEST_RELEASE_DIR);
   const executablePath = await resolvePackagedAppExecutable(releaseDir);
-  return launchDesktopExecutable(executablePath, env);
+  return launchDesktopExecutable(executablePath, env, normalized.locale);
 }
 
 export async function launchDesktopByExecutable(
@@ -206,16 +220,17 @@ export async function launchDesktopByExecutable(
   const normalized = normalizeLaunchOptions(options);
   const agentDir = await prepareAgentDir(userDataDir, normalized);
   const env = buildDesktopLaunchEnv(userDataDir, agentDir, normalized);
-  return launchDesktopExecutable(executablePath, env);
+  return launchDesktopExecutable(executablePath, env, normalized.locale);
 }
 
 async function launchDesktopExecutable(
   executablePath: string,
   env: NodeJS.ProcessEnv,
+  locale: LaunchDesktopOptions["locale"],
 ): Promise<DesktopHarness> {
   const electronApp = await electron.launch({
     executablePath,
-    args: electronCliArgs(),
+    args: electronCliArgs(undefined, locale),
     cwd: dirname(executablePath),
     env,
   });

@@ -30,10 +30,13 @@ test("one icon and keyboard shortcuts toggle the selected workspace tool", async
     const chooser = window.getByTestId("workbench-chooser");
     if (!(await chooser.isVisible())) await window.getByTestId("workbench-add-tab").click();
     const modifierLabel = process.platform === "darwin" ? "⌘" : "Ctrl+";
+    const shiftPrefix = process.platform === "darwin" ? "⇧⌘" : "Ctrl+Shift+";
     const tile = (name: string) => chooser.getByRole("button", { name, exact: true });
     await expect(tile("Review").locator("kbd")).toHaveText(`${modifierLabel}R`);
     await expect(tile("Terminal").locator("kbd")).toHaveText(`${modifierLabel}J`);
-    await expect(tile("Files").locator("kbd")).toHaveCount(0);
+    // Apple puts the shift before the command symbol.
+    await expect(tile("Files").locator("kbd")).toHaveText(`${shiftPrefix}O`);
+    await expect(tile("Tasks").locator("kbd")).toHaveText(`${shiftPrefix}T`);
     await selectSidePanel(window, "Files");
     await expect(toggle).toHaveAttribute("aria-pressed", "true");
 
@@ -95,6 +98,33 @@ test("one icon and keyboard shortcuts toggle the selected workspace tool", async
       await expect(terminal.locator(".xterm-rows")).toContainText(/i-search/);
       await expect(window.locator(".diff-panel")).toHaveCount(0);
     }
+  } finally {
+    await harness.close();
+  }
+});
+
+test("Shift+Cmd+O and Shift+Cmd+T toggle project files and the task manager", async () => {
+  test.setTimeout(60_000);
+  const userDataDir = await makeUserDataDir();
+  const workspacePath = await makeWorkspace("workbench-tool-chords");
+  const harness = await launchDesktop(userDataDir, {
+    initialWorkspaces: [workspacePath],
+    testMode: "background",
+  });
+
+  try {
+    const window = await harness.firstWindow();
+    await createNamedThread(window, "Tool chord thread");
+    // The chords sit on Shift so plain Command+O stays Open Folder and Command+T
+    // keeps opening the tab chooser.
+    await window.getByTestId("composer").click();
+    await window.keyboard.press(desktopShortcut("Shift+O"));
+    await expect(window.getByTestId("file-workbench")).toBeVisible();
+    await window.keyboard.press(desktopShortcut("Shift+T"));
+    await expect(window.getByTestId("tasks-board")).toBeVisible();
+    // A second press closes the panel the same way Review's chord does.
+    await window.keyboard.press(desktopShortcut("Shift+T"));
+    await expect(window.getByTestId("workbench")).toHaveCount(0);
   } finally {
     await harness.close();
   }

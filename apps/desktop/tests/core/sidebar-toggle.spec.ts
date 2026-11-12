@@ -155,7 +155,7 @@ test("toggles and persists the primary sidebar from the button and keyboard shor
     await window.keyboard.press(desktopShortcut("B"));
     await expectSidebarCollapsed(window, false);
 
-    await window.keyboard.press(desktopShortcut("Shift+O"));
+    await window.keyboard.press(desktopShortcut("N"));
     await expect(window.getByTestId("new-thread-composer")).toBeVisible();
     await window.keyboard.press(desktopShortcut("B"));
     await expectSidebarCollapsed(window, true);
