@@ -20,20 +20,23 @@ test("one icon and keyboard shortcuts toggle the selected workspace tool", async
   try {
     const window = await harness.firstWindow();
     await createNamedThread(window, "Shortcut thread");
-    // The toggle sits in the topbar while the pane is hidden and in the
-    // workbench tab strip while it is shown; there is only ever one.
-    const toggle = window.getByRole("button", { name: "Toggle side panel" });
-    await expect(toggle).toHaveCount(1);
-    await expect(toggle).toBeVisible();
+    // A new conversation already opens the side panel with the three workflow
+    // tools; the chooser is reached from the strip's own + button.
+    const workbench = window.getByTestId("workbench");
+    if (!(await workbench.isVisible())) {
+      await window.getByTestId("toggle-side-panel").click();
+    }
+    await expect(workbench).toBeVisible();
+    const toggle = window.getByTestId("toggle-side-panel");
     await expect(toggle).toHaveText("");
-    await toggle.click();
     const chooser = window.getByTestId("workbench-chooser");
     if (!(await chooser.isVisible())) await window.getByTestId("workbench-add-tab").click();
     const modifierLabel = process.platform === "darwin" ? "⌘" : "Ctrl+";
     const shiftPrefix = process.platform === "darwin" ? "⇧⌘" : "Ctrl+Shift+";
     const tile = (name: string) => chooser.getByRole("button", { name, exact: true });
     await expect(tile("Review").locator("kbd")).toHaveText(`${modifierLabel}R`);
-    await expect(tile("Terminal").locator("kbd")).toHaveText(`${modifierLabel}J`);
+    // The terminal left the rail for the bottom dock, so the chooser no longer lists it.
+    await expect(tile("Terminal")).toHaveCount(0);
     // Apple puts the shift before the command symbol.
     await expect(tile("Files").locator("kbd")).toHaveText(`${shiftPrefix}O`);
     await expect(tile("Tasks").locator("kbd")).toHaveText(`${shiftPrefix}T`);
