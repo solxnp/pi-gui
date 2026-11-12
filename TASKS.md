@@ -145,3 +145,15 @@
 | 改了什么 | 新增 built-in 工具 `tasks`（`contracts/workbench.ts` 加 kind）；`features/workbench/tasks-board/parse-tasks.ts` 解析台账；`session-overview.tsx` 一行概况；`App.tsx` 抽出 `workbench-tool-panels.tsx`（撞到 1447 行上限） |
 | 踩过的坑 | `.gitignore:35` 的 `*-[A-Za-z0-9]{8}.css` 把 `session-overview.css` 吃掉了，改名 `session-strip.css`                                                                                                                      |
 | 已知未修 | `side-panel-picker.spec.ts:11`、`workbench-tabs.spec.ts:187/253` 三条在 clean main 上就红，与本单无关                                                                                                                     |
+
+### ask_user 已答卡：去掉重复的「用户的回答」条，备注留在板上
+
+| 项   | 内容 |
+| ---- | ---- |
+| 状态 | 已完成 |
+| 提交 | `ecb93c3` |
+| 验收 | 答完的卡上只留整张题面（选项 + 已选 ● + 备注那栏回显备注），下面不再有 `用户的回答：` 灰色条 |
+
+- [x] `extension-card.tsx`：有 `answeredForm` 时丢掉 `rows`（老条目没有题面才走 rows 兜底），删掉 `extension-card__answers` / `answers-label` 样式与两条 `extensionForm.answerLabel` 文案
+- [x] 顺手修掉同文件里已红的用例选择器：`--lang=en-US` 之后「其他」是 `Other — write my own`，改成 `/^(其他|Other)/`
+- [x] core 用例 5 条全绿 + typecheck + prettier；真机截图确认（题面 / ● / 备注回显，无重复条）
