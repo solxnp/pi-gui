@@ -26,10 +26,13 @@ export type WorkbenchAction =
 
 /** A task without a saved layout keeps the side workspace closed until the user opens it. */
 export function initialWorkbenchView(workspaceId: string): TaskWorkbenchTemplate {
+  // A new conversation opens with the three panels this workflow lives in, so a
+  // restart never drops back to the bare chooser. Terminal moved to the bottom
+  // bar, so it is not one of them.
   return {
-    visibility: "hidden",
-    tools: [{ kind: "changes" }],
-    selection: { kind: "tool", toolId: "changes" },
+    visibility: "visible",
+    tools: [{ kind: "tasks" }, { kind: "files" }, { kind: "changes" }],
+    selection: { kind: "tool", toolId: "tasks" },
     files: { workspaceId, tabs: EMPTY_FILE_TABS },
     changes: { workspaceId, selectedPath: null, scope: { kind: "uncommitted" } },
   };
