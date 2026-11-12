@@ -164,7 +164,7 @@
 | 项   | 内容 |
 | ---- | ---- |
 | 状态 | 已完成 |
-| 提交 | `6bbfd55`（样式 / `alignTop()` / 挂载）/ `PENDING`（用例断言） |
+| 提交 | `6bbfd55`（样式 / `alignTop()` / 挂载）、`16ba250`（用例断言） |
 | 验收 | 待答卡宽度等于 transcript 那一列（768px）而不是整个对话区；卡内没有自己的滚动条，指针停在卡上滚轮滚的是对话；卡片比 pane 高时出现即对齐顶边，第 1 个问题先入眼 |
 
 - [x] `.timeline-pending-form` 加 `max-width: var(--transcript-measure, 768px)` + 居中 + 上边距
