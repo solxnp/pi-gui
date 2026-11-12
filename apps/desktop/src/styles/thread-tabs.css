@@ -71,9 +71,12 @@
   text-overflow: ellipsis;
 }
 
+/* State dots: green and pulsing while a turn runs, amber when a turn finished
+ * and has not been read, red after a failure. A finished, read conversation has
+ * no dot at all, so "is it still working?" is answerable at a glance. */
 .thread-tabs__dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   flex: none;
   border-radius: 50%;
   background: var(--muted);
@@ -81,39 +84,51 @@
 
 .thread-tabs__dot--running {
   background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent);
+  animation: thread-tab-pulse 1.4s ease-in-out infinite;
+}
+
+.thread-tabs__dot--unseen {
+  background: var(--warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 25%, transparent);
 }
 
 .thread-tabs__dot--failed {
   background: var(--error);
 }
 
-.thread-tabs__dot--unseen {
-  background: var(--accent);
-}
-
-/* A conversation waiting for an answer is the one thing the strip must not
- * under-state: the whole tab tints, keeps a left bar, and names the state. */
-.thread-tabs__tab--input {
-  background: color-mix(in srgb, var(--warning) 18%, var(--surface));
-  border-color: color-mix(in srgb, var(--warning) 45%, var(--line));
-  box-shadow: inset 3px 0 0 var(--warning);
-  color: var(--text);
-  font-weight: var(--font-medium);
-}
-
-.thread-tabs__tab--input .thread-tabs__select {
-  padding-left: 12px;
-}
-
 .thread-tabs__badge {
   flex: none;
   padding: 1px 6px 2px;
   border-radius: 999px;
-  background: var(--warning);
-  color: var(--button-primary-ink, #fff);
+  border: 1px solid transparent;
   font-size: 10.5px;
   font-weight: var(--font-semibold);
   letter-spacing: 0.02em;
+}
+
+/* Waiting for an answer outranks every other mark: it blocks the work. */
+.thread-tabs__badge--input,
+.thread-tabs__tab--input .thread-tabs__badge {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--button-primary-ink, #fff);
+}
+
+@keyframes thread-tab-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thread-tabs__dot--running {
+    animation: none;
+  }
 }
 
 .thread-tabs__close {

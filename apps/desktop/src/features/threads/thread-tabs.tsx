@@ -18,7 +18,8 @@ export interface ThreadTabEntry {
   readonly title: string;
   /** Root workspace name, shown in the tooltip so two projects read apart. */
   readonly projectName: string;
-  readonly status: "running" | "failed" | "unseen" | "none";
+  /** running · failed · unseen (finished, not read yet) · idle (finished, read). */
+  readonly status: "running" | "failed" | "unseen" | "idle";
   /** An extension dialog is waiting in this conversation. */
   readonly awaitingInput: boolean;
 }
@@ -153,7 +154,17 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
                 index < 9 ? `${platform === "darwin" ? "Meta" : "Control"}+${index + 1}` : undefined
               }
               aria-label={
-                tab.awaitingInput ? `${tab.title} · ${t("threadTabs.awaitingInput")}` : undefined
+                tab.awaitingInput
+                  ? `${tab.title} · ${t("threadTabs.awaitingInput")}`
+                  : `${tab.title} · ${
+                      tab.status === "running"
+                        ? t("threadTabs.running")
+                        : tab.status === "failed"
+                          ? t("threadTabs.failed")
+                          : tab.status === "unseen"
+                            ? t("threadTabs.unseen")
+                            : t("threadTabs.idle")
+                    }`
               }
               aria-selected={active}
               className="thread-tabs__select"
@@ -169,8 +180,10 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
               type="button"
             >
               {tab.awaitingInput ? (
-                <span className="thread-tabs__badge">{t("threadTabs.awaitingInputBadge")}</span>
-              ) : tab.status !== "none" ? (
+                <span className="thread-tabs__badge thread-tabs__badge--input">
+                  {t("threadTabs.awaitingInputBadge")}
+                </span>
+              ) : tab.status === "idle" ? null : (
                 <span
                   aria-label={
                     tab.status === "running"
@@ -181,7 +194,7 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
                   }
                   className={`thread-tabs__dot thread-tabs__dot--${tab.status}`}
                 />
-              ) : null}
+              )}
               <span className="thread-tabs__title">{tab.title}</span>
             </button>
             <button

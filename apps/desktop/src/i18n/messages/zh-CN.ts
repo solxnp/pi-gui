@@ -246,6 +246,7 @@ export const zhCN: Partial<Messages> = {
   "threadTabs.running": "运行中",
   "threadTabs.failed": "运行失败",
   "threadTabs.unseen": "有新内容",
+  "threadTabs.idle": "已结束，你看过了",
   "threadTabs.awaitingInputBadge": "待确认",
   "threadTabs.awaitingInput": "等待你回答",
   "workbench.chooserTitle": "打开工具",

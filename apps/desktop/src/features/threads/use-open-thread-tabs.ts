@@ -182,6 +182,8 @@ export function useThreadTabs({
         key,
         title: entry.session.title,
         projectName: projectName(entry.folderId),
+        // Four observable states: still running, failed, finished-and-unread,
+        // finished-and-read. A tab never looks the same as an idle one by accident.
         status:
           status === "running"
             ? "running"
@@ -189,7 +191,7 @@ export function useThreadTabs({
               ? "failed"
               : hasUnseenUpdate
                 ? "unseen"
-                : "none",
+                : "idle",
         awaitingInput: pendingKeys.has(key),
       };
     };
