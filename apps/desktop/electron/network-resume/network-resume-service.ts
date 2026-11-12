@@ -90,9 +90,11 @@ export class NetworkResumeService {
   /** Returns the stop function; call it when the app quits. */
   start(): () => void {
     this.stopped = false;
+    this.note("start", { waiting: this.waiting.size });
     this.schedule();
     return () => {
       this.stopped = true;
+      this.note("stop", { waiting: this.waiting.size });
       if (this.timer) {
         clearTimeout(this.timer);
         this.timer = undefined;
@@ -244,6 +246,8 @@ export class NetworkResumeService {
     if (!enabled) {
       return;
     }
+    // Logged so a missing probe is distinguishable from a missing timer.
+    this.note("arm", { inMs: probeIntervalMs, waiting: this.waiting.size });
     this.timer = setTimeout(() => {
       this.timer = undefined;
       this.tick()
@@ -264,12 +268,15 @@ export class NetworkResumeService {
 
   private async tick(): Promise<void> {
     if (this.ticking || this.stopped) {
+      // A tick that never finished is why probes would silently stop; log it.
+      this.note("skip", { ticking: this.ticking, stopped: this.stopped });
       return;
     }
     this.ticking = true;
     try {
       const { enabled, consecutiveSuccesses, giveUpAfterFailedProbes } = this.host.getPreferences();
       if (!enabled || this.waiting.size === 0) {
+        this.note("skip", { enabled, waiting: this.waiting.size });
         return;
       }
       const result = await this.options.probe();
