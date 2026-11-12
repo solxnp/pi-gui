@@ -16,7 +16,7 @@ import type {
   WorkspaceRecord,
 } from "../../contracts/desktop-state";
 import { resolvePackagedAppExecutable } from "./packaged-app";
-import { TINY_PNG_BASE64 } from "./native-input";
+import { desktopShortcut, TINY_PNG_BASE64 } from "./native-input";
 
 export {
   copyAppBundle,
@@ -1789,6 +1789,15 @@ export async function selectSidePanel(
   window: Page,
   choice: "Files" | "Review" | "Terminal",
 ): Promise<void> {
+  if (choice === "Terminal") {
+    // The terminal is docked under the window now; ⌘J is its only surface.
+    const dock = window.getByTestId("bottom-terminal");
+    if (!(await dock.isVisible().catch(() => false))) {
+      await window.keyboard.press(desktopShortcut("J"));
+    }
+    await expect(dock).toBeVisible({ timeout: 15_000 });
+    return;
+  }
   const workbench = window.getByTestId("workbench");
   if (!(await workbench.isVisible())) {
     await window.getByTestId("toggle-side-panel").click();

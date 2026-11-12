@@ -59,8 +59,9 @@ test("opens task terminals with persistent output and independent shell tabs", a
     );
 
     await createNamedThread(window, "Terminal other thread");
-    await expect(window.getByTestId("integrated-terminal")).toHaveCount(0);
-    await window.keyboard.press(desktopShortcut("J"));
+    // The dock is window state now: switching conversation keeps it open and
+    // remounts the panel for the other thread's shell.
+    await expect(window.getByTestId("bottom-terminal")).toBeVisible();
     await expect(window.getByTestId("integrated-terminal")).toBeVisible();
     await expect(
       window.getByTestId("integrated-terminal").locator(".xterm-rows"),
@@ -81,9 +82,9 @@ test("opens task terminals with persistent output and independent shell tabs", a
     // shell keeps the chord, so neither the composer nor a Files tab shows up.
     await window.keyboard.press(desktopShortcut("Shift+O"));
     await expect(window.getByTestId("new-thread-composer")).toHaveCount(0);
-    await expect(
-      window.getByTestId("workbench").getByRole("tab", { name: "Files", exact: true }),
-    ).toHaveCount(0);
+    // The rail already holds a Files tab; what must not happen is that chord
+    // inside the terminal switching the panel to it.
+    await expect(window.getByTestId("file-workbench")).toHaveCount(0);
     await harness.electronApp.evaluate(({ clipboard, nativeImage }, pngBase64) => {
       clipboard.writeImage(nativeImage.createFromDataURL(`data:image/png;base64,${pngBase64}`));
     }, TINY_PNG_BASE64);
