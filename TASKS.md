@@ -205,6 +205,25 @@
 - [x] 新增单测 `thread-tabs-layout.spec.ts`（7 / 12 / 18 / 19 个 tab、窄条、槽位顺序）
 - [x] 实测：1480 宽 → 每行 6/1；1900 宽 → 一行 7 个；1100 宽 → 3/3/1
 
+### P0-12 迁移断言 `.session-row` 的 13 条红用例（列表已进浮层）
+
+| 项   | 内容                                                                                                                                                                                       |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 状态 | 已完成                                                                                                                                                                                     |
+| 提交 | `63d5d99`（产品修复）、`0a52b58`（用例迁移）                                                                                                                                               |
+| 验收 | `notifications` 5、`stop-running-prompt` 3、`thread-menu` 2、`navigation` 2（原报 3）、`command-palette` 1 全绿，且断言打在用户真能看到的面上（「全部会话」浮层 / tab 条 / composer 焦点） |
+
+- [x] 复现并分类 13 条：12 条是「行只在浮层里」的过期断言，`command-palette` 1 条是终端抢焦点导致 ⌘P 被吞
+- [x] notifications：加 `rowOf()` 辅助，先 `openThreadOverview` 再取行（5 条）
+- [x] stop-running-prompt：pin/unpin 与行状态断言前开浮层，pin 完 Escape 回对话再发 prompt（3 条）
+- [x] thread-menu：开头开浮层；选中行会关浮层 → 后续菜单操作前重开；比对 header 菜单前 Escape（2 条）
+- [x] navigation：`workspace-list` / `.session-row--active` 改在浮层内断言（2 条 + 顺带 1 条）
+- [x] 产品修复 1：`TerminalDock` 只在 dock 由关到开时传 `autoFocus`，切会话的 remount 不再抢焦点（`autoFocus` 用 ref 读一次，放进 deps 会重建 shell）
+- [x] 产品修复 2：⇧⌘R 先 `threadList.setOpen(true)` 再重命名；`ThreadOverview` 打开时若面板内已有焦点就不抢到关闭按钮
+- [x] 新增回归用例：dock 开着切会话 → composer 仍持有焦点、⌘P 仍能开面板；首条用例 marker 改用 printf 拼，避免命令回显命中断言（原来偶发假红）
+- [x] 验证：typecheck / eslint / prettier / unit 548；core 22 条全绿（这批耗时从 5–30s 等超时降到 2–7s）
+- [x] 对比 clean HEAD：同样跑 5 个文件（new-thread-auto-title 7、parallel-runs 1、sidebar-folder-collapse 1、sidebar-ordering 3、unread-state 1）失败集合**完全一致**，本次改动没有引入新红
+
 ## 二、已完成
 
 ### P0-00 台账面板 + 输入框上方概况条
