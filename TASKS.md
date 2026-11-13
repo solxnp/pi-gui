@@ -158,6 +158,34 @@
 | 验收 | ⌘J 开合底部终端；终端横跨整个窗口宽度、右栏在它上方结束；拖动上边缘改高度，重启后保持；多开沿用终端标签栏     |
 | 阻塞 | `integrated-terminal` / `side-panel-picker` / `workbench-tabs` 等用例仍按「终端是右栏一张 tab」写断言，未迁移 |
 
+### P0-09 终端可见入口 + 面板「收起」
+
+| 项   | 内容                                                                                                                                                  |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 状态 | 已完成                                                                                                                                                |
+| 提交 | `50eac2f`                                                                                                                                             |
+| 验收 | 不记快捷键也能开终端：顶栏终端按钮（tooltip 显示 ⌘J）、⌘K 命令面板「切换终端」；终端工具栏「收起」隐藏整块面板但不关 shell，再打开时 tab 数与输出都在 |
+
+- [x] 顶栏 actions 加终端 toggle（`topbar.tsx`；`aria-pressed` 跟终端开合、无会话时 disabled）
+- [x] 终端工具栏加「收起」按钮（`terminal-panel.tsx` → `onHide`，不触发关 tab）
+- [x] ⌘K 面板加「切换终端」条目（`palette-actions.tsx`，复用 `workbench.toggleTool` 文案；`builtin-tools.tsx` 导出 `TERMINAL_TOOL_KIND`）
+- [x] 语言包 en + zh-CN 各补 4 条：`topbar.toggleTerminal` / `topbar.hideTerminal` / `topbar.showTerminal` / `terminal.hide`
+- [x] 新增 core 用例：顶栏按钮开合、「收起」后 shell 仍在跑、重开输出与 tab 数保持、面板条目切换
+- [x] 跑 integrated-terminal / command-palette / thread-tabs 用例 + typecheck（command-palette、navigation 2 条在 clean HEAD 上同红，与本单无关）
+- [x] commit + push + 回写本表
+
+### P0-10 会话状态区分不出来：颜色/形状/两处不一致
+
+| 项   | 内容                                                                                                                    |
+| ---- | ----------------------------------------------------------------------------------------------------------------------- |
+| 状态 | 待做                                                                                                                    |
+| 提交 | —                                                                                                                       |
+| 阻塞 | 等用户拍板：状态色是否脱离主题 seed；是否用「实心点 + 行底色/文字标签」而不只是换颜色                                   |
+| 验收 | 顶部 tab 条与「全部会话」列表用同一套状态语言；running / 待你读 / 失败 / 待确认 在 100% 缩放下不看 tooltip 也能一眼分开 |
+
+- [x] 现状清点：tab 条 unseen=琥珀 `--warning`（`thread-tabs.css:91`），侧栏行 unseen=accent 蓝（`sidebar.css:675`）；running 在 tab 条是 pulse 实心点、在侧栏是旋转环 → 同一状态两处不同色
+- [ ] 待定（等阻塞项拍板）
+
 ## 二、已完成
 
 ### P0-00 台账面板 + 输入框上方概况条
