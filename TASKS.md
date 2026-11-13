@@ -224,6 +224,23 @@
 - [x] 验证：typecheck / eslint / prettier / unit 548；core 22 条全绿（这批耗时从 5–30s 等超时降到 2–7s）
 - [x] 对比 clean HEAD：同样跑 5 个文件（new-thread-auto-title 7、parallel-runs 1、sidebar-folder-collapse 1、sidebar-ordering 3、unread-state 1）失败集合**完全一致**，本次改动没有引入新红
 
+### P0-13 迁移剩下 22 条 `.session-row` 红用例（同一根因，P0-12 之外）
+
+| 项   | 内容                                                                                                                               |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 状态 | 已完成（第二批 30 条转绿；剩余 48 条拆到 P0-14）                                                                                   |
+| 提交 | `8506619`                                                                                                                          |
+| 验收 | `getByRole("complementary")` / `.session-row` / `.workspace-row` / `.archived-thread-group` 一类死定位器全部换成顶栏、浮层、tab 条 |
+
+- [x] 跑完整 core 套件（Node 22）拿到真实红名单：**78 条 / 40 个文件**（之前的 22 条只是 14 个文件的局部数，我低估了）
+- [x] `getByRole("complementary")` + New thread → `openNewThread()`（11 个文件，含 live 3 个）
+- [x] 行 / 文件夹行 / pinned / archived 断言前 `openThreadOverview()`；被 selectSession 或「新会话中」带走后重新打开
+- [x] `new-thread-auto-title` 7 条标题断言改打 tab 条
+- [x] `extension-continuation` / `extension-custom-messages` 改打 `.thread-tabs__tab--running`
+- [x] `composer-draft-sync` ⌘1/⌘2 期望值按 tab 打开顺序对调
+- [x] 验证（Node 22）：smoke 3、archive、new-thread-auto-title 7、new-thread-draft、parallel-runs、sidebar-ordering 3、sidebar-folder-collapse、unread-state、thread-hierarchy-archive、composer-draft-sync 8、message-wrapping、queued-messages 5、extension-continuation、extension-custom-messages、extension-trace-view、extension-usage-view 3 全绿
+- [!] 教训：**core 套件必须用 Node 22 跑**（`zlib.crc32`）。默认 `/usr/local/bin/node` 20 会让 `workbench-tabs` 6 条等假失败
+
 ## 二、已完成
 
 ### P0-00 台账面板 + 输入框上方概况条
