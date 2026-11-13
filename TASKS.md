@@ -241,6 +241,22 @@
 - [x] 验证（Node 22）：smoke 3、archive、new-thread-auto-title 7、new-thread-draft、parallel-runs、sidebar-ordering 3、sidebar-folder-collapse、unread-state、thread-hierarchy-archive、composer-draft-sync 8、message-wrapping、queued-messages 5、extension-continuation、extension-custom-messages、extension-trace-view、extension-usage-view 3 全绿
 - [!] 教训：**core 套件必须用 Node 22 跑**（`zlib.crc32`）。默认 `/usr/local/bin/node` 20 会让 `workbench-tabs` 6 条等假失败
 
+### P0-14 剩余 51 条红用例分类与修复
+
+| 项   | 内容                                                                                                                       |
+| ---- | -------------------------------------------------------------------------------------------------------------------------- |
+| 状态 | 进行中                                                                                                                     |
+| 提交 | `c379f37`（gitignore 构建修复）、`27ffd31`（第三批迁移 + 删废弃用例）                                                      |
+| 验收 | 每条红用例都归到「死定位器 / 环境 / 真回归」三类之一；真回归单独修产品；死定位器批量迁移；最终全量 core 套件回到可解释状态 |
+
+- [x] **基线**：`git worktree add /tmp/pi-base fd556f5`（今天所有改动之前）+ 构建 + 跑可疑的 16 条 → **全部同样红**，证明不是今天的改动引起
+- [x] 顺带发现真 bug：`bottom-terminal.css` 被 `.gitignore` 的 hashed 规则吞了，从来没进 git → 干净 clone 构建失败（`c379f37` 修复，基线 worktree 实测）
+- [x] 第二/三批迁移（`27ffd31`）：`hydrate-recovery` 3、`persistence` 2、`settings-appearance` 1、`turn-changes-card`、`review-turns`、`session-lease`、`multi-window`、`model-scope-toggle`、`extension-flags`、`workspace-files` 2、`orchestration-runtime-tools`、`composer-draft-flush`、`open-folder` 2、`provider-settings`、`extension-examples`、`extension-draft-actions`
+- [x] 删除界面已不存在的用例 4 条：`sidebar-drawer.spec.ts` 整份、`secondary-surface-inset.spec.ts` 整份、`transcript-annotations` 抽屉那条
+- [x] 验证（Node 22）：18 个文件 55 条 → 53 绿；剩 2 条 `transcript-annotations` 为基线同红
+- [ ] 剩余：`sidebar-recency` 5、`worktrees` 5、`mentions-diff` 2、`tree-command` 2、`pending-approval-badge`、`skills-settings`、`side-panel-picker`、`side-panel-tab-shortcuts`、`workspace-menu`、`custom-endpoints`、`timeline-pinning` 2、`timeline-overflow` 2、`transcript-annotations` 2（其中 4 条 timeline + 2 条 annotations 属基线同红）
+- [x] 记录：core 套件必须 Node 22（`zlib.crc32`）；`fd556f5` 基线 worktree 留在 `/tmp/pi-base` 可复查
+
 ## 二、已完成
 
 ### P0-00 台账面板 + 输入框上方概况条
