@@ -7,6 +7,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
   persistedSessionDataPaths,
 } from "../helpers/electron-app";
 import { appendMessagesToSessionFile, sessionFilePathFromCatalog } from "../helpers/session-file";
@@ -76,6 +77,8 @@ test("right-click thread menu supports rename, archive/restore, mark read, and c
   const harness = await launchDesktop(userDataDir, { testMode: "background" });
   try {
     const window = await harness.firstWindow();
+    // The conversation list lives in 「全部会话」 now; its rows hold the menu.
+    await openThreadOverview(window);
     let row = window.locator(".session-row", { hasText: targetTitle }).first();
     await expect(row).toHaveAttribute("data-sidebar-indicator", "unseen");
 
@@ -134,6 +137,8 @@ test("right-click thread menu supports rename, archive/restore, mark read, and c
     await window.mouse.click(gapPoint.x, gapPoint.y);
     await expect(window.locator(".chat-header__title")).toHaveText(targetTitle);
     await captureProof(window, "06-gap-fixed.png");
+    // Selecting a row closes the list, so reopen it for the menu work.
+    await openThreadOverview(window);
 
     await row.click({ button: "right" });
     await row.getByRole("menu").getByRole("button", { name: "Rename thread" }).click();
@@ -187,6 +192,7 @@ test("header and right-click menus match, show shortcuts, and Shift chords renam
     // The newly created thread is the current/selected thread.
     await createNamedThread(window, targetTitle);
 
+    await openThreadOverview(window);
     const row = window.locator(".session-row", { hasText: targetTitle }).first();
     await row.click({ button: "right" });
     const rowMenu = row.getByRole("menu");
@@ -200,6 +206,9 @@ test("header and right-click menus match, show shortcuts, and Shift chords renam
     await captureProof(window, "07-row-menu-hints.png");
     await window.keyboard.press("Escape");
     await expect(rowMenu).toHaveCount(0);
+    // The header menu sits behind the list, so close it before comparing menus.
+    await window.keyboard.press("Escape");
+    await expect(window.getByTestId("thread-overview")).toHaveCount(0);
 
     await window.getByTestId("thread-header-menu").click();
     const headerMenu = window.locator(".chat-header__menu");
@@ -209,6 +218,7 @@ test("header and right-click menus match, show shortcuts, and Shift chords renam
     await expect(headerMenu).toHaveCount(0);
 
     // Hovering the row's archive button shows the shortcut.
+    await openThreadOverview(window);
     await row.hover();
     await row.getByRole("button", { name: `Archive ${targetTitle}` }).hover();
     const tooltip = row.locator(".session-row__tooltip");
@@ -216,7 +226,7 @@ test("header and right-click menus match, show shortcuts, and Shift chords renam
     await expect(tooltip.locator("kbd")).toHaveText(isMac ? "⇧⌘A" : "Ctrl+Shift+A");
     await captureProof(window, "09-archive-tooltip.png");
 
-    // Rename from a collapsed sidebar opens it and focuses the field.
+    // ⌘B closes the list; the rename chord then works without it.
     await window.keyboard.press(`${modifier}+B`);
     await expect(window.locator(".session-row")).toHaveCount(0);
     await window.keyboard.press(`${modifier}+Shift+R`);
@@ -227,6 +237,7 @@ test("header and right-click menus match, show shortcuts, and Shift chords renam
     await expect(window.locator(".chat-header__title")).toHaveText(renamedTitle);
 
     await window.keyboard.press(`${modifier}+Shift+A`);
+    await openThreadOverview(window);
     await expect(
       window.locator(".session-list > .session-row", { hasText: renamedTitle }),
     ).toHaveCount(0);

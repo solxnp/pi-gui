@@ -10,6 +10,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
 } from "../helpers/electron-app";
 
 const pendingPrompts = [
@@ -31,10 +32,13 @@ for (const { finish, prompt } of pendingPrompts) {
       const page = await harness.firstWindow();
       await createNamedThread(page, "Other thread");
       await createNamedThread(page, "Pending prompt");
+      // The list only exists while 「全部会话」 is open.
+      await openThreadOverview(page);
       await page.locator(".session-row", { hasText: "Pending prompt" }).hover();
       await page.getByRole("button", { name: /^Pin Pending prompt/ }).click();
       const pinnedSection = page.getByRole("region", { name: "Pinned threads" });
       await expect(pinnedSection).toBeVisible();
+      await page.keyboard.press("Escape");
       const state = await getDesktopState(page);
       const target = {
         workspaceId: state.selectedWorkspaceId!,
@@ -120,6 +124,8 @@ for (const { finish, prompt } of pendingPrompts) {
       await page.getByTestId("send").click();
       await expect(page.getByRole("button", { name: "Stop run", exact: true })).toBeVisible();
       await expect(page.locator(".composer__hint")).toHaveCount(0);
+      // Pinned threads live in the list, so the pin controls need it open again.
+      await openThreadOverview(page);
       await pinnedSection.getByRole("button", { name: /^Unpin Pending prompt/ }).click();
       await expect(pinnedSection).toHaveCount(0);
       const row = page.locator(`.session-row[data-session-id="${target.sessionId}"]`);
@@ -132,6 +138,7 @@ for (const { finish, prompt } of pendingPrompts) {
       await expect(page.locator(".chat-header__title")).toHaveText("Other thread", {
         timeout: 5_000,
       });
+      await openThreadOverview(page);
       await expect(row).toHaveAttribute("data-sidebar-indicator", "running");
       if (finish === "complete") {
         await harness.electronApp.evaluate(async () => {
@@ -150,6 +157,7 @@ for (const { finish, prompt } of pendingPrompts) {
       await expect(page.getByTestId("send")).toHaveAttribute("aria-label", "Send message", {
         timeout: 5_000,
       });
+      await openThreadOverview(page);
       await expect(
         page.locator(`.session-row[data-session-id="${target.sessionId}"]`),
       ).not.toHaveAttribute("data-sidebar-indicator", "running");

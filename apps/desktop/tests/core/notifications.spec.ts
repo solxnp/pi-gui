@@ -1,10 +1,11 @@
 import { join } from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   getDesktopState,
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
 } from "../helpers/electron-app";
 import {
   emitAttentionRequest,
@@ -18,6 +19,12 @@ import {
   selectSessionByTitle,
   setSessionVisibilityOverride,
 } from "../helpers/session-event-test-helpers";
+
+/** The conversation list lives in 「全部会话」 now; rows only exist while it is open. */
+async function rowOf(window: Page, title: string): Promise<Locator> {
+  const overview = await openThreadOverview(window);
+  return overview.locator(".session-row", { hasText: title });
+}
 
 test("does not log a notification or blue dot for a focused selected session completion", async () => {
   const userDataDir = await makeUserDataDir();
@@ -35,7 +42,7 @@ test("does not log a notification or blue dot for a focused selected session com
     await setSessionVisibilityOverride(harness, "active");
     await selectSessionByTitle(window, "Focused Session");
 
-    const row = window.locator(".session-row", { hasText: "Focused Session" });
+    const row = await rowOf(window, "Focused Session");
     const runId = await emitRunningEvent(harness, session, "Focused");
     await emitCompletedEvent(harness, session, "Focused", runId);
 
@@ -92,11 +99,11 @@ test("logs a completion notification and blue dot for a focused different sessio
     await expect
       .poll(() => readOptionalLog(notificationLogPath), { timeout: 30_000 })
       .toContain('"body":"Agent finished responding"');
-    await expect(window.locator(".session-row", { hasText: "Session A" })).toHaveAttribute(
+    await expect(await rowOf(window, "Session A")).toHaveAttribute(
       "data-sidebar-indicator",
       "unseen",
     );
-    await expect(window.locator(".session-row", { hasText: "Session B" })).toHaveAttribute(
+    await expect(await rowOf(window, "Session B")).toHaveAttribute(
       "data-sidebar-indicator",
       "none",
     );
@@ -122,7 +129,7 @@ test("logs a completion notification and blue dot for a selected session after t
     await selectSessionByTitle(window, "Selected Session");
     await setSessionVisibilityOverride(harness, "inactive");
 
-    const row = window.locator(".session-row", { hasText: "Selected Session" });
+    const row = await rowOf(window, "Selected Session");
     const runId = await emitRunningEvent(harness, session, "Hidden");
     await emitCompletedEvent(harness, session, "Hidden", runId);
 
@@ -191,7 +198,7 @@ test("logs a failure notification and preserves failed status with an unread upd
           ?.hasUnseenUpdate;
       })
       .toBe(true);
-    await expect(window.locator(".session-row", { hasText: "Failed Session A" })).toHaveAttribute(
+    await expect(await rowOf(window, "Failed Session A")).toHaveAttribute(
       "data-sidebar-indicator",
       "failed",
     );
@@ -226,9 +233,10 @@ test("logs an attention-needed notification and blue dot for a focused different
     await expect
       .poll(() => readOptionalLog(notificationLogPath), { timeout: 30_000 })
       .toContain("Needs your approval");
-    await expect(
-      window.locator(".session-row", { hasText: "Attention Session A" }),
-    ).toHaveAttribute("data-sidebar-indicator", "running");
+    await expect(await rowOf(window, "Attention Session A")).toHaveAttribute(
+      "data-sidebar-indicator",
+      "running",
+    );
   } finally {
     await harness.close();
   }

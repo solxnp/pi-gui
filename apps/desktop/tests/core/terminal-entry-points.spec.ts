@@ -41,9 +41,10 @@ test("opens the terminal from the topbar and hides it without closing its shells
     await expect(toggle).toHaveAttribute("aria-pressed", "true");
 
     // Start output that finishes only after the dock is gone, so the marker can
-    // only show up if the shell kept running while hidden.
+    // only show up if the shell kept running while hidden. The marker is built by
+    // printf so the echoed command line itself never contains it.
     await terminal.locator(".xterm").click();
-    await window.keyboard.type("sleep 6; echo PI_SURVIVES_HIDE");
+    await window.keyboard.type("sleep 6; echo $(printf 'PI_%s' SURVIVES_HIDE)");
     await window.keyboard.press("Enter");
     await expect(terminal.locator(".xterm-rows")).not.toContainText("PI_SURVIVES_HIDE");
 
@@ -79,6 +80,51 @@ test("opens the terminal from the topbar and hides it without closing its shells
     await expect(palette).toHaveCount(0);
     await expect(dock).toBeVisible();
     await expect(window.getByTestId("terminal-tab")).toHaveCount(1);
+  } finally {
+    await harness.close();
+  }
+});
+
+/**
+ * The dock is window-level state, so switching conversations remounts the shell
+ * under an open dock. That remount must not take focus: the keystrokes belong to
+ * the newly opened thread's composer, and a focused shell swallows ⌘P/⌘K.
+ */
+test("switching conversations under an open terminal leaves focus in the composer", async () => {
+  test.setTimeout(90_000);
+
+  const userDataDir = await makeUserDataDir();
+  const workspacePath = await makeWorkspace("terminal-focus");
+  const harness = await launchDesktop(userDataDir, {
+    initialWorkspaces: [workspacePath],
+    testMode: "background",
+  });
+
+  try {
+    const window = await harness.firstWindow();
+    await waitForWorkspaceByPath(window, workspacePath);
+    await createNamedThread(window, "Terminal focus one");
+    await createNamedThread(window, "Terminal focus two");
+
+    await window.getByTestId("toggle-terminal").click();
+    const terminal = window.getByTestId("integrated-terminal");
+    await expect(terminal).toBeVisible();
+    // Opening the dock focuses its shell, so typing can start immediately.
+    await expect(terminal.locator(".xterm-helper-textarea")).toBeFocused();
+
+    // Switch by clicking the strip's tab: the shell owns ⌘K while it has focus
+    // (main forwards macOS chords to the page), so a chord is not the way in here.
+    await window
+      .getByTestId("thread-tabs")
+      .getByRole("tab", { name: /^Terminal focus one/ })
+      .click();
+    await expect(window.locator(".chat-header__title")).toHaveText("Terminal focus one");
+    await expect(window.getByTestId("terminal-tab")).toHaveCount(1);
+
+    // The composer owns the keyboard after the switch, not the shell.
+    await expect(window.getByTestId("composer")).toBeFocused();
+    await window.keyboard.press(desktopShortcut("P"));
+    await expect(window.getByTestId("command-palette")).toBeVisible();
   } finally {
     await harness.close();
   }

@@ -6,6 +6,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
   selectSession,
   streamAssistantDeltas,
   waitForWorkspaceByPath,
@@ -56,8 +57,11 @@ test("persists workspace, selected session, and draft across app restart", async
         selectedWorkspaceId: persistedWorkspace.id,
         hasPersistenceSession: true,
       });
-    await expect(window.getByTestId("workspace-list")).toContainText(basename(workspacePath));
-    await expect(window.locator(".session-row--active")).toContainText("Persistence session");
+    // The list lives in 「全部会话」 now, so the saved selection is read there.
+    const overview = await openThreadOverview(window);
+    await expect(overview.getByTestId("workspace-list")).toContainText(basename(workspacePath));
+    await expect(overview.locator(".session-row--active")).toContainText("Persistence session");
+    await window.keyboard.press("Escape");
     await expect(window.getByTestId("composer")).toHaveValue(draft);
 
     const state = await getDesktopState(window);
@@ -94,22 +98,24 @@ test("navigates across folders and sessions through the sidebar", async () => {
     await waitForWorkspaceByPath(window, betaPath);
 
     await createNamedThread(window, "Alpha session one", { workspaceName: basename(alphaPath) });
-    await expect(window.locator(".session-row", { hasText: "Alpha session one" })).toHaveAttribute(
-      "data-sidebar-indicator",
-      "none",
-    );
+    // Rows only exist while 「全部会话」 is open.
+    let overview = await openThreadOverview(window);
+    await expect(
+      overview.locator(".session-row", { hasText: "Alpha session one" }),
+    ).toHaveAttribute("data-sidebar-indicator", "none");
 
     await createNamedThread(window, "Alpha session two", { workspaceName: basename(alphaPath) });
     await createNamedThread(window, "Beta session one", { workspaceName: basename(betaPath) });
 
     await expect(window.locator(".chat-header__title")).toHaveText("Beta session one");
-    await expect(window.locator(".session-row", { hasText: "Alpha session two" })).toHaveAttribute(
-      "data-sidebar-indicator",
-      "none",
-    );
+    overview = await openThreadOverview(window);
+    await expect(
+      overview.locator(".session-row", { hasText: "Alpha session two" }),
+    ).toHaveAttribute("data-sidebar-indicator", "none");
 
-    await expect(window.getByTestId("workspace-list")).toContainText(basename(alphaPath));
-    await expect(window.getByTestId("workspace-list")).toContainText(basename(betaPath));
+    await expect(overview.getByTestId("workspace-list")).toContainText(basename(alphaPath));
+    await expect(overview.getByTestId("workspace-list")).toContainText(basename(betaPath));
+    await window.keyboard.press("Escape");
 
     await selectSession(window, "Alpha session one");
     await selectSession(window, "Beta session one");
