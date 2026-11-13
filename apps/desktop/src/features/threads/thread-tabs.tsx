@@ -36,6 +36,11 @@ interface ThreadTabsProps {
  * Rows and columns for a row-major strip: tabs stay on one row while they fit,
  * wrap only as wide as the strip allows, and stop at `THREAD_TAB_MAX_ROWS` rows —
  * past that the strip scrolls sideways rather than pushing the transcript down.
+ *
+ * Fitting rows are filled to capacity instead of being evened out: with room for
+ * six, seven tabs read 6 + 1, never 4 + 3, so a wide window never wraps while
+ * its first row is still half empty. Only past the row cap does the column count
+ * grow (and the strip start scrolling) to keep every tab inside three rows.
  */
 export function threadTabLayout(
   count: number,
@@ -43,9 +48,10 @@ export function threadTabLayout(
 ): { readonly rows: number; readonly columns: number } {
   if (count <= 0) return { rows: 0, columns: 0 };
   const perRow = Math.max(1, Math.floor(availableWidth / THREAD_TAB_SLOT_WIDTH));
-  const columns = Math.max(1, Math.min(count, perRow));
-  const rows = Math.min(THREAD_TAB_MAX_ROWS, Math.ceil(count / columns));
-  return { rows, columns: Math.ceil(count / rows) };
+  if (count <= perRow * THREAD_TAB_MAX_ROWS) {
+    return { rows: Math.ceil(count / perRow), columns: perRow };
+  }
+  return { rows: THREAD_TAB_MAX_ROWS, columns: Math.ceil(count / THREAD_TAB_MAX_ROWS) };
 }
 
 /** The grid slot of a tab, so reading order stays left-to-right, then the next row. */
