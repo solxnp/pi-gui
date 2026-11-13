@@ -1029,6 +1029,9 @@ export default function App() {
             ) : undefined
           }
           onTogglePanel={commands.toggleSidePanel}
+          terminalAvailable={Boolean(selectedWorkspace && selectedSession)}
+          terminalOpen={terminalOpen}
+          onToggleTerminal={() => setTerminalOpen((current) => !current)}
           sessionTitle={
             snapshot.activeView === "threads" && selectedSession ? displayedSessionTitle : undefined
           }

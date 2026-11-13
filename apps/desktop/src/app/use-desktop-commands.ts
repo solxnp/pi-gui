@@ -452,6 +452,7 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
           toggleSidebar: input.toggleThreadList,
           toggleTool: toggleWorkbenchTool,
           toggleSidePanel,
+          toggleTerminal: input.toggleTerminal,
           extensionViews: input.extensionViews
             .filter((view) => view.state === "ready")
             .map((view) => {

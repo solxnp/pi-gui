@@ -5,7 +5,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
 import type { WorkspaceRecord } from "../../../contracts/desktop-state";
-import { CloseIcon, PlusIcon, RefreshIcon } from "../../ui/icons";
+import { CloseIcon, PlusIcon, RefreshIcon, ChevronDownIcon } from "../../ui/icons";
 import { getSidePanelTabCommand } from "../../../contracts/ipc";
 import type {
   TerminalPanelSnapshot,
@@ -392,6 +392,16 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
             }
           >
             <RefreshIcon />
+          </button>
+          <button
+            type="button"
+            className="icon-button terminal-panel__action"
+            title={t("terminal.hide")}
+            aria-label={t("terminal.hide")}
+            data-testid="terminal-hide"
+            onClick={onHide}
+          >
+            <ChevronDownIcon />
           </button>
         </div>
       </div>

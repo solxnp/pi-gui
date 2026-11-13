@@ -1,6 +1,10 @@
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 import type { AppView, WorkspaceRecord, WorktreeRecord } from "../../contracts/desktop-state";
-import { getSidePanelToggleShortcutLabel, type PiDesktopApi } from "../../contracts/ipc";
+import {
+  formatShortcut,
+  getSidePanelToggleShortcutLabel,
+  type PiDesktopApi,
+} from "../../contracts/ipc";
 import {
   ClockIcon,
   ExtensionIcon,
@@ -8,6 +12,7 @@ import {
   SettingsIcon,
   SidePanelIcon,
   SkillIcon,
+  TerminalIcon,
 } from "../ui/icons";
 import { useTranslation } from "../i18n";
 
@@ -24,6 +29,11 @@ interface TopbarProps {
   /** Rendered in the actions cluster, next to the side-panel toggle. */
   readonly editorControl?: ReactNode;
   readonly onTogglePanel: () => void;
+  /** Whether a thread is open, so the terminal dock has a shell to show. */
+  readonly terminalAvailable: boolean;
+  readonly terminalOpen: boolean;
+  /** Shows or hides the docked terminal; the shells keep running while hidden. */
+  readonly onToggleTerminal: () => void;
   /** Whether the 「全部会话」overlay is showing, for the pressed state. */
   readonly threadsOpen: boolean;
   readonly onNewThread: () => void;
@@ -51,6 +61,9 @@ export function Topbar({
   panelVisible,
   editorControl,
   onTogglePanel,
+  terminalAvailable,
+  terminalOpen,
+  onToggleTerminal,
   threadsOpen,
   onNewThread,
   onOpenThreads,
@@ -162,6 +175,23 @@ export function Topbar({
       <div className="topbar__actions">
         {children}
         {editorControl}
+        <div className="shortcut-tooltip-wrap topbar__tooltip-wrap">
+          <button
+            type="button"
+            aria-label={t("topbar.toggleTerminal")}
+            aria-pressed={terminalOpen}
+            data-testid="toggle-terminal"
+            className={`icon-button topbar__icon${terminalOpen ? " icon-button--active" : ""}`}
+            disabled={!terminalAvailable}
+            onClick={onToggleTerminal}
+          >
+            <TerminalIcon />
+          </button>
+          <span className="shortcut-tooltip topbar__tooltip" role="tooltip">
+            <span>{terminalOpen ? t("topbar.hideTerminal") : t("topbar.showTerminal")}</span>
+            <kbd>{formatShortcut(api.platform, "J")}</kbd>
+          </span>
+        </div>
         {!panelVisible ? (
           <div className="shortcut-tooltip-wrap topbar__tooltip-wrap">
             <button

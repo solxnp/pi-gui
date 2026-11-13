@@ -3,7 +3,11 @@ import { formatShortcut } from "../../../contracts/ipc";
 import type { BuiltinToolKind } from "../../../contracts/workbench";
 import type { Translate } from "../../i18n";
 import type { ThreadAction } from "../threads/thread-actions";
-import { BUILTIN_TOOL_ENTRIES } from "../workbench/builtin-tools";
+import {
+  BUILTIN_TOOL_ENTRIES,
+  BUILTIN_TOOLS,
+  TERMINAL_TOOL_KIND,
+} from "../workbench/builtin-tools";
 import type { SettingsSection } from "../settings/settings-view";
 import { sectionTitle } from "../settings/settings-sections";
 import {
@@ -18,6 +22,7 @@ import {
   SidebarToggleIcon,
   SidePanelIcon,
   SkillIcon,
+  TerminalIcon,
 } from "../../ui/icons";
 
 export type PaletteMode = "commands" | "files" | "models";
@@ -62,6 +67,8 @@ export interface PaletteActionContext {
   /** Shows the tool in the side panel, or hides the panel when that tool is already showing. */
   readonly toggleTool: (kind: BuiltinToolKind) => void;
   readonly toggleSidePanel: () => void;
+  /** Shows or hides the docked terminal; its shells keep running while hidden. */
+  readonly toggleTerminal: () => void;
   /** Extension views the side panel can open for this thread. */
   readonly extensionViews: readonly {
     readonly id: string;
@@ -130,6 +137,17 @@ export function buildPaletteActions(context: PaletteActionContext): readonly Pal
         run: () => context.toggleTool(kind),
       });
     }
+    // The terminal is docked under the window, not a side panel tool, so it is
+    // listed on its own instead of through BUILTIN_TOOL_ENTRIES.
+    actions.push({
+      id: `toggle-${TERMINAL_TOOL_KIND}`,
+      title: context.t("workbench.toggleTool", {
+        name: context.t(BUILTIN_TOOLS[TERMINAL_TOOL_KIND].labelKey),
+      }),
+      icon: <TerminalIcon />,
+      hint: formatShortcut(platform, BUILTIN_TOOLS[TERMINAL_TOOL_KIND].shortcut.key),
+      run: context.toggleTerminal,
+    });
     actions.push({
       id: "toggle-side-panel",
       title: "Toggle side panel",

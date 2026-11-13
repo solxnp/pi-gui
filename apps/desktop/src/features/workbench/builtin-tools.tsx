@@ -47,8 +47,13 @@ export const BUILTIN_TOOLS = {
   },
 } as const satisfies Record<BuiltinToolKind, BuiltinToolDefinition>;
 
+/** The one built-in tool that docks under the window instead of the side panel. */
+export const TERMINAL_TOOL_KIND = "terminal" as const;
+
 /** Tools the side panel can hold; the terminal lives in the bottom bar instead. */
-export const SIDE_PANEL_TOOL_KINDS = BUILTIN_TOOL_KINDS.filter((kind) => kind !== "terminal");
+export const SIDE_PANEL_TOOL_KINDS = BUILTIN_TOOL_KINDS.filter(
+  (kind) => kind !== TERMINAL_TOOL_KIND,
+);
 
 /** Chooser order follows the contract's kind list. */
 export const BUILTIN_TOOL_ENTRIES = SIDE_PANEL_TOOL_KINDS.map(
