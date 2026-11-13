@@ -1693,6 +1693,7 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
           style={style}
           className={classes}
           data-sidebar-indicator={indicatorVariant}
+          data-pending-approval={pendingApproval ? "true" : "false"}
           data-session-pinned={pinned ? "true" : "false"}
           data-session-id={thread.session.id}
           data-parent-thread={thread.parentKey}

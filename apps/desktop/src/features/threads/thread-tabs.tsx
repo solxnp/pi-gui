@@ -148,9 +148,9 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
         const slot = threadTabSlot(index, columns);
         return (
           <div
-            className={`thread-tabs__tab${active ? " thread-tabs__tab--active" : ""}${
-              tab.awaitingInput ? " thread-tabs__tab--input" : ""
-            }`}
+            className={`thread-tabs__tab thread-tabs__tab--${tab.status}${
+              active ? " thread-tabs__tab--active" : ""
+            }${tab.awaitingInput ? " thread-tabs__tab--input" : ""}`}
             data-testid={`thread-tab-${tab.key}`}
             key={tab.key}
             style={{ gridRow: slot.row, gridColumn: slot.column }}

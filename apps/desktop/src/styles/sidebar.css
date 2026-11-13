@@ -655,28 +655,63 @@
   display: block;
 }
 
+/* Same language as the tab strip (thread-tabs.css): hollow ring = running,
+ * solid amber = unread, solid red = failed, violet badge = waiting on you.
+ * The row also carries the state as a tint, so it is visible as an area. */
 .session-row__status--running {
   width: 11px;
   height: 11px;
   border-radius: var(--radius-pill);
-  border: 2px solid var(--border-heavy);
-  border-top-color: var(--status-running);
-  border-right-color: var(--status-running);
-  animation: session-row-spin 900ms linear infinite;
+  border: 2px solid var(--status-running);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-running) 22%, transparent);
+  animation: session-row-pulse 1.4s ease-in-out infinite;
 }
 
 .session-row__status--failed {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: var(--radius-pill);
   background: var(--status-error);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-error) 22%, transparent);
 }
 
 .session-row__status--unseen {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: var(--radius-pill);
-  background: var(--accent);
+  background: var(--status-attention);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-attention) 22%, transparent);
+}
+
+.session-row[data-sidebar-indicator="unseen"] {
+  background: color-mix(in srgb, var(--status-attention) 14%, transparent);
+}
+
+.session-row[data-sidebar-indicator="failed"] {
+  background: color-mix(in srgb, var(--status-error) 16%, transparent);
+}
+
+.session-row[data-sidebar-indicator="running"] {
+  background: color-mix(in srgb, var(--status-running) 12%, transparent);
+}
+
+/* An answer-required row outranks every other mark: it blocks the work. */
+.session-row[data-pending-approval="true"] {
+  background: color-mix(in srgb, var(--status-pending) 18%, transparent);
+}
+
+.session-row--active[data-sidebar-indicator="unseen"],
+.session-row--active[data-pending-approval="true"],
+.session-row--active[data-sidebar-indicator="failed"],
+.session-row--active[data-sidebar-indicator="running"] {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+.session-row[data-sidebar-indicator="unseen"] .session-row__title,
+.session-row[data-pending-approval="true"] .session-row__title {
+  font-weight: var(--font-semibold);
+  color: var(--text-strong);
 }
 
 .session-row__body {
@@ -713,8 +748,8 @@
   flex: none;
   padding: 1px 6px;
   border-radius: var(--radius-round);
-  background: var(--accent-tint-bg);
-  color: var(--text-strong);
+  background: var(--status-pending);
+  color: var(--button-primary-ink, #fff);
   font-size: 11px;
   font-weight: 600;
   line-height: 1.5;
@@ -799,13 +834,19 @@
   transition: opacity var(--motion-base) var(--ease-out);
 }
 
-@keyframes session-row-spin {
-  from {
-    transform: rotate(0deg);
+@keyframes session-row-pulse {
+  0%,
+  100% {
+    opacity: 1;
   }
+  50% {
+    opacity: 0.45;
+  }
+}
 
-  to {
-    transform: rotate(360deg);
+@media (prefers-reduced-motion: reduce) {
+  .session-row__status--running {
+    animation: none;
   }
 }
 

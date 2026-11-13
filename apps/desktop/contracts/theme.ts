@@ -243,6 +243,13 @@ export function deriveThemeTokens(seedValue: ThemeSeed, variant: ResolvedTheme):
     "--success-ink": mix(added, ink, pick(0.4, 0.35)),
     "--warning": warning,
     "--warning-ink": warningInk,
+    // Session/terminal state signals are fixed colours, NOT the syntax theme's
+    // added/removed/warning seeds: whether a conversation is running, unread,
+    // failed or waiting for an answer must read identically in every preset.
+    // Nord's own seeds (sage #a3be8c vs amber #ebcb8b) are ΔE76 26.7 apart, which
+    // an 8px dot cannot carry. Each pair keeps ≥3:1 (UI component contrast)
+    // against that variant's darkest surface.
+    ...statusSignals(light),
     "--surface-overlay": alpha(ink, pick(0.025, 0.04)),
     "--surface-overlay-hover": alpha(ink, pick(0.05, 0.07)),
     "--surface-overlay-border": alpha(ink, 0.12),
@@ -280,6 +287,20 @@ export function deriveThemeTokens(seedValue: ThemeSeed, variant: ResolvedTheme):
 
 export function themeTokensFor(presetId: ThemePresetId, variant: ResolvedTheme): ThemeTokens {
   return deriveThemeTokens(themePreset(presetId).variants[variant].seed, variant);
+}
+
+/**
+ * The semantic state palette. Deliberately theme-independent: the states a user
+ * scans for (running / unread / failed / waiting) must not change meaning when
+ * the editor theme changes, and pastel seeds make two states look alike.
+ */
+export function statusSignals(light: boolean): ThemeTokens {
+  return {
+    "--status-running": light ? "#15803d" : "#22c55e",
+    "--status-attention": light ? "#b45309" : "#f59e0b",
+    "--status-error": light ? "#dc2626" : "#f87171",
+    "--status-pending": light ? "#7c3aed" : "#a78bfa",
+  };
 }
 
 /** The colour behind the whole window, for the native window background. */

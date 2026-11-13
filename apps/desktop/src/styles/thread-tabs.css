@@ -71,9 +71,13 @@
   text-overflow: ellipsis;
 }
 
-/* State dots: green and pulsing while a turn runs, amber when a turn finished
- * and has not been read, red after a failure. A finished, read conversation has
- * no dot at all, so "is it still working?" is answerable at a glance. */
+/* State marks, one language for every surface (see sidebar.css):
+ *   running  = hollow ring, pulsing — "this turn is still going"
+ *   unread   = solid amber dot — "it finished and you have not read it"
+ *   failed   = solid red dot
+ *   waiting  = violet text badge — "it blocks until you answer"
+ * The mark is backed by a tint over the whole tab, so the state reads as an
+ * area rather than an 8px dot in peripheral vision. */
 .thread-tabs__dot {
   width: 8px;
   height: 8px;
@@ -83,18 +87,53 @@
 }
 
 .thread-tabs__dot--running {
-  background: var(--success);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent);
+  width: 9px;
+  height: 9px;
+  background: transparent;
+  border: 2px solid var(--status-running);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-running) 22%, transparent);
   animation: thread-tab-pulse 1.4s ease-in-out infinite;
 }
 
 .thread-tabs__dot--unseen {
-  background: var(--warning);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 25%, transparent);
+  background: var(--status-attention);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-attention) 22%, transparent);
 }
 
 .thread-tabs__dot--failed {
-  background: var(--error);
+  background: var(--status-error);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-error) 22%, transparent);
+}
+
+.thread-tabs__tab--unseen {
+  background: color-mix(in srgb, var(--status-attention) 14%, var(--surface-muted));
+  color: var(--text-strong);
+}
+
+.thread-tabs__tab--unseen .thread-tabs__title {
+  font-weight: var(--font-semibold);
+}
+
+.thread-tabs__tab--failed {
+  background: color-mix(in srgb, var(--status-error) 16%, var(--surface-muted));
+  color: var(--text-strong);
+}
+
+.thread-tabs__tab--running {
+  background: color-mix(in srgb, var(--status-running) 12%, var(--surface-muted));
+}
+
+/* The active tab keeps its own base so it still reads as the current one. */
+.thread-tabs__tab--active.thread-tabs__tab--unseen {
+  background: color-mix(in srgb, var(--status-attention) 16%, var(--main));
+}
+
+.thread-tabs__tab--active.thread-tabs__tab--failed {
+  background: color-mix(in srgb, var(--status-error) 18%, var(--main));
+}
+
+.thread-tabs__tab--active.thread-tabs__tab--running {
+  background: color-mix(in srgb, var(--status-running) 14%, var(--main));
 }
 
 .thread-tabs__badge {
@@ -110,9 +149,20 @@
 /* Waiting for an answer outranks every other mark: it blocks the work. */
 .thread-tabs__badge--input,
 .thread-tabs__tab--input .thread-tabs__badge {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--status-pending);
+  border-color: var(--status-pending);
   color: var(--button-primary-ink, #fff);
+}
+
+/* A waiting tab outranks running/unread/failed: it is the only state that
+ * needs the user before work can continue. */
+.thread-tabs__tab--input {
+  background: color-mix(in srgb, var(--status-pending) 18%, var(--surface-muted));
+  color: var(--text-strong);
+}
+
+.thread-tabs__tab--input.thread-tabs__tab--active {
+  background: color-mix(in srgb, var(--status-pending) 20%, var(--main));
 }
 
 @keyframes thread-tab-pulse {
@@ -130,7 +180,6 @@
     animation: none;
   }
 }
-
 .thread-tabs__close {
   width: 20px;
   height: 20px;
