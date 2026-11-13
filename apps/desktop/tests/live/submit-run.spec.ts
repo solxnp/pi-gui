@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  openNewThread,
   getDesktopState,
   getRealAuthConfig,
   launchDesktop,
@@ -23,10 +24,7 @@ test("submits a real prompt and shows the response in the transcript", async () 
   try {
     const window = await harness.firstWindow();
 
-    await window
-      .getByRole("complementary")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    await openNewThread(window);
     await window.getByLabel("New thread prompt").fill("Reply with only the uppercase word READY.");
     await window.getByRole("button", { name: "Start thread" }).click();
 

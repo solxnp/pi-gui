@@ -4,6 +4,7 @@ import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
 import {
+  openNewThread,
   addWorkspaceViaIpc,
   assertExists,
   chooseThreadGrouping,
@@ -98,10 +99,7 @@ test("creates and selects a worktree-backed workspace from the desktop UI", asyn
     await expect(window.locator(".empty-panel")).toContainText("Create a thread for this folder");
     await expect(window.locator(".empty-panel")).not.toContainText("/Users/");
 
-    await window
-      .getByRole("complementary")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    await openNewThread(window);
     await expect(window.getByTestId("new-thread-composer")).toBeVisible();
     await expect(window.getByRole("button", { name: "Local", exact: true })).toBeVisible();
     await expect(window.getByRole("button", { name: "Worktree", exact: true })).toBeVisible();

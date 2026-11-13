@@ -2,6 +2,7 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import {
+  openNewThread,
   getSelectedTranscript,
   launchDesktop,
   makeUserDataDir,
@@ -145,10 +146,7 @@ test("extension custom messages show like terminal pi, live and after relaunch",
   try {
     const window = await firstRun.firstWindow();
     await waitForWorkspaceByPath(window, workspacePath);
-    await window
-      .getByRole("complementary")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    await openNewThread(window);
     await window.getByLabel("New thread prompt", { exact: true }).fill("Check CI, then continue.");
     await window.getByRole("button", { name: "Start thread", exact: true }).click();
 
@@ -159,10 +157,7 @@ test("extension custom messages show like terminal pi, live and after relaunch",
       "Checking the build before I continue.",
       "The build is green, carrying on.",
     ]);
-    await expect(window.locator(".session-row--active")).toHaveAttribute(
-      "data-sidebar-indicator",
-      "none",
-    );
+    await expect(window.locator(".thread-tabs__tab--running")).toHaveCount(0);
 
     const composer = window.getByTestId("composer");
     await composer.fill("/ci-note ");

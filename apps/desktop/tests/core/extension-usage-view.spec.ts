@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test, type FrameLocator, type Page } from "@playwright/test";
 import {
+  openNewThread,
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
@@ -300,10 +301,7 @@ test("the Usage example adds a card after each reply with its time, cost and con
   try {
     const window = await harness.firstWindow();
     await waitForWorkspaceByPath(window, workspace);
-    await window
-      .getByRole("complementary")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    await openNewThread(window);
     await window.getByLabel("New thread prompt", { exact: true }).fill("Answer briefly.");
     await window.getByRole("button", { name: "Start thread", exact: true }).click();
 
@@ -381,10 +379,7 @@ test("the Usage example writes one card for a reply pi retried", async () => {
   try {
     const window = await harness.firstWindow();
     await waitForWorkspaceByPath(window, workspace);
-    await window
-      .getByRole("complementary")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    await openNewThread(window);
     await window.getByLabel("New thread prompt", { exact: true }).fill("Answer briefly.");
     await window.getByRole("button", { name: "Start thread", exact: true }).click();
     await expect(window.locator(".timeline-item--assistant .message__content").last()).toHaveText(

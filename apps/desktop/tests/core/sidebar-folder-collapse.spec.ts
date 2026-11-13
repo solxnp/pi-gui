@@ -6,6 +6,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
   waitForWorkspaceByPath,
 } from "../helpers/electron-app";
 
@@ -29,6 +30,8 @@ test("folds a folder group from its row and keeps it folded across restart", asy
     await createSessionViaIpc(window, alphaPath, "Alpha planning");
     await createSessionViaIpc(window, betaPath, "Beta planning");
     await chooseThreadGrouping(window, "workspace");
+    // Folder rows and session rows only exist while 「全部会话」 is open.
+    await openThreadOverview(window);
 
     const group = window.locator(`.workspace-group[data-workspace-id="${workspaceId}"]`);
     const folderRow = group.locator(".workspace-row__select");
@@ -66,6 +69,7 @@ test("folds a folder group from its row and keeps it folded across restart", asy
   try {
     const window = await secondRun.firstWindow();
     await waitForWorkspaceByPath(window, alphaPath);
+    await openThreadOverview(window);
     const group = window.locator(`.workspace-group[data-workspace-id="${workspaceId}"]`);
     const folderRow = group.locator(".workspace-row__select");
     await expect(folderRow).toHaveAttribute("aria-expanded", "false");
@@ -82,6 +86,8 @@ test("folds a folder group from its row and keeps it folded across restart", asy
     await folderRow.click();
     await expect(folderRow).toHaveAttribute("aria-expanded", "false");
     await group.getByRole("button", { name: /^New thread in / }).click();
+    // Starting a thread leaves for the new-thread surface, which closes the list.
+    await openThreadOverview(window);
     await expect(folderRow).toHaveAttribute("aria-expanded", "true");
 
     // A folded folder that has since lost all its threads still opens on "+".

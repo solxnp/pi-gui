@@ -6,6 +6,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openNewThread,
   seedAgentDir,
   waitForWorkspaceByPath,
   writeProjectExtension,
@@ -110,10 +111,8 @@ test("keeps no-tool continuation replies separate and completes only after settl
   try {
     const window = await harness.firstWindow();
     await waitForWorkspaceByPath(window, workspacePath);
-    await window
-      .getByRole("complementary")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    // The sidebar column is gone; 「新会话」 lives in the topbar now.
+    await openNewThread(window);
     await window.getByLabel("New thread prompt", { exact: true }).fill("Exercise a continuation.");
     await window.getByRole("button", { name: "Start thread", exact: true }).click();
 
@@ -121,10 +120,8 @@ test("keeps no-tool continuation replies separate and completes only after settl
     await expect(confirmation).toBeVisible();
     const assistantRows = window.locator(".timeline-item--assistant .message__content");
     await expect(assistantRows).toHaveText(["First response"]);
-    await expect(window.locator(".session-row--active")).toHaveAttribute(
-      "data-sidebar-indicator",
-      "running",
-    );
+    // The strip's running mark is the surface that is always on screen.
+    await expect(window.locator(".thread-tabs__tab--running")).toHaveCount(1);
     await expect(window.getByTestId("send")).toHaveAttribute("aria-label", "Stop run");
     expect(
       (await getSelectedTranscript(window))?.transcript.filter((item) => item.kind === "summary"),
@@ -143,10 +140,7 @@ test("keeps no-tool continuation replies separate and completes only after settl
     await settlement.getByTestId("extension-dialog-confirm").click();
     await expect(settlement).toHaveCount(0);
     await expect(assistantRows).toHaveText(["First response", "Continued response"]);
-    await expect(window.locator(".session-row--active")).toHaveAttribute(
-      "data-sidebar-indicator",
-      "none",
-    );
+    await expect(window.locator(".thread-tabs__tab--running")).toHaveCount(0);
     await expect(window.getByTestId("send")).not.toHaveAttribute("aria-label", "Stop run");
     await expect(window.getByTestId("composer-error-banner")).toHaveCount(0);
     // A no-tool run that completes cleanly adds no summary row: no failure or

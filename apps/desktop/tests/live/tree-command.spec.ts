@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  openNewThread,
   getRealAuthConfig,
   launchDesktop,
   makeUserDataDir,
@@ -21,10 +22,7 @@ test("runs /tree summarize flow against a real provider and surfaces the branch 
 
   try {
     const window = await harness.firstWindow();
-    await window
-      .getByRole("complementary")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    await openNewThread(window);
 
     const newThreadComposer = window.getByTestId("new-thread-composer");
     await newThreadComposer.fill("Reply with exactly ROOT-ONE.");

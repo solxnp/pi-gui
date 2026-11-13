@@ -5,6 +5,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
 } from "../helpers/electron-app";
 
 test("archives a hovered thread into a restorable sidebar section", async () => {
@@ -20,6 +21,8 @@ test("archives a hovered thread into a restorable sidebar section", async () => 
     await createNamedThread(window, "Thread one");
     await createNamedThread(window, "Thread two");
     await expect(window.locator(".chat-header__title")).toHaveText("Thread two");
+    // Rows — and their archive/restore buttons — only exist in 「全部会话」.
+    await openThreadOverview(window);
 
     const activeRow = window
       .locator(".session-list > .session-row")

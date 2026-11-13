@@ -7,6 +7,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
   waitForWorkspaceByPath,
 } from "../helpers/electron-app";
 
@@ -49,7 +50,8 @@ test("sidebar thread order is stable after creation and does not flicker", async
     // Thread B was created/interacted with more recently, so its updatedAt should be >= A's.
     expect(sessionB.updatedAt >= sessionA.updatedAt).toBe(true);
 
-    // Verify sidebar renders B before A (most recent first).
+    // Verify the list renders B before A (most recent first).
+    await openThreadOverview(window);
     const rows = window.locator(".session-row__select");
     const titles = await rows.allTextContents();
     const bIndex = titles.findIndex((t) => t.includes("Thread B"));
@@ -98,6 +100,8 @@ test("pinned sidebar threads stay above history, persist across relaunch, and un
     await new Promise((resolve) => setTimeout(resolve, 50));
     await createNamedThread(window, "Thread B", { workspaceName: basename(workspacePath) });
 
+    // Rows, pin buttons and the pinned section all live in 「全部会话」.
+    await openThreadOverview(window);
     const threadARow = window.locator(".session-row", { hasText: "Thread A" });
     await threadARow.hover();
     await window.getByRole("button", { name: /Pin Thread A/ }).click();
@@ -121,6 +125,7 @@ test("pinned sidebar threads stay above history, persist across relaunch, and un
 
     const reopenedWindow = await harness.firstWindow();
     await waitForWorkspaceByPath(reopenedWindow, workspacePath);
+    await openThreadOverview(reopenedWindow);
     const reopenedPinnedSection = reopenedWindow.getByRole("region", { name: "Pinned threads" });
     await expect(reopenedPinnedSection).toBeVisible();
     await expect(reopenedPinnedSection.locator(".session-row__title")).toHaveText(["Thread A"]);
@@ -167,6 +172,7 @@ test("pinned sidebar threads can be reordered and repinned threads return to the
     await new Promise((resolve) => setTimeout(resolve, 50));
     await createNamedThread(window, "Thread B", { workspaceName: basename(workspacePath) });
 
+    await openThreadOverview(window);
     await pinThread(window, "Thread A");
     await pinThread(window, "Thread B");
 
@@ -194,6 +200,7 @@ test("pinned sidebar threads can be reordered and repinned threads return to the
 
     const reopenedWindow = await harness.firstWindow();
     await waitForWorkspaceByPath(reopenedWindow, workspacePath);
+    await openThreadOverview(reopenedWindow);
     const reopenedPinnedSection = reopenedWindow.getByRole("region", { name: "Pinned threads" });
     await expect(reopenedPinnedSection.locator(".session-row__title")).toHaveText([
       "Thread A",

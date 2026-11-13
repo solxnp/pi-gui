@@ -19,6 +19,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openNewThread,
   pasteTinyPng,
   seedAgentDir,
   selectSession,
@@ -248,10 +249,7 @@ test("delineates queued follow-ups and submitted steers in the timeline", async 
     await waitForWorkspaceByPath(window, workspacePath);
     // The queue belongs to a reply that is really running: with pi idle, the app would start
     // the first queued message as the next reply instead.
-    await window
-      .getByRole("complementary")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    await openNewThread(window);
     await window.getByLabel("New thread prompt", { exact: true }).fill("Start a long reply");
     await window.getByRole("button", { name: "Start thread", exact: true }).click();
     await expect.poll(() => existsSync(called)).toBe(true);

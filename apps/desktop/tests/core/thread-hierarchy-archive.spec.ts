@@ -8,6 +8,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
   runOrchestrationRuntimeTool,
   seedAgentDir,
   seedNamedTextSessionFixture,
@@ -106,12 +107,15 @@ test("children nest under their parent; the archive tool archives only finished 
   let harness = await launch();
   try {
     let window = await harness.firstWindow();
+    // The hierarchy lives in 「全部会话」; opening a thread closes it again.
+    await openThreadOverview(window);
     const group = window.getByRole("group", { name: "Children of 主任务 A", exact: true });
     await expect(group.locator(".session-row")).toHaveCount(3);
     await expect(group).toContainText(done.title);
     await expect(group).not.toContainText(foreign.title);
     // Collapse the parent of the selected child; later state pushes must not reopen it.
     await selectSession(window, done.title);
+    await openThreadOverview(window);
     await window
       .getByRole("button", { name: "Collapse children of 主任务 A", exact: true })
       .click();
@@ -130,6 +134,8 @@ test("children nest under their parent; the archive tool archives only finished 
     await window.keyboard.press(`${process.platform === "darwin" ? "Meta" : "Control"}+Shift+R`);
     await expect(window.getByLabel(`Rename thread ${done.title}`)).toBeFocused();
     await window.keyboard.press("Escape");
+    // Escape cancels the rename and closes the list, so reopen it.
+    await openThreadOverview(window);
     await expect(group).toBeVisible();
     await window
       .getByRole("button", { name: "Collapse children of 主任务 A", exact: true })
@@ -181,6 +187,7 @@ test("children nest under their parent; the archive tool archives only finished 
       },
       { threadId: parent.sessionId, reason: notOwn },
     ]);
+    await openThreadOverview(window);
     await expect(group.locator(".session-row")).toHaveCount(2);
     // The agent's archive leaves the user's selection, transcript, and draft alone.
     expect((await getDesktopState(window)).selectedSessionId).toBe(done.sessionId);
@@ -212,6 +219,7 @@ test("children nest under their parent; the archive tool archives only finished 
     harness = await launch();
     window = await harness.firstWindow();
     await expect(window.getByTestId("composer")).toHaveValue(parentDraft);
+    await openThreadOverview(window);
     await window.locator(".archived-thread-group__toggle").click();
     const archived = window.locator(
       `.session-list--archived .session-row[data-session-id="${done.sessionId}"]`,

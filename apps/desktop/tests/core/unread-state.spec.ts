@@ -7,6 +7,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
   persistedSessionDataPaths,
   selectSession,
 } from "../helpers/electron-app";
@@ -70,10 +71,13 @@ test("selecting an unread thread persists read state through the latest known ac
   const secondRun = await launchDesktop(userDataDir, { testMode: "background" });
   try {
     const window = await secondRun.firstWindow();
+    // The list is an overlay now, and selecting a thread closes it.
+    await openThreadOverview(window);
     const row = window.locator(".session-row", { hasText: title });
     await expect(row).toHaveAttribute("data-sidebar-indicator", "unseen");
 
     await selectSession(window, title);
+    await openThreadOverview(window);
     await expect(row).toHaveAttribute("data-sidebar-indicator", "none");
   } finally {
     await secondRun.close();
@@ -82,6 +86,7 @@ test("selecting an unread thread persists read state through the latest known ac
   const thirdRun = await launchDesktop(userDataDir, { testMode: "background" });
   try {
     const window = await thirdRun.firstWindow();
+    await openThreadOverview(window);
     await expect(window.locator(".session-row", { hasText: title })).toHaveAttribute(
       "data-sidebar-indicator",
       "none",

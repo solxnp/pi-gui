@@ -1,6 +1,7 @@
 import { basename } from "node:path";
 import { expect, test } from "@playwright/test";
 import {
+  openNewThread,
   addWorkspaceViaIpc,
   chooseThreadGrouping,
   createSessionViaIpc,
@@ -9,6 +10,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
   waitForWorkspaceByPath,
 } from "../helpers/electron-app";
 
@@ -24,7 +26,9 @@ test("adds a workspace to an empty launched app", async () => {
     await addWorkspaceViaIpc(window, workspacePath);
 
     const workspace = await waitForWorkspaceByPath(window, workspacePath);
-    await expect(window.getByTestId("workspace-list")).toContainText(workspace.name);
+    // The workspace list lives in 「全部会话」.
+    const overview = await openThreadOverview(window);
+    await expect(overview.getByTestId("workspace-list")).toContainText(workspace.name);
   } finally {
     await harness.close();
   }
@@ -43,11 +47,10 @@ test("boots an existing workspace and starts a new thread through the real UI", 
     const window = await harness.firstWindow();
 
     await waitForWorkspaceByPath(window, workspacePath);
-    await expect(window.getByTestId("workspace-list")).toContainText(basename(workspacePath));
-    await window
-      .getByRole("complementary")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    const overview = await openThreadOverview(window);
+    await expect(overview.getByTestId("workspace-list")).toContainText(basename(workspacePath));
+    await window.keyboard.press("Escape");
+    await openNewThread(window);
 
     const prompt = window.getByLabel("New thread prompt");
     await expect(prompt).toBeVisible();
@@ -90,9 +93,10 @@ test("aligns workspace names with session titles in the sidebar gutter", async (
     const window = await harness.firstWindow();
 
     await waitForWorkspaceByPath(window, workspacePath);
-    await expect(window.getByTestId("workspace-list")).toContainText(basename(workspacePath));
     await createSessionViaIpc(window, workspacePath, "Aligned session");
     await chooseThreadGrouping(window, "workspace");
+    const overview = await openThreadOverview(window);
+    await expect(overview.getByTestId("workspace-list")).toContainText(basename(workspacePath));
 
     const workspaceName = window.locator(".workspace-row__name").first();
     const sessionTitle = window.locator(".session-row__title", {

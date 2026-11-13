@@ -8,6 +8,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
 } from "../helpers/electron-app";
 import {
   createThread,
@@ -130,6 +131,8 @@ test("runs two sessions in parallel without sidebar status bleed", async () => {
         sessionBStatus: "running",
       });
 
+    // Rows are rendered by 「全部会话」, so open it for the indicator checks.
+    await openThreadOverview(window);
     const sessionARow = window.locator(".session-row", { hasText: "Session A" });
     const sessionBRow = window.locator(".session-row", { hasText: "Session B" });
     await expect(sessionARow).toHaveAttribute("data-sidebar-indicator", "running");
@@ -184,6 +187,7 @@ test("runs two sessions in parallel without sidebar status bleed", async () => {
     await clickSession(window, "Session A");
     await expect(window.locator(".chat-header__title")).toHaveText("Session A");
     await expect(window.getByTestId("composer")).toBeFocused();
+    await openThreadOverview(window);
     await expect(sessionARow).toHaveAttribute("data-sidebar-indicator", "none");
 
     const summarize = (transcript: Awaited<ReturnType<typeof getSelectedTranscript>>) =>

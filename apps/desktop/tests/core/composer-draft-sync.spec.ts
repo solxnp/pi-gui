@@ -366,13 +366,13 @@ test("Cmd/Ctrl+number keeps a draft typed just before switching on its own threa
     const composer = window.getByTestId("composer");
     await createNamedThread(window, "Number Alpha");
     await createNamedThread(window, "Number Bravo");
-    // Newest first: 1 opens Bravo, 2 opens Alpha.
+    // Digits address the tab strip in open order: 1 = Alpha, 2 = Bravo.
     await composer.click();
     await composer.pressSequentially("typed right before switching");
-    await window.keyboard.press(`${modifier}+2`);
+    await window.keyboard.press(`${modifier}+1`);
     await expect(title).toHaveText("Number Alpha");
     await expect(composer).toHaveValue("");
-    await window.keyboard.press(`${modifier}+1`);
+    await window.keyboard.press(`${modifier}+2`);
     await expect(title).toHaveText("Number Bravo");
     await expect(composer).toHaveValue("typed right before switching");
   } finally {

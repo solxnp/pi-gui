@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  openNewThread,
   createNamedThread,
   getDesktopState,
   launchDesktop,
@@ -24,10 +25,7 @@ test("opening New thread flushes the current conversation draft before navigatio
     });
     const draft = "Keep this unsent draft in the original conversation";
     await window.getByTestId("composer").fill(draft);
-    await window
-      .getByRole("complementary")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    await openNewThread(window);
     await expect(window.getByLabel("New thread prompt", { exact: true })).toBeVisible();
     await expect.poll(async () => (await getDesktopState(window)).composerDraft).toBe(draft);
     await createNamedThread(window, "Another conversation");
