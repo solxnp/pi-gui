@@ -33,6 +33,12 @@ index.html
 # Vite hashed build output (anywhere)
 *-[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9].js
 *-[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9].css
+# …but never in source: `bottom-terminal.css` matched the rule above and never
+# reached git, so a clean clone could not build.
+!/apps/**/src/**/*.css
+!/apps/**/src/**/*.js
+!/packages/**/src/**/*.css
+!/packages/**/src/**/*.js
 
 # Local verification evidence (verify-pi-gui runs, proof workspaces)
 /.artifacts/

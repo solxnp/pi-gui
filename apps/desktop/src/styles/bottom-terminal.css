@@ -1,0 +1,46 @@
+/*
+ * Integrated terminal docked under the whole window: it spans the transcript
+ * column and the side panel, so the right panel stops above it.
+ */
+.bottom-terminal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.bottom-terminal__handle {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  z-index: 2;
+  cursor: row-resize;
+}
+
+.bottom-terminal__handle:hover {
+  background: var(--line-strong);
+}
+
+.bottom-terminal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.bottom-terminal__body > .terminal-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  border: 0;
+}
+
+/* The dock is a sibling of the transcript column, so `.main` (and the side panel
+ * inside it) ends above the terminal instead of running behind it. */
+.shell--single-column > .main {
+  min-height: 0;
+}
