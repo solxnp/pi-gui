@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
+  openThreadOverview,
   getDesktopState,
   launchDesktop,
   makeUserDataDir,
@@ -111,6 +112,7 @@ test("new threads start with the chosen extension flags, remembered per workspac
   });
   try {
     const window = await secondRun.firstWindow();
+    await openThreadOverview(window);
     await window.locator(".session-row__select").first().click();
     await expect(window.getByTestId("extension-flags-session-badge")).toHaveText("Flags · 1");
     await reportInThread(window);

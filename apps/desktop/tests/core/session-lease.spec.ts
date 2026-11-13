@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import {
+  openThreadOverview,
   createSessionViaIpc,
   launchDesktop,
   makeUserDataDir,
@@ -51,6 +52,7 @@ test("a second pi-gui process cannot open a thread the first one holds", async (
       testMode: "background",
     });
     const secondWindow = await second.firstWindow();
+    await openThreadOverview(secondWindow);
     const secondRow = secondWindow.locator(".session-row__select", { hasText: title });
     await expect(secondRow).toBeVisible({ timeout: 20_000 });
     await secondRow.click();

@@ -1,6 +1,7 @@
 import { basename } from "node:path";
 import { expect, test } from "@playwright/test";
 import {
+  openThreadOverview,
   expectNewThreadWorkspace,
   getApplicationMenuItemInfo,
   getDesktopState,
@@ -21,10 +22,11 @@ test("adds a workspace from the empty state button using a stubbed folder select
 
   try {
     const window = await harness.firstWindow();
-    await expect(window.getByTestId("empty-state")).toBeVisible();
+    const overview = await openThreadOverview(window);
+    await expect(overview.getByTestId("empty-state")).toBeVisible();
 
     await stubNextOpenDialog(harness, [workspacePath]);
-    await window.getByRole("button", { name: "Open first folder" }).click();
+    await overview.getByRole("button", { name: "Open first folder" }).click();
 
     await expect
       .poll(
@@ -39,8 +41,10 @@ test("adds a workspace from the empty state button using a stubbed folder select
       )
       .toBe(workspacePath);
 
-    await expect(window.getByTestId("workspace-list")).toContainText(basename(workspacePath));
+    // Picking a folder from the menu closes the list and opens the new-thread view.
     await expectNewThreadWorkspace(window, workspacePath);
+    await openThreadOverview(window);
+    await expect(window.getByTestId("workspace-list")).toContainText(basename(workspacePath));
   } finally {
     await harness.close();
   }
@@ -55,7 +59,8 @@ test("exposes File > Open Folder… with Command+O and reuses the same open-fold
 
   try {
     const window = await harness.firstWindow();
-    await expect(window.getByTestId("empty-state")).toBeVisible();
+    const overview = await openThreadOverview(window);
+    await expect(overview.getByTestId("empty-state")).toBeVisible();
 
     const menuItem = await getApplicationMenuItemInfo(harness, OPEN_FOLDER_MENU_ITEM_ID);
 
@@ -83,8 +88,10 @@ test("exposes File > Open Folder… with Command+O and reuses the same open-fold
       )
       .toBe(workspacePath);
 
-    await expect(window.getByTestId("workspace-list")).toContainText(basename(workspacePath));
+    // Picking a folder from the menu closes the list and opens the new-thread view.
     await expectNewThreadWorkspace(window, workspacePath);
+    await openThreadOverview(window);
+    await expect(window.getByTestId("workspace-list")).toContainText(basename(workspacePath));
   } finally {
     await harness.close();
   }

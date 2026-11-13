@@ -220,11 +220,9 @@ test("the actual PR Review example records a Pi review, opens files, prepares a 
         .filter({ hasText: "Fixture review recorded." }),
     ).toBeVisible();
     await expect(window.getByTestId("send")).not.toHaveAttribute("aria-label", "Stop run");
-    // Background windows may keep a completed result unread; both are idle states.
-    await expect(window.locator(".session-row--active")).toHaveAttribute(
-      "data-sidebar-indicator",
-      /^(none|unseen)$/,
-    );
+    // Background windows may keep a completed result unread; either way the run
+    // is over, which the strip shows as "not running".
+    await expect(window.locator(".thread-tabs__tab--running")).toHaveCount(0);
     await expect(window.getByTestId("composer-error-banner")).toHaveCount(0);
     await expect(
       frame.getByRole("heading", { name: "[P2] Retain the empty-query guard", exact: true }),

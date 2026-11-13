@@ -9,6 +9,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
   readIpcInvokeControl,
   reloadDesktopRenderer,
   setIpcInvokeControl,
@@ -52,7 +53,8 @@ test("recovers from a rejected first state hydrate without rewriting persisted U
     const card = window.getByTestId("shell-status-card");
     await expect(card).toHaveAttribute("data-status", "failed");
     await expect(window.getByRole("heading", { name: "Couldn't restore sessions" })).toBeVisible();
-    await expect(window.locator(".sidebar")).toHaveCount(0);
+    // No sidebar column exists any more; a failed hydrate must leave no tab strip either.
+    await expect(window.getByTestId("thread-tabs")).toHaveCount(0);
     await expect(window.locator("body")).not.toContainText(HYDRATE_TEST_SENTINEL);
     expect(await readFile(uiStatePath)).toEqual(persistedUiState);
 
@@ -79,6 +81,7 @@ test("recovers from a rejected first state hydrate without rewriting persisted U
     await setIpcInvokeControl(harness, desktopIpc.stateRequest, { mode: "passthrough" });
     await window.getByTestId("hydrate-retry").click();
     await expect(window.getByTestId("composer")).toHaveValue("draft survives hydrate failure");
+    await openThreadOverview(window);
     await expect(
       window.locator(".session-row__select", { hasText: "Hydrate recovery" }),
     ).toBeVisible();
@@ -99,7 +102,8 @@ test("keeps the shell usable when only the selected transcript hydrate rejects",
     });
     await reloadDesktopRenderer(window);
 
-    await expect(window.getByTestId("workspace-list")).toBeVisible();
+    // The shell rendered: its own surfaces are up.
+    await expect(window.getByTestId("topbar")).toBeVisible();
     await expect(window.getByTestId("shell-status-card")).toHaveCount(0);
     const transcriptError = window.getByTestId("transcript-hydrate-error");
     await expect(transcriptError).toBeVisible();
@@ -135,7 +139,8 @@ test("uncaught renderer errors show a recoverable fallback instead of a blank wi
   try {
     const window = await harness.firstWindow();
     await waitForWorkspaceByPath(window, workspacePath);
-    await expect(window.getByTestId("workspace-list")).toBeVisible();
+    // The shell rendered: its own surfaces are up.
+    await expect(window.getByTestId("topbar")).toBeVisible();
 
     await installIpcInvokeControl(harness, desktopIpc.stateRequest, {
       mode: "replace",
@@ -151,7 +156,8 @@ test("uncaught renderer errors show a recoverable fallback instead of a blank wi
 
     await setIpcInvokeControl(harness, desktopIpc.stateRequest, { mode: "passthrough" });
     await window.getByTestId("hydrate-retry").click();
-    await expect(window.getByTestId("workspace-list")).toBeVisible();
+    // The shell rendered: its own surfaces are up.
+    await expect(window.getByTestId("topbar")).toBeVisible();
     await expect(card).toHaveCount(0);
   } finally {
     await harness.close();

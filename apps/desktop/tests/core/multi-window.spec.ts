@@ -2,6 +2,7 @@ import { writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import {
+  openThreadOverview,
   createNamedThread,
   emitTestSessionEvent,
   getDesktopState,
@@ -276,6 +277,7 @@ test("selects an empty workspace from the sidebar row", async () => {
     await waitForWorkspaceByPath(window, alphaPath);
     await waitForWorkspaceByPath(window, betaPath);
 
+    await openThreadOverview(window);
     await window.locator(".workspace-row__select", { hasText: basename(betaPath) }).click();
     await expect
       .poll(() => selectedSummary(window), { timeout: 15_000 })

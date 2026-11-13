@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import {
+  openThreadOverview,
   createNamedThread,
   commitAllInGitRepo,
   desktopShortcut,
@@ -111,6 +112,7 @@ test("switches between app-global and per-repo model scope while worktrees inher
       visibleModelLabels: ["GPT-4o", "GPT-4 Turbo"],
       hiddenModelLabels: ["GPT-5"],
     });
+    await openThreadOverview(window);
     await window.locator(".session-row--active .session-row__select").first().click();
     await expect(window.getByTestId("new-thread-composer")).toHaveCount(0);
 

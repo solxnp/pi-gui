@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
+  openNewThread,
   commitAllInGitRepo,
   initGitRepo,
   launchDesktop,
@@ -68,10 +69,7 @@ async function expectCompleted(window: Page, text: string): Promise<void> {
     window.locator(".timeline-item--assistant .message__content").filter({ hasText: text }),
   ).toBeVisible();
   await expect(window.getByTestId("send")).not.toHaveAttribute("aria-label", "Stop run");
-  await expect(window.locator(".session-row--active")).toHaveAttribute(
-    "data-sidebar-indicator",
-    "none",
-  );
+  await expect(window.locator(".thread-tabs__tab--running")).toHaveCount(0);
   await expect(window.getByTestId("composer-error-banner")).toHaveCount(0);
 }
 
@@ -122,10 +120,7 @@ test("Last turn captures actual tool edits and a response pins its own saved com
   try {
     let window = await harness.firstWindow();
     await waitForWorkspaceByPath(window, workspacePath);
-    await window
-      .locator(".sidebar")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    await openNewThread(window);
     await window.getByLabel("New thread prompt", { exact: true }).fill("capture first");
     await window.getByRole("button", { name: "Start thread", exact: true }).click();
     await expectCompleted(window, "First capture complete");

@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import {
+  openThreadOverview,
   desktopShortcut,
   launchDesktop,
   makeUserDataDir,
@@ -196,7 +197,8 @@ test("opening the first workspace from the empty state hydrates provider and mod
 
   try {
     const window = await harness.firstWindow();
-    const emptyState = window.getByTestId("empty-state");
+    const overview = await openThreadOverview(window);
+    const emptyState = overview.getByTestId("empty-state");
     await expect(emptyState).toBeVisible();
 
     await stubNextOpenDialog(harness, [workspacePath]);

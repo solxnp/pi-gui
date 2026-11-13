@@ -151,8 +151,8 @@ export default function extension(pi) {
     const composer = window.getByTestId("composer");
     await composer.fill("Keep this run active until Stop");
     await window.getByTestId("send").click();
-    const originalRow = window.locator(`.session-row[data-session-id="${target.sessionId}"]`);
-    await expect(originalRow).toHaveAttribute("data-sidebar-indicator", "running");
+    // The strip's running mark is always on screen; the list is behind ⌘B.
+    await expect(window.locator(".thread-tabs__tab--running")).toHaveCount(1);
     await composer.fill("Keep my unsent original draft");
     await frame.getByRole("button", { name: "Prepare task draft", exact: true }).click();
     await expect(window.getByTestId("composer-prepare-task-status")).toBeVisible();
@@ -161,7 +161,7 @@ export default function extension(pi) {
     await expect(stop).toBeEnabled();
     expect(await stop.evaluate((element) => element.closest("[inert]") === null)).toBe(true);
     await stop.click();
-    await expect(originalRow).not.toHaveAttribute("data-sidebar-indicator", "running");
+    await expect(window.locator(".thread-tabs__tab--running")).toHaveCount(0);
     await expect(composer).toHaveValue("Keep my unsent original draft");
     await expect(window.locator(".chat-header__title")).toHaveText("Original running task");
     await harness.electronApp.evaluate(() => {

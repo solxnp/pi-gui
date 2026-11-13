@@ -9,6 +9,7 @@ import {
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
+  openThreadOverview,
   pasteTinyPng,
   persistedSessionDataPaths,
   selectSession,
@@ -197,7 +198,8 @@ test("recovers persisted ui state from the backup when ui-state.json is corrupt"
   const secondRun = await launchDesktop(userDataDir, { testMode: "background" });
   try {
     const window = await secondRun.firstWindow();
-    await expect(window.getByTestId("workspace-list")).toContainText(
+    const overview = await openThreadOverview(window);
+    await expect(overview.getByTestId("workspace-list")).toContainText(
       "corruption-recovery-workspace",
     );
     await expect(window.getByTestId("composer")).toHaveValue("recover me from backup", {
@@ -672,10 +674,11 @@ test("migrates legacy inline attachment persistence and drops legacy inline tran
   const secondRun = await launchDesktop(userDataDir, { testMode: "background" });
   try {
     const window = await secondRun.firstWindow();
-    await expect(window.getByTestId("workspace-list")).toContainText(
+    const overview = await openThreadOverview(window);
+    await expect(overview.getByTestId("workspace-list")).toContainText(
       "legacy-persistence-workspace",
     );
-    await expect(window.locator(".session-row--active")).toContainText(
+    await expect(overview.locator(".session-row--active")).toContainText(
       "Legacy persistence session",
     );
     await expect(window.getByTestId("composer")).toHaveValue("legacy draft", { timeout: 15_000 });

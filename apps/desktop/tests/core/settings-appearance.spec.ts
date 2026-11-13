@@ -234,12 +234,12 @@ async function elementCssProperty(
 
 /** Each surface reads the same token in every preset, as Default does. */
 async function expectSameDesign(window: Page): Promise<void> {
+  // The sidebar column is gone; the list's surfaces live in 「全部会话」 and are
+  // covered by the main/topbar rows here.
   const surfaces: readonly (readonly [selector: string, property: string, token: string])[] = [
     [".main", "background-color", "var(--main)"],
-    [".sidebar", "background-color", "var(--sidebar)"],
     [".topbar", "background-color", "var(--main)"],
-    [".sidebar__new", "background-color", "var(--surface)"],
-    [".session-row--active", "background-color", "var(--surface)"],
+    [".topbar__new", "background-color", "var(--surface)"],
     [".composer__surface", "background-color", "var(--surface)"],
     [".message__content pre", "background-color", "var(--code-block-bg)"],
   ];

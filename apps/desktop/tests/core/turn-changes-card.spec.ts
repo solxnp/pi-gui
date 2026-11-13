@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import {
+  openNewThread,
   commitAllInGitRepo,
   initGitRepo,
   launchDesktop,
@@ -97,10 +98,7 @@ test("a turn that edits files gets a changes card whose rows open that file's di
   try {
     const window = await harness.firstWindow();
     await waitForWorkspaceByPath(window, workspacePath);
-    await window
-      .locator(".sidebar")
-      .getByRole("button", { name: "New thread", exact: true })
-      .click();
+    await openNewThread(window);
     await window.getByLabel("New thread prompt", { exact: true }).fill("edit files");
     await window.getByRole("button", { name: "Start thread", exact: true }).click();
     await expectCompleted(window, "Edited the files");

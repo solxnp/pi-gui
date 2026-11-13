@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import {
+  openThreadOverview,
   createNamedThread,
   getDesktopState,
   launchDesktop,
@@ -197,6 +198,7 @@ test("keeps a draft when the thread is archived by shortcut straight after typin
     await expect(window.locator(".chat-header__title")).toHaveText("Kept");
     await window.clock.resume();
 
+    await openThreadOverview(window);
     await window.locator(".archived-thread-group__toggle").click();
     const archivedRow = window.locator(".session-list--archived .session-row", {
       hasText: "Archived",

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import type { SessionRef } from "@pi-gui/session-driver";
 import {
+  openThreadOverview,
   createNamedThread,
   getDesktopState,
   launchDesktop,
@@ -115,6 +116,7 @@ test("create_child_thread returns after a slow worker starts, before its turn co
     );
     expect(child?.status).toBe("running");
     expect(child?.transcript.length).toBeGreaterThan(0);
+    await openThreadOverview(window);
     const childRunningIndicator = window.locator(
       `.session-row[data-session-id="${child?.childSessionId}"] .session-row__status--running`,
     );
