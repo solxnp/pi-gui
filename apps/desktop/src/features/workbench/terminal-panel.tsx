@@ -21,9 +21,15 @@ interface TerminalPanelProps {
   readonly workspace: WorkspaceRecord;
   readonly sessionId: string;
   readonly onHide: () => void;
+  /**
+   * True only for the panel mounted by the dock opening. A remount under an
+   * already-open dock (switching conversations) must not grab focus, or the
+   * keystrokes meant for the new thread's composer land in the shell.
+   */
+  readonly autoFocus: boolean;
 }
 
-export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelProps) {
+export function TerminalPanel({ workspace, sessionId, onHide, autoFocus }: TerminalPanelProps) {
   const { t } = useTranslation();
   const api = window.piApp;
   const panelRef = useRef<HTMLElement | null>(null);
@@ -32,6 +38,9 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
   const terminalRef = useRef<Terminal | null>(null);
   const activeTerminalIdRef = useRef("");
   const mountedRef = useRef(false);
+  // Read once: the flag belongs to the mount that opened the dock. Keeping it in
+  // the xterm effect's deps would dispose and rebuild the shell when it flips.
+  const autoFocusRef = useRef(autoFocus);
   const lastSizeRef = useRef<TerminalSize>({ cols: 80, rows: 24 });
   const [panel, setPanel] = useState<TerminalPanelSnapshot | null>(null);
   const [error, setError] = useState<string>("");
@@ -302,7 +311,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
     if (activeSession.replay) {
       terminal.write(activeSession.replay);
     }
-    terminal.focus();
+    if (autoFocusRef.current) terminal.focus();
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
     window.requestAnimationFrame(fitAndResize);

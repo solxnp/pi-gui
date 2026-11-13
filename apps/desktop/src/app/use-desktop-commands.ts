@@ -78,8 +78,14 @@ interface DesktopCommandsInput {
     readonly open: () => void;
     readonly close: () => void;
   };
-  /** Opens or closes 「全部会话」; ⌘B and the palette entry both land here. */
-  readonly toggleThreadList: () => void;
+  /**
+   * 「全部会话」: ⌘B toggles it, and actions that edit a row inline (rename) must
+   * open it, because the row is where their UI lives.
+   */
+  readonly threadList: {
+    readonly open: boolean;
+    readonly setOpen: (open: boolean) => void;
+  };
   /** Shows or hides the terminal docked under the window. */
   readonly toggleTerminal: () => void;
   /** Closes one conversation's tab; false when the window has no such tab. */
@@ -222,10 +228,15 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
     [desktopCommands.toggleTasks]: () => toggleWorkbenchTool("tasks"),
     [desktopCommands.newSidePanelTab]: newSidePanelTab,
     [desktopCommands.closeFocusedSurface]: closeThreadTabOrWindow,
-    [desktopCommands.toggleSidebar]: () => input.toggleThreadList(),
+    [desktopCommands.toggleSidebar]: () => input.threadList.setOpen(!input.threadList.open),
     [desktopCommands.openCommandPalette]: (source) => togglePalette("commands", source),
     [desktopCommands.openFilePalette]: (source) => togglePalette("files", source),
-    [desktopCommands.renameThread]: () => runThreadAction("rename-thread"),
+    [desktopCommands.renameThread]: () => {
+      // The rename field is rendered by the row itself, and rows only exist
+      // while the list is open. Without this, ⇧⌘R would silently do nothing.
+      input.threadList.setOpen(true);
+      return runThreadAction("rename-thread");
+    },
     [desktopCommands.archiveThread]: () => runThreadAction("archive-thread"),
     [desktopCommands.selectRecentThread1]: () => selectThreadTab(0),
     [desktopCommands.selectRecentThread2]: () => selectThreadTab(1),
@@ -449,7 +460,7 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
           openSkills: () => input.openSkills(selectedRootWorkspaceId),
           openExtensions: () => input.openExtensions(selectedRootWorkspaceId),
           openScheduledTasks: () => input.setActiveView("scheduled"),
-          toggleSidebar: input.toggleThreadList,
+          toggleSidebar: () => input.threadList.setOpen(!input.threadList.open),
           toggleTool: toggleWorkbenchTool,
           toggleSidePanel,
           toggleTerminal: input.toggleTerminal,

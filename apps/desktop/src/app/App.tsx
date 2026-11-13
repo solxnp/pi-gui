@@ -761,7 +761,7 @@ export default function App() {
     threadShortcutOrderRef,
     selectThread: (target) => selectThreadRef.current(target),
     threadSearch,
-    toggleThreadList: () => setThreadOverviewOpen((current) => !current),
+    threadList: { open: threadOverviewOpen, setOpen: setThreadOverviewOpen },
     toggleTerminal: () => setTerminalOpen((current) => !current),
     closeThreadTab: (target) => closeThreadTabRef.current(target),
     workbench,

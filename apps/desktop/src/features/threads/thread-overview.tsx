@@ -25,7 +25,12 @@ export function ThreadOverview({ open, onClose, children }: ThreadOverviewProps)
     // depends on how many rows the open conversations need.
     const strip = document.querySelector('[data-testid="thread-tabs"]');
     setTop(strip ? strip.getBoundingClientRect().bottom + 6 : 0);
-    closeRef.current?.focus();
+    // Focus the close button so Escape and Tab work, unless something inside the
+    // list already took focus — a row's rename field auto-focuses when the list
+    // opens from ⇧⌘R, and stealing it would make the chord look broken.
+    if (!panelRef.current?.contains(document.activeElement)) {
+      closeRef.current?.focus();
+    }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented || event.isComposing || event.repeat)
         return;

@@ -110,10 +110,20 @@ export function TerminalDock({
   readonly sessionId: string | undefined;
   readonly onHide: () => void;
 }) {
+  // The dock grabs focus for its shell only on the render that opens it. A
+  // thread switch remounts the panel under an already-open dock, and focusing
+  // there would send the new thread's typing to a shell instead of the composer.
+  const wasOpen = useRef(open);
+  const justOpened = open && !wasOpen.current;
+  useEffect(() => {
+    wasOpen.current = open;
+  }, [open]);
+
   if (!workspace || !sessionId) return null;
   return (
     <BottomTerminal open={open}>
       <TerminalPanel
+        autoFocus={justOpened}
         key={`${workspace.id}:${sessionId}`}
         onHide={onHide}
         sessionId={sessionId}
