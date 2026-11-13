@@ -178,13 +178,32 @@
 
 | 项   | 内容                                                                                                                    |
 | ---- | ----------------------------------------------------------------------------------------------------------------------- |
-| 状态 | 待做                                                                                                                    |
-| 提交 | —                                                                                                                       |
-| 阻塞 | 等用户拍板：状态色是否脱离主题 seed；是否用「实心点 + 行底色/文字标签」而不只是换颜色                                   |
+| 状态 | 已完成                                                                                                                  |
+| 提交 | `fa6f02f`                                                                                                               |
 | 验收 | 顶部 tab 条与「全部会话」列表用同一套状态语言；running / 待你读 / 失败 / 待确认 在 100% 缩放下不看 tooltip 也能一眼分开 |
 
 - [x] 现状清点：tab 条 unseen=琥珀 `--warning`（`thread-tabs.css:91`），侧栏行 unseen=accent 蓝（`sidebar.css:675`）；running 在 tab 条是 pulse 实心点、在侧栏是旋转环 → 同一状态两处不同色
-- [ ] 待定（等阻塞项拍板）
+- [x] 状态色脱离语法主题：`contracts/theme.ts` 新增 `statusSignals()`，暗/亮各一套固定值（running `#22c55e`/`#15803d`、unseen `#f59e0b`/`#b45309`、failed `#f87171`/`#dc2626`、pending `#a78bfa`/`#7c3aed`）；`tokens.css` 不再从 `--success/--error/--warning` 派生
+- [x] 形状区分：running = 空心环 + 呼吸（tab 条与列表一致，删掉原来的旋转环）；unseen / failed = 实心点 + 22% 光环；pending = 文字徽章（改紫色）
+- [x] 整块底色：tab 条按 `thread-tabs__tab--{running,unseen,failed,input}` 上 12–20% 状态色底，当前 tab 用 `--main` 做底再混色；列表行按 `data-sidebar-indicator` / `data-pending-approval` 上 12–18% 底 + 标题加重
+- [x] 两处统一：`sidebar.css` 的 unseen 从 accent 蓝改成同一枚 `--status-attention`
+- [x] 新增 core 用例 `thread-state-visuals.spec.ts`：四种状态各自的 class / 点色（对照 computed `--status-*`）/ 四种底色互不相同 / 换 preset 后状态色不变
+- [x] 真机截图（nord dark + 默认亮色）：四种状态的 tab 与列表行底色、点、徽章都能分辨
+- [x] 验证：typecheck / eslint / prettier / unit 548 条；core `thread-state-visuals`、`thread-tabs` 2、`terminal-entry-points` 全绿
+- [x] 已知红（与本单无关，clean HEAD 同红）：`notifications` 5、`stop-running-prompt` 3、`thread-menu` 2 —— 都在断言 `.session-row`，而列表现在只在「全部会话」浮层里 DOM 才存在
+
+### P0-11 tab 条为凑行数丢掉半行空间
+
+| 项   | 内容                                                                                               |
+| ---- | -------------------------------------------------------------------------------------------------- |
+| 状态 | 已完成                                                                                             |
+| 提交 | `4eff5f7`                                                                                          |
+| 验收 | 窗口够宽时 tab 一行排满再换行：1480px 窗口 7 个 tab 读作 6 + 1（原为 4 + 3），1900px 读作一行 7 个 |
+
+- [x] `threadTabLayout` 不再用 `ceil(count / rows)` 摊平列数，行数 ≤ 3 时列数 = 每行容量
+- [x] 超过三行容量（count > 每行容量 × 3）才扩列，让 tab 条横向滚动而不是继续长高
+- [x] 新增单测 `thread-tabs-layout.spec.ts`（7 / 12 / 18 / 19 个 tab、窄条、槽位顺序）
+- [x] 实测：1480 宽 → 每行 6/1；1900 宽 → 一行 7 个；1100 宽 → 3/3/1
 
 ## 二、已完成
 
