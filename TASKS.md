@@ -257,6 +257,22 @@
 - [ ] 剩余：`sidebar-recency` 5、`worktrees` 5、`mentions-diff` 2、`tree-command` 2、`pending-approval-badge`、`skills-settings`、`side-panel-picker`、`side-panel-tab-shortcuts`、`workspace-menu`、`custom-endpoints`、`timeline-pinning` 2、`timeline-overflow` 2、`transcript-annotations` 2（其中 4 条 timeline + 2 条 annotations 属基线同红）
 - [x] 记录：core 套件必须 Node 22（`zlib.crc32`）；`fd556f5` 基线 worktree 留在 `/tmp/pi-base` 可复查
 
+### P0-15 ask_user 每题可「跳过」：算作答，模型收到「用户跳过了这个问题」
+
+| 项   | 内容                                                                                                                                                                     |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 状态 | 已完成                                                                                                                                                                   |
+| 提交 | `d2e4242`                                                                                                                                                                |
+| 验收 | 待答卡上有「跳过这道题」，没选任何选项也能点；点了卡消失、扩展当轮拿到跳过（不是取消）；对话流留下「已跳过」的题面，重启仍在；模型看到「用户跳过了这个问题」且不重复追问 |
+
+- [x] 协议：`HostUiResponse` 增加 `skipped: true`；`ExtensionCardAnsweredForm.skipped`；`FORM_SKIP_ANSWER_FIELD` 回传给扩展
+- [x] IPC 校验接受 `skipped`（与 `values` / `cancelled` 互斥）+ 单测
+- [x] 驱动：跳过时写 `pi-gui.card` 已答条目（`skipped: true`），扩展拿到 `{ __skipped: "true" }`
+- [x] 渲染：卡片底栏加「跳过这道题」次要按钮，已答卡徽标改成「已跳过」（i18n en + zh-CN）
+- [x] `~/.pi/agent/extensions/ask-user.ts`：跳过按题继续问剩下的题，工具结果里带「不要重复问同一句」的指导
+- [x] 验证（Node 22）：`extension-form-card` 6 条 + `ipc-request-validation` 10 条 + `pi-sdk-driver` 206 条 + desktop unit 548 条全绿；真机截图两张（待答卡底栏「跳过这道题」靠左、提交置灰；已答卡「已跳过」徽标 + 选项无 ●）
+- [!] 已知基线红（与本单无关，P0-14 已记录）：`timeline-pinning` 2 条、`timeline-overflow` 2 条
+
 ## 二、已完成
 
 ### P0-00 台账面板 + 输入框上方概况条
