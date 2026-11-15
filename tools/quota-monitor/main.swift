@@ -575,26 +575,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// 把面板定位到菜单栏图标正下方
+    /// 把面板贴到菜单栏图标正下方。
+    ///
+    /// 没有自己的 statusItem 时（Dimble 启动器模式：图标被隐藏），退回**屏幕右上角**
+    /// ——也就是菜单栏那一排的位置，而不是鼠标位置（鼠标在哪都没关系，
+    /// 面板要固定在右上角，像正常的菜单栏弹窗）。
     private func positionPanelUnderStatusItem() {
-        guard let button = statusItem?.button, let win = button.window else {
-            // 没有 statusItem 时退回鼠标位置
-            let mouse = NSEvent.mouseLocation
-            panel.setFrameOrigin(NSPoint(x: mouse.x - panelW / 2, y: mouse.y - panelH - 12))
+        if let button = statusItem?.button, let win = button.window {
+            let local = button.convert(button.bounds, to: nil)
+            let screenRect = win.convertToScreen(local)
+            let height = panel.frame.height
+            var x = screenRect.midX - panelW / 2
+            var y = screenRect.minY - height - 6
+            if let screen = win.screen ?? NSScreen.main {
+                let vf = screen.visibleFrame
+                x = min(max(vf.minX + 8, x), vf.maxX - panelW - 8)
+                if y < vf.minY + 8 { y = vf.minY + 8 }
+            }
+            panel.setFrameOrigin(NSPoint(x: x, y: y))
+            log("panel anchor=statusItem frame=\(panel.frame)")
             return
         }
-        let local = button.convert(button.bounds, to: nil)
-        let screenRect = win.convertToScreen(local)
 
-        var x = screenRect.midX - panelW / 2
-        var y = screenRect.minY - panelH - 6
-
-        if let screen = win.screen ?? NSScreen.main {
-            let vf = screen.visibleFrame
-            x = min(max(vf.minX + 8, x), vf.maxX - panelW - 8)
-            if y < vf.minY + 8 { y = vf.minY + 8 }
-        }
+        let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
+        guard let screen = screen else { return }
+        let vf = screen.visibleFrame
+        // 贴右上角，垂直位置和菜单栏弹窗一致（菜单栏底下 6pt）
+        let height = panel.frame.height
+        let x = vf.maxX - panelW - 10
+        let y = vf.maxY - height - 6
         panel.setFrameOrigin(NSPoint(x: x, y: y))
+        log("panel anchor=corner frame=\(panel.frame)")
     }
 
     private func hidePanel() {
