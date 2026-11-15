@@ -272,7 +272,7 @@ final class QuotaView: NSView {
         NSBezierPath(roundedRect: NSRect(x: barX, y: barY, width: filled, height: 5),
                      xRadius: 2.5, yRadius: 2.5).fill()
 
-        let right = row.valueText
+        let right = row.valueText.isEmpty ? Self.pctText(row.pct) : row.valueText
         let size = right.size(withAttributes: [.font: valueFont])
         right.draw(at: NSPoint(x: bounds.width - pad - size.width, y: y - 1),
                    withAttributes: [.font: valueFont, .foregroundColor: color])
@@ -284,7 +284,7 @@ final class QuotaView: NSView {
         Self.prettyName(m.model).draw(at: NSPoint(x: pad, y: y),
                                       withAttributes: [.font: labelFont, .foregroundColor: labelColor])
 
-        let txt = m.valueText.isEmpty ? String(format: "%.1f%%", m.pct) : m.valueText
+        let txt = m.valueText.isEmpty ? Self.pctText(m.pct) : m.valueText
         let sz = txt.size(withAttributes: [.font: valueFont])
         txt.draw(at: NSPoint(x: bounds.width - pad - sz.width, y: y - 1),
                  withAttributes: [.font: valueFont, .foregroundColor: color])
@@ -299,6 +299,12 @@ final class QuotaView: NSView {
         NSBezierPath(roundedRect: NSRect(x: pad, y: barY, width: filled, height: 3),
                      xRadius: 1.5, yRadius: 1.5).fill()
         y += modelRowHeight
+    }
+
+    /// 百分比文案：小于 10% 保留一位小数，其余取整（和 OpenCode 那几行的观感对齐）
+    static func pctText(_ value: Double) -> String {
+        if value < 10 { return String(format: "%.1f%%", value) }
+        return String(format: "%.0f%%", value)
     }
 
     /// 水位配色：<50 绿 / <80 橙 / ≥80 红
@@ -597,15 +603,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
+        // 没有 statusItem 时（Dimble 启动器）以鼠标位置为水平中心：
+        // 用户点的是菜单栏上那个启动器图标，面板就该在那个图标下面居中
+        let mouse = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
         guard let screen = screen else { return }
         let vf = screen.visibleFrame
-        // 贴右上角，垂直位置和菜单栏弹窗一致（菜单栏底下 6pt）
         let height = panel.frame.height
-        let x = vf.maxX - panelW - 10
+        var x = mouse.x - panelW / 2
+        x = min(max(vf.minX + 8, x), vf.maxX - panelW - 8)
         let y = vf.maxY - height - 6
         panel.setFrameOrigin(NSPoint(x: x, y: y))
-        log("panel anchor=corner frame=\(panel.frame)")
+        log("panel anchor=mouse frame=\(panel.frame) mouse=\(mouse)")
     }
 
     private func hidePanel() {
@@ -1095,13 +1104,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let cc = cachedCC, cc.fiveCap > 0 || cc.weekCap > 0 || cc.monthCap > 0 {
             ccRows.append(QuotaRow(label: "5小时",
                                    pct: cc.fiveCap > 0 ? cc.fiveUsed / cc.fiveCap * 100 : 0,
-                                   valueText: Self.money(cc.fiveUsed, cc.fiveCap)))
+                                   valueText: ""))
             ccRows.append(QuotaRow(label: "本周",
                                    pct: cc.weekCap > 0 ? cc.weekUsed / cc.weekCap * 100 : 0,
-                                   valueText: Self.money(cc.weekUsed, cc.weekCap)))
+                                   valueText: ""))
             ccRows.append(QuotaRow(label: "本月",
                                    pct: cc.monthCap > 0 ? cc.monthUsed / cc.monthCap * 100 : 0,
-                                   valueText: Self.money(cc.monthUsed, cc.monthCap)))
+                                   valueText: ""))
             if !cc.fiveReset.isEmpty {
                 ccNotes.append("5小时重置 \(cc.fiveReset) 北京时间")
             }
@@ -1111,10 +1120,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ccNotes.append("加载中…")
         }
         let ccModelRows: [ModelUsage] = ccModels.map { spend in
-            let pct = (cachedCC?.fiveCap ?? 0) > 0 ? spend.usd / (cachedCC?.fiveCap ?? 1) * 100 : 0
+            let cap = cachedCC?.fiveCap ?? 0
+            let pct = cap > 0 ? spend.usd / cap * 100 : 0
             return ModelUsage(model: spend.model, usedUSD: spend.usd,
-                              capUSD: cachedCC?.fiveCap ?? 0, pct: pct,
-                              valueText: String(format: "$%.3f", spend.usd))
+                              capUSD: cap, pct: pct, valueText: "")
         }
         var ccNoteList = ccNotes
         if !ccModelRows.isEmpty {
@@ -1170,10 +1179,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return nil
     }
 
-    /// `$0.13 / $3.00`，小额保留两位
-    private static func money(_ used: Double, _ cap: Double) -> String {
-        String(format: "$%.2f / $%.0f", used, cap)
-    }
 
     // MARK: 快捷键（保留）
 
