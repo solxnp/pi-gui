@@ -20,7 +20,8 @@ OPENCODE GO
   GLM-5.3                  1.1%
 ```
 
-- **Command Code 是精确值**：直接读官方额度接口，三行分别对应它自己的 5 小时窗口、周窗口、月度 credit。
+- **Command Code 是精确值**：直接读官方额度接口，三行分别对应 5 小时窗口 / 周窗口 / 月度 **credits**。
+  credits 不是美元：GOAT 的 70 credits 折算成最高 $100 用量，比例按模型浮动（1 credit ≈ $1~$1.43）。
 - **OpenCode Go 是账号合计 + 单模型明细**：合计来自官方 `/usage`，单模型由 `ocstats.py` 扫本地会话日志推算（官方没有按模型的口径）。
 
 ## 数据来源
@@ -36,7 +37,8 @@ OPENCODE GO
 **Command Code 服务端没有「按模型」的用量接口**，单模型那行是本地估算：pi 会话日志 × 官方单价。两个已知边界：
 
 - 只统计**经 pi** 的调用，你在 command-code CLI 里直接用掉的不在里面
-- CC 的 5 小时 / 周限额是**整池**（Go 套餐 $3 / $6），不是每模型独立上限；所以这里显示的是「这个模型占了这个窗口多少」，不是「它自己的上限」
+- CC 的 5 小时 / 周限额是**整池**（Go 3/6 credits、GOAT 14/35），不是每模型独立上限；显示的是「这个模型占了这个窗口多少」，不是「它自己的上限」
+- 单模型那栏是**估算美元**，上限是 **credits**，两者单位不同，所以只显示金额、不画进度条
 
 `cc-prices.json` 是从 `command-code` npm 包里内嵌的模型目录抽的（`pricing.inputCost/outputCost/cacheReadCost`，$/1M tokens）。CLI 升级后可以重新抽一次。
 

@@ -29,6 +29,8 @@ struct ModelUsage {
     var pct: Double
     /// 右侧文案，留空时画百分比
     var valueText: String = ""
+    /// 单位与窗口上限不一致时置 false：只显示文案，不画进度条
+    var showBar: Bool = true
 }
 
 /// Command Code 的额度（全部是美元 credit 单位）
@@ -280,7 +282,7 @@ final class QuotaView: NSView {
     }
 
     private func drawModelRow(_ m: ModelUsage, y: inout CGFloat, labelColor: NSColor) {
-        let color = Self.waterColor(Int(m.pct.rounded()))
+        let color = m.showBar ? Self.waterColor(Int(m.pct.rounded())) : NSColor(calibratedWhite: 1, alpha: 0.62)
         Self.prettyName(m.model).draw(at: NSPoint(x: pad, y: y),
                                       withAttributes: [.font: labelFont, .foregroundColor: labelColor])
 
@@ -288,6 +290,11 @@ final class QuotaView: NSView {
         let sz = txt.size(withAttributes: [.font: valueFont])
         txt.draw(at: NSPoint(x: bounds.width - pad - sz.width, y: y - 1),
                  withAttributes: [.font: valueFont, .foregroundColor: color])
+
+        if !m.showBar {
+            y += modelRowHeight
+            return
+        }
 
         let barW: CGFloat = bounds.width - pad * 2
         let barY = y + 16
@@ -664,12 +671,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let cc = self.cachedCC
             print("Command Code")
             if let cc = cc {
-                print(String(format: "  5小时  $%.4f / $%.2f  = %.1f%%",
+                // 注意：这里是 credits，不是美元（见 planCredits 注释）
+                print(String(format: "  5小时  %.2f / %.0f credits  = %.1f%%",
                              cc.fiveUsed, cc.fiveCap, cc.fiveCap > 0 ? cc.fiveUsed / cc.fiveCap * 100 : 0))
-                print(String(format: "  本周    $%.4f / $%.2f  = %.1f%%",
+                print(String(format: "  本周    %.2f / %.0f credits  = %.1f%%",
                              cc.weekUsed, cc.weekCap, cc.weekCap > 0 ? cc.weekUsed / cc.weekCap * 100 : 0))
-                print(String(format: "  本月    $%.4f / $%.2f  = %.1f%%",
-                             cc.monthUsed, cc.monthCap, cc.monthCap > 0 ? cc.monthUsed / cc.monthCap * 100 : 0))
+                print(String(format: "  本月    %.2f / %.0f credits  = %.1f%%  %@",
+                             cc.monthUsed, cc.monthCap, cc.monthCap > 0 ? cc.monthUsed / cc.monthCap * 100 : 0,
+                             Self.planUsageLabel(cc.planId) ?? ""))
+                if !cc.planId.isEmpty { print("  套餐 \(cc.planId)") }
                 if !cc.fiveReset.isEmpty { print("  5小时重置 \(cc.fiveReset)") }
             } else {
                 print("  失败：\(self.ccError ?? "未知")")
@@ -770,17 +780,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Command Code 用量
     //
-    // 数据源（2026-11-14 实测）：
-    //   GET https://api.commandcode.ai/alpha/billing/credits
-    //     credits.monthlyCredits  = 本月「剩余」credit（美元）
-    //     windowLimits.fiveHour   = {used, cap, resetAt(ms)}  → 5 小时窗口（Go 套餐 cap = $3）
-    //     windowLimits.weekly     = {used, cap, resetAt(ms)}  → 周窗口（cap = $6）
-    //   GET https://api.commandcode.ai/alpha/usage/summary
-    //     totalCost = 本账期已花费（credit 单位）
-    //   月度上限 = 剩余 + 已花，这样换成 GOAT/Max 套餐也不用改代码。
+    // 数据源（2026-11-15 实测）：
+    //   GET /alpha/billing/credits
+    //     credits.monthlyCredits = 本月「剩余」credits
+    //     windowLimits.fiveHour  = {used, cap, resetAt(ms)}  → 5 小时窗口（GOAT cap = 14）
+    //     windowLimits.weekly    = {used, cap, resetAt(ms)}  → 周窗口（GOAT cap = 35）
+    //   GET /alpha/billing/subscriptions
+    //     data.planId → 查 planCredits 得月度总额（GOAT = 70）
     //
-    // 注意：官方没有「按模型」的用量接口，所以 CC 这块只有 5 小时 / 周 / 月三行，
-    // 没有 OC 那种单模型明细。
+    // ⚠️ 这里的 used/cap/月度额全是 **credits，不是美元**：
+    //    官方文档写 GOAT「14 credits in any 5 hours ... worth up to $20 of usage on
+    //    a $100 model」→ 70 credits 折算最高 $100 用量，比例按模型浮动。
+    //    之前把这套数字当美元显示（$70/$14），是错的口径。
+    //
+    // 不用 /alpha/usage/summary.totalCost：那个计数器按账期内的窗口统计、跨窗口归零，
+    // 拿它当本月累计会把「已用」算成旧窗口的小数字。
     private func refreshCC(completion: (() -> Void)? = nil) {
         guard let key = readCCKey() else {
             ccError = "未找到 Command Code key"
@@ -790,7 +804,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let group = DispatchGroup()
         var credits: [String: Any]?
-        var summary: [String: Any]?
         var failure: String?
 
         group.enter()
@@ -799,11 +812,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             group.leave()
         }
         var subscription: [String: Any]?
-        group.enter()
-        ccRequest(path: "/alpha/usage/summary", key: key) { obj, _ in
-            summary = obj
-            group.leave()
-        }
         group.enter()
         ccRequest(path: "/alpha/billing/subscriptions", key: key) { obj, _ in
             subscription = obj
@@ -821,21 +829,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             var cc = CCUsage()
             let remaining = (c["monthlyCredits"] as? Double) ?? 0
-            let spent = (summary?["totalCost"] as? Double) ?? 0
             if let plan = (subscription?["data"] as? [String: Any])?["planId"] as? String {
                 cc.planId = plan
             }
-            // 月度总额来自套餐定价表；已用 = 总额 - 剩余。
-            // 不能用 usage/summary.totalCost：它按账期内的窗口统计，跨窗口会归零，
-            // 拿它当本月累计会把「已用」算成旧窗口的小数字（实测差 $30）。
+            // 月度总额来自套餐表（credits）；已用 = 总额 - 剩余
             if let cap = Self.planMonthlyCap(cc.planId) {
                 cc.monthCap = cap
                 cc.monthUsed = max(0, cap - remaining)
-            } else if spent > 0 && remaining > spent {
-                // 认不出套餐时：remaining 是剩余，spent 只能当窗口内的近似
-                cc.monthCap = remaining + spent
-                cc.monthUsed = spent
             } else {
+                // 认不出套餐：只知道剩余，总额未知
                 cc.monthCap = remaining
                 cc.monthUsed = 0
             }
@@ -1119,25 +1121,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if !cc.fiveReset.isEmpty {
                 ccNotes.append("5小时重置 \(cc.fiveReset) 北京时间")
             }
+            let usageLabel = Self.planUsageLabel(cc.planId)
+            ccNotes.append("数值是 credits（1 credit ≈ $1~$1.43 用量，按模型浮动）" + (usageLabel ?? ""))
         } else if let err = ccError {
             ccNotes.append(err)
         } else {
             ccNotes.append("加载中…")
         }
+        // 单模型花费是「估算的美元」，窗口上限是 credits——两个单位不能相除，
+        // 所以这里只给金额、不画进度条也不给百分比
         let ccModelRows: [ModelUsage] = ccModels.map { spend in
-            let cap = cachedCC?.fiveCap ?? 0
-            let pct = cap > 0 ? spend.usd / cap * 100 : 0
-            return ModelUsage(model: spend.model, usedUSD: spend.usd,
-                              capUSD: cap, pct: pct, valueText: "")
+            ModelUsage(model: spend.model, usedUSD: spend.usd, capUSD: 0, pct: 0,
+                       valueText: String(format: "$%.3f", spend.usd), showBar: false)
         }
-        var ccNoteList = ccNotes
-        if !ccModelRows.isEmpty {
-            ccNoteList.insert("单模型按 pi 会话日志估算，占整池比例", at: 0)
-        }
+        let ccNoteList = ccNotes
         blocks.append(ProviderBlock(title: "COMMAND CODE",
                                     rows: ccRows,
                                     models: ccModelRows,
-                                    modelsTitle: "单模型 · 5小时",
+                                    modelsTitle: "单模型 · 本窗口估算花费（美元）",
                                     footnotes: ccNoteList))
 
         // ── OpenCode Go ──
@@ -1171,9 +1172,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.setFrame(frame, display: true)
     }
 
-    /// 各套餐的月度 credit 总额。来源：command-code CLI 自己的定价表
-    /// （dist/cli.mjs 里的 planId → credits 映射，2026-11-15 从 1.89.1 抽出）。
-    /// 注意 Go/GOAT/Pro 是「按模型领取」的上限，Max 是 premium/standard 各一份。
+    /// 各套餐的月度 **credits**（不是美元）。
+    /// 来源：command-code CLI 的 planId → credits 表（dist/cli.mjs，1.89.1）。
+    /// GOAT 已用 API 交叉验证：fiveHour.cap = 14、weekly.cap = 35、月度 = 5×14 = 70。
     private static let planCredits: [String: Double] = [
         "individual-go": 10,
         "individual-go-v1": 10,
@@ -1186,8 +1187,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         "teams-pro": 40,
     ]
 
+    /// 套餐的「折算用量价值」（美元）。来源：commandcode.ai/pricing 的 Included LLM Usage 列。
+    /// 与 credits 的比例按套餐不同（Go 1:1，GOAT 70 credits = 最高 $100），
+    /// 而且同一个套餐内还会按模型浮动，所以只能当上限参考。
+    private static let planUsageDollars: [String: Double] = [
+        "individual-go": 10,
+        "individual-go-v1": 10,
+        "individual-goat": 100,
+        "individual-pro": 110,
+        "individual-pro-v1": 110,
+        "individual-max": 150,
+        "individual-ultra": 300,
+        "teams-pro": 40,
+    ]
+
     private static func planMonthlyCap(_ planId: String) -> Double? {
         planCredits[planId]
+    }
+
+    private static func planUsageLabel(_ planId: String) -> String? {
+        guard let usd = planUsageDollars[planId] else { return nil }
+        return String(format: "（≈ 最高 $%.0f 用量）", usd)
     }
 
 
