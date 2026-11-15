@@ -825,14 +825,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let plan = (subscription?["data"] as? [String: Any])?["planId"] as? String {
                 cc.planId = plan
             }
-            // 月度总额优先按套餐定价取整（Go = $10），因为「剩余 + 已花」会因为
-            // 两份统计口径的细微差异漂成 $9.98 这种数字；拿不到套餐就退回推导值
+            // 月度总额来自套餐定价表；已用 = 总额 - 剩余。
+            // 不能用 usage/summary.totalCost：它按账期内的窗口统计，跨窗口会归零，
+            // 拿它当本月累计会把「已用」算成旧窗口的小数字（实测差 $30）。
             if let cap = Self.planMonthlyCap(cc.planId) {
                 cc.monthCap = cap
                 cc.monthUsed = max(0, cap - remaining)
-            } else {
+            } else if spent > 0 && remaining > spent {
+                // 认不出套餐时：remaining 是剩余，spent 只能当窗口内的近似
                 cc.monthCap = remaining + spent
                 cc.monthUsed = spent
+            } else {
+                cc.monthCap = remaining
+                cc.monthUsed = 0
             }
             if let f = windows["fiveHour"] as? [String: Any] {
                 cc.fiveUsed = (f["used"] as? Double) ?? 0
@@ -1166,17 +1171,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.setFrame(frame, display: true)
     }
 
-    /// 各套餐的月度 credit 总额（来源：commandcode.ai/pricing，2026-11-14 复核）。
-    /// 认不出套餐时返回 nil，调用方退回「剩余 + 已花」。
+    /// 各套餐的月度 credit 总额。来源：command-code CLI 自己的定价表
+    /// （dist/cli.mjs 里的 planId → credits 映射，2026-11-15 从 1.89.1 抽出）。
+    /// 注意 Go/GOAT/Pro 是「按模型领取」的上限，Max 是 premium/standard 各一份。
+    private static let planCredits: [String: Double] = [
+        "individual-go": 10,
+        "individual-go-v1": 10,
+        "individual-goat": 70,
+        "individual-pro": 30,
+        "individual-pro-v1": 80,
+        "individual-provider": 15,
+        "individual-max": 150,
+        "individual-ultra": 300,
+        "teams-pro": 40,
+    ]
+
     private static func planMonthlyCap(_ planId: String) -> Double? {
-        let id = planId.lowercased()
-        if id.contains("goat") { return 100 }
-        if id.contains("max20") || id.contains("max-20") { return 300 }
-        if id.contains("max10") || id.contains("max-10") { return 150 }
-        if id.contains("team") { return 40 }
-        if id.contains("individual-go") || id == "go" { return 10 }
-        if id.contains("pro") { return 110 }
-        return nil
+        planCredits[planId]
     }
 
 
