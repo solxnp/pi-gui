@@ -30,6 +30,8 @@ export const zhCN: Partial<Messages> = {
   "ui.addCustomEndpoint": "添加自定义端点",
   "extensionDialog.recommended": "推荐",
   "extensionForm.answered": "已回答",
+  "extensionForm.skipped": "已跳过",
+  "extensionForm.skip": "跳过这道题",
   "extensionForm.submit": "提交回答",
   "extensionForm.other": "其他 —— 我自己写",
   "extensionForm.otherPlaceholder": "写你的答案",

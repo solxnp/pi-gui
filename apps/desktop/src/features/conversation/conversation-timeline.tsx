@@ -238,6 +238,7 @@ export function ConversationTimeline({
                   onSubmit={(values) =>
                     onAnswerForm?.({ requestId: pendingForm.requestId, values })
                   }
+                  onSkip={() => onAnswerForm?.({ requestId: pendingForm.requestId, skipped: true })}
                 />
               </div>
             ) : null}

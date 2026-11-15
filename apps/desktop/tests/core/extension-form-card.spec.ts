@@ -143,6 +143,38 @@ export default function formExtension(pi) {
       ctx.ui.notify(values ? "Tall form answered" : "Tall form cancelled", "info");
     },
   });
+
+  pi.registerCommand("form-skip", {
+    description: "Ask one question the user may skip",
+    handler: async (_args, ctx) => {
+      const values = await ctx.ui.form({
+        title: "需要你决定",
+        description: "请选择一项",
+        fields: [
+          {
+            id: "answer",
+            title: "旧方案还要继续维护吗？",
+            options: [
+              { value: "维护", label: "继续维护", recommended: true },
+              { value: "冻结", label: "冻结" },
+            ],
+          },
+        ],
+        allowOther: true,
+        submitLabel: "提交回答",
+      });
+      // A skipped question answers with the reserved field id, so the extension keeps its turn
+      // and can tell "skipped" apart from "cancelled".
+      ctx.ui.notify(
+        !values
+          ? "Cancelled"
+          : values.__skipped === "true"
+            ? "Skipped the question"
+            : "Answered " + values.answer,
+        "info",
+      );
+    },
+  });
 }
 `;
 
@@ -422,5 +454,69 @@ test("a multi question answers with every checked option", async () => {
     await expect(window.getByTestId("extension-notices")).toContainText("Multi multi+pack");
   } finally {
     await harness.close();
+  }
+});
+
+test("a question can be skipped, and the skip stays in the transcript", async () => {
+  test.setTimeout(60_000);
+  const userDataDir = await makeUserDataDir();
+  const workspacePath = await makeWorkspace("extension-form-skip-workspace");
+  await writeProjectExtension(workspacePath, "form-extension.ts", extensionSource);
+
+  const harness = await launchDesktop(userDataDir, {
+    initialWorkspaces: [workspacePath],
+    testMode: "background",
+  });
+
+  try {
+    const window = await harness.firstWindow();
+    await createNamedThread(window, "Form skip session");
+
+    const composer = window.getByTestId("composer");
+    await composer.fill("/form-skip ");
+    await composer.press("Enter");
+
+    const card = window.getByTestId("extension-form");
+    await expect(card).toBeVisible();
+    const skip = card.getByTestId("extension-form-skip");
+    await expect(skip).toBeVisible();
+    await expect(skip).toHaveText(/跳过这道题|Skip this question/);
+    // Skipping is not answering: it works before anything is picked, unlike submit.
+    await expect(card.getByTestId("extension-form-submit")).toBeDisabled();
+    await expect(skip).toBeEnabled();
+    await skip.click();
+
+    // The card goes away and the extension keeps running with "the user skipped it".
+    await expect(card).toHaveCount(0);
+    await expect(window.getByTestId("extension-notices")).toContainText("Skipped the question");
+
+    const answeredCard = window.getByTestId("extension-card").last();
+    await expect(answeredCard).toContainText("旧方案还要继续维护吗？");
+    await expect(answeredCard.getByTestId("extension-card-board")).toContainText("继续维护");
+    // It reads as skipped, not as answered, and nothing is marked as picked.
+    await expect(answeredCard.getByTestId("extension-card-answered")).toHaveText(
+      /^(已跳过|Skipped)$/,
+    );
+    await expect(answeredCard.locator('li[data-picked="true"]')).toHaveCount(0);
+    await expect(answeredCard.locator('li[data-picked="false"]')).toHaveCount(2);
+  } finally {
+    await harness.close();
+  }
+
+  // The skip is a session entry too, so reopening the thread still shows the question was skipped.
+  const reopened = await launchDesktop(userDataDir, {
+    initialWorkspaces: [workspacePath],
+    testMode: "background",
+  });
+  try {
+    const window = await reopened.firstWindow();
+    await selectSession(window, "Form skip session");
+    const card = window.getByTestId("extension-card");
+    await expect(card).toHaveCount(1);
+    await expect(card).toContainText("旧方案还要继续维护吗？");
+    await expect(card.getByTestId("extension-card-answered")).toHaveText(/^(已跳过|Skipped)$/);
+    await expect(window.getByTestId("extension-form")).toHaveCount(0);
+  } finally {
+    await reopened.close();
   }
 });

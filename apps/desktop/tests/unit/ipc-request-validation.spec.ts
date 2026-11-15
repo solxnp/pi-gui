@@ -121,7 +121,7 @@ test("IPC request validation checks discriminated command records", () => {
   });
   expect(() =>
     expectHostUiResponse({ requestId: "request-a", confirmed: true, cancelled: true }),
-  ).toThrow("response must contain exactly one of value, confirmed, values, or cancelled");
+  ).toThrow("response must contain exactly one of value, confirmed, values, skipped, or cancelled");
   // A form's answers are one entry per answered question.
   expect(
     expectHostUiResponse({
@@ -131,10 +131,18 @@ test("IPC request validation checks discriminated command records", () => {
   ).toEqual({ requestId: "request-b", values: { q1: "keep", q2: "written answer" } });
   expect(() =>
     expectHostUiResponse({ requestId: "request-b", values: { q1: "keep" }, cancelled: true }),
-  ).toThrow("response must contain exactly one of value, confirmed, values, or cancelled");
+  ).toThrow("response must contain exactly one of value, confirmed, values, skipped, or cancelled");
   expect(() => expectHostUiResponse({ requestId: "request-b", values: { q1: 1 } })).toThrow(
     "response.values.q1 must be a string",
   );
+  // "Skip this question" is an answer of its own: neither a value nor a cancellation.
+  expect(expectHostUiResponse({ requestId: "request-c", skipped: true })).toEqual({
+    requestId: "request-c",
+    skipped: true,
+  });
+  expect(() =>
+    expectHostUiResponse({ requestId: "request-c", skipped: true, values: { q1: "keep" } }),
+  ).toThrow("response must contain exactly one of value, confirmed, values, skipped, or cancelled");
 
   expect(
     expectForkThreadInput({

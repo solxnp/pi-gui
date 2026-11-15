@@ -57,7 +57,11 @@ import type {
 import type { RuntimeCommandRecord } from "@pi-gui/session-driver/runtime-types";
 import { isMissingFileError, JsonCatalogStore } from "@pi-gui/catalogs/node";
 import type { SessionFileCatalogStorage } from "@pi-gui/catalogs";
-import { EXTENSION_CARD_CUSTOM_TYPE, sessionKey } from "@pi-gui/session-driver";
+import {
+  EXTENSION_CARD_CUSTOM_TYPE,
+  FORM_SKIP_ANSWER_FIELD,
+  sessionKey,
+} from "@pi-gui/session-driver";
 import { buildSessionSchemaInfo, readSessionFileSchemaVersion } from "./session-schema.js";
 import {
   gatedBuiltinExtensions,
@@ -2284,6 +2288,12 @@ export class SessionSupervisor {
           }),
           (response) => {
             if ("cancelled" in response && response.cancelled) return undefined;
+            if ("skipped" in response && response.skipped) {
+              this.recordFormAnswer(record, prompt, {}, true);
+              // A skip is an answer, not a cancellation: the extension keeps the turn and is told
+              // the user skipped it, so a card never blocks on a question the user will not answer.
+              return { [FORM_SKIP_ANSWER_FIELD]: "true" };
+            }
             if (!("values" in response)) return undefined;
             this.recordFormAnswer(record, prompt, response.values);
             return response.values;
@@ -2512,6 +2522,7 @@ export class SessionSupervisor {
     record: ManagedSessionRecord,
     prompt: HostUiFormPrompt,
     values: Readonly<Record<string, string | readonly string[]>>,
+    skipped = false,
   ): void {
     const sessionManager = record.session?.sessionManager;
     if (!sessionManager) return;
@@ -2526,7 +2537,7 @@ export class SessionSupervisor {
       const value = labels.join("、").trim();
       return value ? [{ label: field.title, value }] : [];
     });
-    if (rows.length === 0) return;
+    if (rows.length === 0 && !skipped) return;
 
     const card: ExtensionCard = {
       title: prompt.title,
@@ -2539,6 +2550,7 @@ export class SessionSupervisor {
         fields: prompt.fields,
         values,
         ...(prompt.allowOther ? { allowOther: true } : {}),
+        ...(skipped ? { skipped: true } : {}),
       },
     };
     const entryId = sessionManager.appendCustomEntry(EXTENSION_CARD_CUSTOM_TYPE, {

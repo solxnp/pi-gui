@@ -96,6 +96,8 @@ export interface ExtensionCardAnsweredForm {
   readonly fields: readonly HostUiFormField[];
   readonly values: Readonly<Record<string, string | readonly string[]>>;
   readonly allowOther?: boolean;
+  /** The user skipped the question instead of answering it, so nothing is marked as picked. */
+  readonly skipped?: boolean;
 }
 
 export interface SessionTranscriptCard {

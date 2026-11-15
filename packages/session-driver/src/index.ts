@@ -91,6 +91,7 @@ export type {
   SessionTranscriptToolCall,
 } from "./transcript.js";
 
+export { FORM_SKIP_ANSWER_FIELD } from "./types.js";
 export {
   EXTENSION_CARD_CUSTOM_TYPE,
   EXTENSION_PIN_CUSTOM_TYPE,

@@ -665,7 +665,12 @@ function parseExtensionCardAnsweredForm(data: unknown): ExtensionCardAnsweredFor
       values[field.id] = answer.map(String);
     }
   }
-  return { fields, values, ...(data.allowOther === true ? { allowOther: true } : {}) };
+  return {
+    fields,
+    values,
+    ...(data.allowOther === true ? { allowOther: true } : {}),
+    ...(data.skipped === true ? { skipped: true } : {}),
+  };
 }
 
 function parseAnsweredField(data: unknown): HostUiFormField | undefined {

@@ -21,9 +21,12 @@ const OTHER_VALUE_SUFFIX = ":other";
 export function ExtensionFormCard({
   form,
   onSubmit,
+  onSkip,
 }: {
   readonly form: ExtensionFormDialog;
   readonly onSubmit: (values: Record<string, ExtensionFormAnswer>) => void;
+  /** Counts as an answer: the extension is told the user skipped instead of stopping the turn. */
+  readonly onSkip?: () => void;
 }) {
   const { t } = useTranslation();
   const [picked, setPicked] = useState<Readonly<Record<string, readonly string[]>>>({});
@@ -156,6 +159,16 @@ export function ExtensionFormCard({
         })}
       </div>
       <footer className="extension-form__footer">
+        {onSkip ? (
+          <button
+            className="button button--ghost extension-form__skip"
+            data-testid="extension-form-skip"
+            type="button"
+            onClick={onSkip}
+          >
+            {t("extensionForm.skip")}
+          </button>
+        ) : null}
         <button
           className="button button--primary"
           data-testid="extension-form-submit"

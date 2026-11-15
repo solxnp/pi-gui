@@ -505,11 +505,12 @@ export function expectHostUiResponse(value: unknown): HostUiResponse {
     typeof record.value === "string",
     typeof record.confirmed === "boolean",
     isAnswerRecord(record.values),
+    record.skipped === true,
     record.cancelled === true,
   ].filter(Boolean).length;
   if (variants !== 1) {
     throw new TypeError(
-      "response must contain exactly one of value, confirmed, values, or cancelled",
+      "response must contain exactly one of value, confirmed, values, skipped, or cancelled",
     );
   }
   if (typeof record.value === "string") {
@@ -531,6 +532,9 @@ export function expectHostUiResponse(value: unknown): HostUiResponse {
       values[fieldId] = answer.filter((item): item is string => typeof item === "string");
     }
     return { requestId, values };
+  }
+  if (record.skipped === true) {
+    return { requestId, skipped: true };
   }
   return { requestId, cancelled: true };
 }

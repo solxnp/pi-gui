@@ -35,6 +35,8 @@ export const en = {
   "ui.addCustomEndpoint": "Add custom endpoint",
   "extensionDialog.recommended": "Recommended",
   "extensionForm.answered": "Answered",
+  "extensionForm.skipped": "Skipped",
+  "extensionForm.skip": "Skip this question",
   "extensionForm.submit": "Submit answers",
   "extensionForm.other": "Other — write my own",
   "extensionForm.otherPlaceholder": "Type your answer",

@@ -292,10 +292,25 @@ export type HostUiResponse =
       readonly requestId: string;
       readonly values: Readonly<Record<string, string | readonly string[]>>;
     }
+  /**
+   * The user pressed "skip" on a `form` question: it counts as answered, so the extension keeps
+   * running, and the answer it receives is `{ [FORM_SKIP_ANSWER]: "true" }`
+   * (`FORM_SKIP_ANSWER_FIELD`) rather than any option value.
+   */
+  | {
+      readonly requestId: string;
+      readonly skipped: true;
+    }
   | {
       readonly requestId: string;
       readonly cancelled: true;
     };
+
+/**
+ * The field id a skipped `form` answers with. It is not a real question id, so an extension can
+ * tell "the user skipped this" apart from any option value and from a cancelled dialog.
+ */
+export const FORM_SKIP_ANSWER_FIELD = "__skipped";
 
 /** One choice a `form` request offers. `value` is answered; `label` is drawn. */
 export interface HostUiFormOption {

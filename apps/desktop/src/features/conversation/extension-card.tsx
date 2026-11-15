@@ -52,8 +52,12 @@ export function ExtensionCardItem({
           {card.subtitle ? <span className="extension-card__subtitle">{card.subtitle}</span> : null}
         </div>
         {board ? (
-          <span className="extension-card__answered" data-testid="extension-card-answered">
-            {t("extensionForm.answered")}
+          <span
+            className="extension-card__answered"
+            data-skipped={board.skipped ? "true" : "false"}
+            data-testid="extension-card-answered"
+          >
+            {board.skipped ? t("extensionForm.skipped") : t("extensionForm.answered")}
           </span>
         ) : null}
         {toneLabel ? <span className="extension-card__tone">{toneLabel}</span> : null}
