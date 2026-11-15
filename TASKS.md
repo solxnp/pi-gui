@@ -257,6 +257,8 @@
 - [ ] 剩余：`sidebar-recency` 5、`worktrees` 5、`mentions-diff` 2、`tree-command` 2、`pending-approval-badge`、`skills-settings`、`side-panel-picker`、`side-panel-tab-shortcuts`、`workspace-menu`、`custom-endpoints`、`timeline-pinning` 2、`timeline-overflow` 2、`transcript-annotations` 2（其中 4 条 timeline + 2 条 annotations 属基线同红）
 - [x] 记录：core 套件必须 Node 22（`zlib.crc32`）；`fd556f5` 基线 worktree 留在 `/tmp/pi-base` 可复查
 
+## 二、已完成
+
 ### P0-15 ask_user 每题可「跳过」：算作答，模型收到「用户跳过了这个问题」
 
 | 项   | 内容                                                                                                                                                                     |
@@ -273,7 +275,19 @@
 - [x] 验证（Node 22）：`extension-form-card` 6 条 + `ipc-request-validation` 10 条 + `pi-sdk-driver` 206 条 + desktop unit 548 条全绿；真机截图两张（待答卡底栏「跳过这道题」靠左、提交置灰；已答卡「已跳过」徽标 + 选项无 ●）
 - [!] 已知基线红（与本单无关，P0-14 已记录）：`timeline-pinning` 2 条、`timeline-overflow` 2 条
 
-## 二、已完成
+### P0-16 切到别的对话再回来，待答卡不再被自动取消
+
+| 项   | 内容                                                                                                         |
+| ---- | ------------------------------------------------------------------------------------------------------------ |
+| 状态 | 已完成                                                                                                       |
+| 提交 | `a7ea5f5`                                                                                                    |
+| 验收 | 卡在 A 对话里待答时切到 B、再切回 A：卡还在、还能提交/跳过；扩展不会收到「用户取消」，也不会说「你没回答我」 |
+
+- [x] 根因：`cancelPendingDialogsForSession`（切对话 / 切工作区 / 离开对话视图 / 关窗口时调）把该会话所有 pending 对话框一律回 `cancelled`，包括画在对话流里的 `form`
+- [x] 改法：非强制路径只取消真正的模态（confirm / select / input / editor），`form` 留着等用户回来；`force`（无可见窗口 / 关窗口）行为不变
+- [x] core 用例新增「a pending question is not cancelled by switching threads」：注入待答 form → 切到别的对话 → 断言 `pendingDialogs` 里仍有 `form` → 切回来卡还在（`extension-form-card.spec.ts` 7 条全绿）
+- [!] 已知未修（记在案）：**用斜杠命令**打开卡片时，`submitComposer` 要等扩展命令跑完，而命令在等这张卡 → 串行 IPC 队列被占住，切对话会一直挂着。实测：`submitComposer` 动作不返回，`selectSession` 排在其后不开始。模型自己调 `ask_user`（正常发消息的路径）不走这条队列，不受影响
+- [!] 留待观察：关掉唯一显示该会话的窗口（`force` 路径）仍会取消 `form`
 
 ### P0-00 台账面板 + 输入框上方概况条
 
