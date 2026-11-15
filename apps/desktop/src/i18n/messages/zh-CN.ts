@@ -34,6 +34,7 @@ export const zhCN: Partial<Messages> = {
   "extensionForm.skip": "跳过这道题",
   "extensionForm.submit": "提交回答",
   "extensionForm.other": "其他 —— 我自己写",
+  "extensionForm.otherBadge": "自己写的",
   "extensionForm.otherPlaceholder": "写你的答案",
   "ui.configureAnOpenAICompatibleServerTheEndpointAndAPIKeyAreStored":
     "配置兼容 OpenAI 的服务。端点和 API 密钥将以明文保存在",

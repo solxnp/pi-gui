@@ -303,6 +303,15 @@ test("a form accepts a written answer when no option fits", async () => {
     await expect(window.getByTestId("extension-notices")).toContainText(
       "Form answers 标识可查可删 / 先做灰度，看两周数据再定",
     );
+
+    // The written answer is a first-class answer: the answered card shows it too. Rendering only
+    // the predefined options dropped it, so the card looked like nothing had been chosen.
+    const answeredCard = window.getByTestId("extension-card").last();
+    const board = answeredCard.getByTestId("extension-card-board");
+    const written = board.getByTestId("extension-card-board-other");
+    await expect(written).toHaveCount(1);
+    await expect(written).toContainText("先做灰度，看两周数据再定");
+    await expect(written).toHaveAttribute("data-picked", "true");
   } finally {
     await harness.close();
   }

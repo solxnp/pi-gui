@@ -150,6 +150,31 @@ function AnsweredBoard({ board }: { readonly board: ExtensionCardAnsweredForm })
                     </li>
                   );
                 })}
+                {/*
+                 * 「其他」写下的答案是自由文本，不在 field.options 里。
+                 * 只渲染 options 会把它整个丢掉 —— 用户选了「其他」并输入后，
+                 * 已答卡片上看不到自己写了什么。这里补一行把它显示出来。
+                 */}
+                {customAnswersFor(board, field).map((answer) => (
+                  <li
+                    className="extension-card__board-option extension-card__board-option--picked"
+                    data-picked="true"
+                    data-testid="extension-card-board-other"
+                    key={`other:${answer}`}
+                  >
+                    <span className="extension-card__board-mark" aria-hidden="true">
+                      ●
+                    </span>
+                    <span className="extension-card__board-option-body">
+                      <span className="extension-card__board-option-title">
+                        {answer}
+                        <span className="extension-card__board-badge">
+                          {t("extensionForm.otherBadge")}
+                        </span>
+                      </span>
+                    </span>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
@@ -165,6 +190,21 @@ function answersFor(board: ExtensionCardAnsweredForm, field: HostUiFormField): r
   if (answer === undefined) return [];
   if (typeof answer === "string") return [answer];
   return answer.filter((entry): entry is string => typeof entry === "string");
+}
+
+/**
+ * Answers that came from the「其他」input rather than a predefined option.
+ *
+ * The form card writes the typed text straight into the answer, so a custom choice looks like any
+ * other string — but it matches no `field.options` value, which is how we tell it apart.
+ */
+function customAnswersFor(
+  board: ExtensionCardAnsweredForm,
+  field: HostUiFormField,
+): readonly string[] {
+  if (!board.allowOther) return [];
+  const known = new Set((field.options ?? []).map((option) => option.value));
+  return answersFor(board, field).filter((answer) => !known.has(answer));
 }
 
 /** What a button will touch, shown beside its label so the user knows before clicking. */

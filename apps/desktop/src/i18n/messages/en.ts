@@ -39,6 +39,7 @@ export const en = {
   "extensionForm.skip": "Skip this question",
   "extensionForm.submit": "Submit answers",
   "extensionForm.other": "Other — write my own",
+  "extensionForm.otherBadge": "Custom",
   "extensionForm.otherPlaceholder": "Type your answer",
   "ui.configureAnOpenAICompatibleServerTheEndpointAndAPIKeyAreStored":
     "Configure an OpenAI-compatible server. The endpoint and API key are stored in plaintext at",
