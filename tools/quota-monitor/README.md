@@ -25,13 +25,13 @@ OPENCODE GO
 
 ## 数据来源
 
-| 提供商 | 接口 | 说明 |
-|---|---|---|
-| Command Code | `GET https://api.commandcode.ai/alpha/billing/credits` | `credits.monthlyCredits` 是**剩余** credit；`windowLimits.fiveHour/weekly` 给 `used`/`cap`/`resetAt`（毫秒） |
-| Command Code | `GET https://api.commandcode.ai/alpha/usage/summary` | `totalCost` = 本账期已花；月度上限 = 剩余 + 已花，所以换成 GOAT/Max 也不用改代码 |
-| OpenCode Go | `GET https://opencode.ai/zen/go/v1/usage` | `rolling` / `weekly` / `monthly` 的 `percent` + `resetsAt` |
-| OpenCode Go | 本地 `ocstats.py` | 扫 Reasonix 的 `events.jsonl` / `wire.jsonl`，按模型归属 `costUsd`，再按 5 小时窗口汇总 |
-| Command Code | 本地 `ccstats.py` + `cc-prices.json` | 扫 pi 会话日志（`~/.pi/agent/sessions/**/*.jsonl`）里 `provider=commandcode` 的 assistant 记录，token × 官方单价（从 command-code CLI 内嵌模型目录抽出）算出每个模型在当前 5 小时窗口花了多少 |
+| 提供商       | 接口                                                   | 说明                                                                                                                                                                                          |
+| ------------ | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Command Code | `GET https://api.commandcode.ai/alpha/billing/credits` | `credits.monthlyCredits` 是**剩余** credit；`windowLimits.fiveHour/weekly` 给 `used`/`cap`/`resetAt`（毫秒）                                                                                  |
+| Command Code | `GET https://api.commandcode.ai/alpha/usage/summary`   | `totalCost` = 本账期已花；月度上限 = 剩余 + 已花，所以换成 GOAT/Max 也不用改代码                                                                                                              |
+| OpenCode Go  | `GET https://opencode.ai/zen/go/v1/usage`              | `rolling` / `weekly` / `monthly` 的 `percent` + `resetsAt`                                                                                                                                    |
+| OpenCode Go  | 本地 `ocstats.py`                                      | 扫 Reasonix 的 `events.jsonl` / `wire.jsonl`，按模型归属 `costUsd`，再按 5 小时窗口汇总                                                                                                       |
+| Command Code | 本地 `ccstats.py` + `cc-prices.json`                   | 扫 pi 会话日志（`~/.pi/agent/sessions/**/*.jsonl`）里 `provider=commandcode` 的 assistant 记录，token × 官方单价（从 command-code CLI 内嵌模型目录抽出）算出每个模型在当前 5 小时窗口花了多少 |
 
 **Command Code 服务端没有「按模型」的用量接口**，单模型那行是本地估算：pi 会话日志 × 官方单价。两个已知边界：
 

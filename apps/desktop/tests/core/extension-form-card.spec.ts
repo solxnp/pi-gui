@@ -477,7 +477,10 @@ test("a pending question is not cancelled by switching threads", async () => {
     await selectSession(window, "Form keep session");
 
     const state = await getDesktopState(window);
-    const sessionRef = { workspaceId: state.selectedWorkspaceId, sessionId: state.selectedSessionId };
+    const sessionRef = {
+      workspaceId: state.selectedWorkspaceId,
+      sessionId: state.selectedSessionId,
+    };
     // The card is a form the extension is still blocked on. A run's pending request is injected
     // here so the switch can be exercised without a provider waiting on it.
     await emitTestSessionEvent(harness, {

@@ -1,800 +1,800 @@
 {
- "claude-fable-5": {
-  "cache_read": 1.0,
-  "cc_id": "claude-fable-5",
-  "in": 10.0,
-  "min_plan": "individual-provider",
-  "out": 50.0
- },
- "claude-fable-5-1": {
-  "cache_read": 0.25,
-  "cc_id": "claude-fable-5-1",
-  "in": 10.0,
-  "min_plan": "individual-provider",
-  "out": 50.0
- },
- "claude-fable-5-2": {
-  "cache_read": 0.2,
-  "cc_id": "claude-fable-5-2",
-  "in": 8.0,
-  "min_plan": "individual-provider",
-  "out": 40.0
- },
- "claude-haiku-4-5-20251001": {
-  "cache_read": 0.1,
-  "cc_id": "claude-haiku-4-5-20251001",
-  "in": 1.0,
-  "min_plan": "individual-pro",
-  "out": 5.0
- },
- "claude-haiku-5-5": {
-  "cache_read": 0.01,
-  "cc_id": "claude-haiku-5-5",
-  "in": 0.1,
-  "min_plan": "individual-goat",
-  "out": 0.5
- },
- "claude-opus-4-7": {
-  "cache_read": 0.5,
-  "cc_id": "claude-opus-4-7",
-  "in": 5.0,
-  "min_plan": "individual-provider",
-  "out": 25.0
- },
- "claude-opus-4-8": {
-  "cache_read": 0.5,
-  "cc_id": "claude-opus-4-8",
-  "in": 5.0,
-  "min_plan": "individual-provider",
-  "out": 25.0
- },
- "claude-opus-5": {
-  "cache_read": 0.5,
-  "cc_id": "claude-opus-5",
-  "in": 5.0,
-  "min_plan": "individual-provider",
-  "out": 25.0
- },
- "claude-opus-5-5": {
-  "cache_read": 0.2,
-  "cc_id": "claude-opus-5-5",
-  "in": 4.0,
-  "min_plan": "individual-provider",
-  "out": 20.0
- },
- "claude-sonnet-4-6": {
-  "cache_read": 0.3,
-  "cc_id": "claude-sonnet-4-6",
-  "in": 3.0,
-  "min_plan": "individual-pro",
-  "out": 15.0
- },
- "claude-sonnet-5": {
-  "cache_read": 0.2,
-  "cc_id": "claude-sonnet-5",
-  "in": 2.0,
-  "min_plan": "individual-pro",
-  "out": 10.0
- },
- "claude-sonnet-5-5": {
-  "cache_read": 0.1,
-  "cc_id": "claude-sonnet-5-5",
-  "in": 2.0,
-  "min_plan": "individual-goat",
-  "out": 10.0
- },
- "deepseek-deepseek-v4-flash": {
-  "cache_read": 0.003,
-  "cc_id": "deepseek/deepseek-v4-flash",
-  "in": 0.15,
-  "min_plan": "individual-go",
-  "out": 0.6
- },
- "deepseek-deepseek-v4-flash-fast": {
-  "cache_read": 0.07,
-  "cc_id": "deepseek/deepseek-v4-flash-fast",
-  "in": 0.28,
-  "min_plan": "individual-go",
-  "out": 0.56
- },
- "deepseek-deepseek-v4-flash-vision-exp": {
-  "cache_read": 0.003,
-  "cc_id": "deepseek/deepseek-v4-flash-vision-exp",
-  "in": 0.15,
-  "min_plan": "individual-go",
-  "out": 0.6
- },
- "deepseek-deepseek-v4-pro": {
-  "cache_read": 0.022,
-  "cc_id": "deepseek/deepseek-v4-pro",
-  "in": 0.66,
-  "min_plan": "individual-go",
-  "out": 1.98
- },
- "deepseek-deepseek-v4.1-flash": {
-  "cache_read": 0.003,
-  "cc_id": "deepseek/deepseek-v4.1-flash",
-  "in": 0.15,
-  "min_plan": "individual-go",
-  "out": 0.6
- },
- "deepseek-deepseek-v4.1-flash-fast": {
-  "cache_read": 0.016,
-  "cc_id": "deepseek/deepseek-v4.1-flash-fast",
-  "in": 0.16,
-  "min_plan": "individual-go",
-  "out": 0.58
- },
- "deepseek-deepseek-v4.1-flash-ultrafast": {
-  "cache_read": 0.048,
-  "cc_id": "deepseek/deepseek-v4.1-flash-ultrafast",
-  "in": 2.4,
-  "min_plan": "individual-goat",
-  "out": 9.6
- },
- "google-gemini-3.1-flash-lite": {
-  "cache_read": 0.03,
-  "cc_id": "google/gemini-3.1-flash-lite",
-  "in": 0.25,
-  "min_plan": "individual-pro",
-  "out": 1.5
- },
- "google-gemini-3.5-flash": {
-  "cache_read": 0.15,
-  "cc_id": "google/gemini-3.5-flash",
-  "in": 1.5,
-  "min_plan": "individual-pro",
-  "out": 9.0
- },
- "google-gemini-3.5-flash-lite": {
-  "cache_read": 0.03,
-  "cc_id": "google/gemini-3.5-flash-lite",
-  "in": 0.3,
-  "min_plan": "individual-pro",
-  "out": 2.5
- },
- "google-gemini-3.6-flash": {
-  "cache_read": 0.15,
-  "cc_id": "google/gemini-3.6-flash",
-  "in": 1.5,
-  "min_plan": "individual-pro",
-  "out": 7.5
- },
- "google-gemini-3.7-flash": {
-  "cache_read": 0.15,
-  "cc_id": "google/gemini-3.7-flash",
-  "in": 1.5,
-  "min_plan": "individual-goat",
-  "out": 7.5
- },
- "google-gemini-3.8-flash": {
-  "cache_read": 0.15,
-  "cc_id": "google/gemini-3.8-flash",
-  "in": 1.5,
-  "min_plan": "individual-goat",
-  "out": 7.5
- },
- "google-gemini-4-argon": {
-  "cache_read": 0.1,
-  "cc_id": "google/gemini-4-argon",
-  "in": 2.0,
-  "min_plan": "individual-pro",
-  "out": 10.0
- },
- "google-gemini-4-carbon": {
-  "cache_read": 0.1,
-  "cc_id": "google/gemini-4-carbon",
-  "in": 2.0,
-  "min_plan": "individual-pro",
-  "out": 10.0
- },
- "gpt-5.3-codex": {
-  "cache_read": 0.5,
-  "cc_id": "gpt-5.3-codex",
-  "in": 2.0,
-  "min_plan": "individual-pro",
-  "out": 8.0
- },
- "gpt-5.4": {
-  "cache_read": 0.25,
-  "cc_id": "gpt-5.4",
-  "in": 2.5,
-  "min_plan": "individual-pro",
-  "out": 15.0
- },
- "gpt-5.4-mini": {
-  "cache_read": 0.075,
-  "cc_id": "gpt-5.4-mini",
-  "in": 0.75,
-  "min_plan": "individual-pro",
-  "out": 4.5
- },
- "gpt-5.5": {
-  "cache_read": 0.5,
-  "cc_id": "gpt-5.5",
-  "in": 5.0,
-  "min_plan": "individual-pro",
-  "out": 30.0
- },
- "gpt-5.6-luna": {
-  "cache_read": 0.02,
-  "cc_id": "gpt-5.6-luna",
-  "in": 0.2,
-  "min_plan": "individual-go",
-  "out": 1.2
- },
- "gpt-5.6-sol": {
-  "cache_read": 0.5,
-  "cc_id": "gpt-5.6-sol",
-  "in": 5.0,
-  "min_plan": "individual-goat",
-  "out": 30.0
- },
- "gpt-5.6-terra": {
-  "cache_read": 0.2,
-  "cc_id": "gpt-5.6-terra",
-  "in": 2.0,
-  "min_plan": "individual-pro",
-  "out": 12.0
- },
- "gpt-6-astra": {
-  "cache_read": 1.0,
-  "cc_id": "gpt-6-astra",
-  "in": 10.0,
-  "min_plan": "individual-provider",
-  "out": 50.0
- },
- "gpt-6-luna": {
-  "cache_read": 0.01,
-  "cc_id": "gpt-6-luna",
-  "in": 0.1,
-  "min_plan": "individual-go",
-  "out": 0.5
- },
- "gpt-6-sol": {
-  "cache_read": 0.2,
-  "cc_id": "gpt-6-sol",
-  "in": 2.0,
-  "min_plan": "individual-pro",
-  "out": 10.0
- },
- "gpt-6.1-sol": {
-  "cache_read": 0.1,
-  "cc_id": "gpt-6.1-sol",
-  "in": 2.0,
-  "min_plan": "individual-max",
-  "out": 10.0
- },
- "gpt-6.1-terra": {
-  "cache_read": 0.05,
-  "cc_id": "gpt-6.1-terra",
-  "in": 1.0,
-  "min_plan": "individual-pro",
-  "out": 5.0
- },
- "inclusionai-ling-3.1-flash": {
-  "cache_read": 0.06,
-  "cc_id": "inclusionai/ling-3.1-flash",
-  "in": 0.3,
-  "min_plan": "individual-go",
-  "out": 0.9
- },
- "inclusionai-ling-3.1-flash-1019": {
-  "cache_read": 0.06,
-  "cc_id": "inclusionai/ling-3.1-flash-1019",
-  "in": 0.3,
-  "min_plan": "individual-go",
-  "out": 0.9
- },
- "inclusionai-ling-3.1-flash-1019-free": {
-  "cache_read": 0.0,
-  "cc_id": "inclusionai/ling-3.1-flash-1019:free",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "inclusionai-ling-3.1-flash-free": {
-  "cache_read": 0.06,
-  "cc_id": "inclusionai/ling-3.1-flash:free",
-  "in": 0.3,
-  "min_plan": "individual-go",
-  "out": 0.9
- },
- "meituan-longcat-2.0": {
-  "cache_read": 0.006,
-  "cc_id": "meituan/LongCat-2.0",
-  "in": 0.3,
-  "min_plan": "individual-go",
-  "out": 1.2
- },
- "meituan-longcat-2.0-free": {
-  "cache_read": 0.05,
-  "cc_id": "meituan/LongCat-2.0:free",
-  "in": 1.0,
-  "min_plan": "individual-go",
-  "out": 2.7
- },
- "meta-muse-ember": {
-  "cache_read": 0.004,
-  "cc_id": "meta/muse-ember",
-  "in": 0.1,
-  "min_plan": "individual-go",
-  "out": 0.5
- },
- "meta-muse-spark-1.1": {
-  "cache_read": 0.15,
-  "cc_id": "meta/muse-spark-1.1",
-  "in": 1.25,
-  "min_plan": "individual-pro",
-  "out": 4.25
- },
- "meta-muse-spark-1.2": {
-  "cache_read": 0.15,
-  "cc_id": "meta/muse-spark-1.2",
-  "in": 1.25,
-  "min_plan": "individual-goat",
-  "out": 4.25
- },
- "meta-muse-spark-1.2-contributor": {
-  "cache_read": 0.002,
-  "cc_id": "meta/muse-spark-1.2-contributor",
-  "in": 0.1,
-  "min_plan": "individual-go",
-  "out": 0.2
- },
- "meta-muse-spark-1.3": {
-  "cache_read": 0.15,
-  "cc_id": "meta/muse-spark-1.3",
-  "in": 1.25,
-  "min_plan": "individual-goat",
-  "out": 4.25
- },
- "meta-muse-spark-1.3-contributor": {
-  "cache_read": 0.002,
-  "cc_id": "meta/muse-spark-1.3-contributor",
-  "in": 0.1,
-  "min_plan": "individual-go",
-  "out": 0.2
- },
- "meta-muse-spark-open": {
-  "cache_read": 0.15,
-  "cc_id": "meta/muse-spark-open",
-  "in": 1.25,
-  "min_plan": "individual-go",
-  "out": 4.25
- },
- "meta-muse-wonder-1.0": {
-  "cache_read": 0.2,
-  "cc_id": "meta/muse-wonder-1.0",
-  "in": 4.0,
-  "min_plan": "individual-max",
-  "out": 20.0
- },
- "minimax-minimax-m2.7-free": {
-  "cache_read": 0.03,
-  "cc_id": "minimax/minimax-m2.7-free",
-  "in": 0.3,
-  "min_plan": "individual-go",
-  "out": 1.2
- },
- "minimax-minimax-m3-free": {
-  "cache_read": 0.03,
-  "cc_id": "minimax/minimax-m3-free",
-  "in": 0.3,
-  "min_plan": "individual-go",
-  "out": 1.2
- },
- "minimax-minimax-m3.1-flash": {
-  "cache_read": 0.015,
-  "cc_id": "minimax/minimax-m3.1-flash",
-  "in": 0.15,
-  "min_plan": "individual-go",
-  "out": 0.6
- },
- "minimax-minimax-m3.1-flash-free": {
-  "cache_read": 0.0,
-  "cc_id": "minimax/minimax-m3.1-flash:free",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "minimaxai-minimax-m2.5": {
-  "cache_read": 0.03,
-  "cc_id": "MiniMaxAI/MiniMax-M2.5",
-  "in": 0.3,
-  "min_plan": "individual-go",
-  "out": 1.2
- },
- "minimaxai-minimax-m2.7": {
-  "cache_read": 0.06,
-  "cc_id": "MiniMaxAI/MiniMax-M2.7",
-  "in": 0.3,
-  "min_plan": "individual-go",
-  "out": 1.2
- },
- "minimaxai-minimax-m3": {
-  "cache_read": 0.06,
-  "cc_id": "MiniMaxAI/MiniMax-M3",
-  "in": 0.3,
-  "min_plan": "individual-go",
-  "out": 1.2
- },
- "minimaxai-minimax-m3-free": {
-  "cache_read": 0.06,
-  "cc_id": "MiniMaxAI/MiniMax-M3-Free",
-  "in": 0.3,
-  "min_plan": "individual-go",
-  "out": 1.2
- },
- "mistral-mistral-large-4": {
-  "cache_read": 0.14,
-  "cc_id": "mistral/mistral-large-4",
-  "in": 1.36,
-  "min_plan": "individual-go",
-  "out": 4.18
- },
- "moonshotai-kimi-k2.5": {
-  "cache_read": 0.1,
-  "cc_id": "moonshotai/Kimi-K2.5",
-  "in": 0.6,
-  "min_plan": "individual-go",
-  "out": 3.0
- },
- "moonshotai-kimi-k2.6": {
-  "cache_read": 0.16,
-  "cc_id": "moonshotai/Kimi-K2.6",
-  "in": 0.95,
-  "min_plan": "individual-go",
-  "out": 4.0
- },
- "moonshotai-kimi-k2.7-code": {
-  "cache_read": 0.19,
-  "cc_id": "moonshotai/Kimi-K2.7-Code",
-  "in": 0.95,
-  "min_plan": "individual-go",
-  "out": 4.0
- },
- "moonshotai-kimi-k2.7-code-highspeed": {
-  "cache_read": 0.38,
-  "cc_id": "moonshotai/Kimi-K2.7-Code-Highspeed",
-  "in": 1.9,
-  "min_plan": "individual-go",
-  "out": 8.0
- },
- "moonshotai-kimi-k3": {
-  "cache_read": 0.3,
-  "cc_id": "moonshotai/Kimi-K3",
-  "in": 3.0,
-  "min_plan": "individual-go",
-  "out": 15.0
- },
- "moonshotai-kimi-k3.1-pro": {
-  "cache_read": 0.2,
-  "cc_id": "moonshotai/Kimi-K3.1-Pro",
-  "in": 2.0,
-  "min_plan": "individual-go",
-  "out": 10.0
- },
- "nvidia-nemotron-3-ultra-550b-a55b": {
-  "cache_read": 0.12,
-  "cc_id": "nvidia/nemotron-3-ultra-550b-a55b",
-  "in": 0.6,
-  "min_plan": "individual-go",
-  "out": 2.4
- },
- "nvidia-nemotron-3.5-super-vl": {
-  "cache_read": 0.04,
-  "cc_id": "nvidia/nemotron-3.5-super-vl",
-  "in": 0.2,
-  "min_plan": "individual-go",
-  "out": 0.5
- },
- "ornith-ornith-1.5-122b": {
-  "cache_read": 0.02,
-  "cc_id": "ornith/ornith-1.5-122b",
-  "in": 0.16,
-  "min_plan": "individual-go",
-  "out": 0.64
- },
- "ornith-ornith-1.5-122b-free": {
-  "cache_read": 0.0,
-  "cc_id": "ornith/ornith-1.5-122b:free",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "poolside-laguna-s-2.1-free": {
-  "cache_read": 0.0,
-  "cc_id": "poolside/laguna-s-2.1-free",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "qwen-qwen3.6-max-preview": {
-  "cache_read": 0.26,
-  "cc_id": "Qwen/Qwen3.6-Max-Preview",
-  "in": 1.3,
-  "min_plan": "individual-go",
-  "out": 7.8
- },
- "qwen-qwen3.6-plus": {
-  "cache_read": 0.1,
-  "cc_id": "Qwen/Qwen3.6-Plus",
-  "in": 0.5,
-  "min_plan": "individual-go",
-  "out": 3.0
- },
- "qwen-qwen3.7-flash": {
-  "cache_read": 0.006,
-  "cc_id": "Qwen/Qwen3.7-Flash",
-  "in": 0.03,
-  "min_plan": "individual-go",
-  "out": 0.13
- },
- "qwen-qwen3.7-max": {
-  "cache_read": 0.5,
-  "cc_id": "Qwen/Qwen3.7-Max",
-  "in": 2.5,
-  "min_plan": "individual-go",
-  "out": 7.5
- },
- "qwen-qwen3.7-plus": {
-  "cache_read": 0.08,
-  "cc_id": "Qwen/Qwen3.7-Plus",
-  "in": 0.4,
-  "min_plan": "individual-go",
-  "out": 1.6
- },
- "qwen-qwen3.8-27b": {
-  "cache_read": 0.04,
-  "cc_id": "Qwen/Qwen3.8-27B",
-  "in": 0.4,
-  "min_plan": "individual-go",
-  "out": 3.0
- },
- "qwen-qwen3.8-flash": {
-  "cache_read": 0.016,
-  "cc_id": "Qwen/Qwen3.8-Flash",
-  "in": 0.16,
-  "min_plan": "individual-go",
-  "out": 0.47
- },
- "qwen-qwen3.8-max": {
-  "cache_read": 0.25,
-  "cc_id": "Qwen/Qwen3.8-Max",
-  "in": 2.0,
-  "min_plan": "individual-go",
-  "out": 6.0
- },
- "qwen-qwen3.8-max-0902": {
-  "cache_read": 0.25,
-  "cc_id": "Qwen/Qwen3.8-Max-0902",
-  "in": 2.0,
-  "min_plan": "individual-go",
-  "out": 6.0
- },
- "qwen-qwen3.8-max-prime": {
-  "cache_read": 0.5,
-  "cc_id": "Qwen/Qwen3.8-Max-Prime",
-  "in": 4.0,
-  "min_plan": "individual-goat",
-  "out": 12.0
- },
- "qwen-qwen3.8-omni-flash": {
-  "cache_read": 0.016,
-  "cc_id": "Qwen/Qwen3.8-Omni-Flash",
-  "in": 0.15,
-  "min_plan": "individual-go",
-  "out": 0.47
- },
- "reflection-beam-free": {
-  "cache_read": 0.0,
-  "cc_id": "reflection/beam:free",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "sakana-fugu-ultra": {
-  "cache_read": 0.5,
-  "cc_id": "sakana/fugu-ultra",
-  "in": 5.0,
-  "min_plan": "individual-provider",
-  "out": 30.0
- },
- "stealth-crouton-alpha": {
-  "cache_read": 0.0,
-  "cc_id": "stealth/crouton-alpha",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "stealth-glyph-cluster-free": {
-  "cache_read": 0.0,
-  "cc_id": "stealth/glyph-cluster:free",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "stealth-pixel-canary": {
-  "cache_read": 0.0,
-  "cc_id": "stealth/pixel-canary",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "stealth-space-bunny-alpha": {
-  "cache_read": 0.0,
-  "cc_id": "stealth/space-bunny-alpha",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "stepfun-step-3.5-flash": {
-  "cache_read": 0.02,
-  "cc_id": "stepfun/Step-3.5-Flash",
-  "in": 0.09,
-  "min_plan": "individual-go",
-  "out": 0.3
- },
- "stepfun-step-3.7-flash": {
-  "cache_read": 0.04,
-  "cc_id": "stepfun/Step-3.7-Flash",
-  "in": 0.2,
-  "min_plan": "individual-go",
-  "out": 1.15
- },
- "stepfun-step-5-preview": {
-  "cache_read": 0.05,
-  "cc_id": "stepfun/Step-5-Preview",
-  "in": 1.0,
-  "min_plan": "individual-go",
-  "out": 2.7
- },
- "tencent-hy3": {
-  "cache_read": 0.0,
-  "cc_id": "tencent/Hy3",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "tencent-hy3-paid": {
-  "cache_read": 0.035,
-  "cc_id": "tencent/hy3-paid",
-  "in": 0.14,
-  "min_plan": "individual-go",
-  "out": 0.58
- },
- "tencent-hy4-preview": {
-  "cache_read": 0.042,
-  "cc_id": "tencent/hy4-preview",
-  "in": 0.834,
-  "min_plan": "individual-go",
-  "out": 2.501
- },
- "thinkingmachines-inkling": {
-  "cache_read": 0.17,
-  "cc_id": "thinkingmachines/inkling",
-  "in": 1.0,
-  "min_plan": "individual-go",
-  "out": 4.05
- },
- "thinkingmachines-inkling-2-small-free": {
-  "cache_read": 0.0,
-  "cc_id": "thinkingmachines/inkling-2-small:free",
-  "in": 0.0,
-  "min_plan": "individual-go",
-  "out": 0.0
- },
- "thinkingmachines-inkling-small": {
-  "cache_read": 0.1,
-  "cc_id": "thinkingmachines/inkling-small",
-  "in": 0.5,
-  "min_plan": "individual-go",
-  "out": 1.2
- },
- "xai-grok-4.5": {
-  "cache_read": 0.5,
-  "cc_id": "xai/grok-4.5",
-  "in": 2.0,
-  "min_plan": "individual-go",
-  "out": 6.0
- },
- "xai-grok-4.6": {
-  "cache_read": 0.5,
-  "cc_id": "xai/grok-4.6",
-  "in": 2.0,
-  "min_plan": "individual-goat",
-  "out": 6.0
- },
- "xai-grok-4.7": {
-  "cache_read": 0.5,
-  "cc_id": "xai/grok-4.7",
-  "in": 2.0,
-  "min_plan": "individual-goat",
-  "out": 6.0
- },
- "xiaomi-mimo-v2.5": {
-  "cache_read": 0.0028,
-  "cc_id": "xiaomi/mimo-v2.5",
-  "in": 0.14,
-  "min_plan": "individual-go",
-  "out": 0.28
- },
- "xiaomi-mimo-v2.5-pro": {
-  "cache_read": 0.0036,
-  "cc_id": "xiaomi/mimo-v2.5-pro",
-  "in": 0.435,
-  "min_plan": "individual-go",
-  "out": 0.87
- },
- "xiaomi-mimo-v2.6-flash": {
-  "cache_read": 0.0028,
-  "cc_id": "xiaomi/mimo-v2.6-flash",
-  "in": 0.14,
-  "min_plan": "individual-go",
-  "out": 0.28
- },
- "xiaomi-mimo-v2.6-pro": {
-  "cache_read": 0.0036,
-  "cc_id": "xiaomi/mimo-v2.6-pro",
-  "in": 0.435,
-  "min_plan": "individual-go",
-  "out": 0.87
- },
- "xiaomi-mimo-v2.6-pro-ultraspeed": {
-  "cache_read": 0.036,
-  "cc_id": "xiaomi/mimo-v2.6-pro-ultraspeed",
-  "in": 4.35,
-  "min_plan": "individual-goat",
-  "out": 8.7
- },
- "z-ai-glm-5.3-flash": {
-  "cache_read": 0.03,
-  "cc_id": "z-ai/glm-5.3-flash",
-  "in": 0.15,
-  "min_plan": "individual-go",
-  "out": 0.5
- },
- "z-ai-glm-5.3-flashx": {
-  "cache_read": 0.075,
-  "cc_id": "z-ai/glm-5.3-flashx",
-  "in": 0.37,
-  "min_plan": "individual-go",
-  "out": 1.25
- },
- "zai-org-glm-5": {
-  "cache_read": 0.2,
-  "cc_id": "zai-org/GLM-5",
-  "in": 1.0,
-  "min_plan": "individual-go",
-  "out": 3.2
- },
- "zai-org-glm-5.1": {
-  "cache_read": 0.26,
-  "cc_id": "zai-org/GLM-5.1",
-  "in": 1.4,
-  "min_plan": "individual-go",
-  "out": 4.4
- },
- "zai-org-glm-5.2": {
-  "cache_read": 0.26,
-  "cc_id": "zai-org/GLM-5.2",
-  "in": 1.4,
-  "min_plan": "individual-go",
-  "out": 4.4
- },
- "zai-org-glm-5.2-fast": {
-  "cache_read": 0.5,
-  "cc_id": "zai-org/GLM-5.2-Fast",
-  "in": 3.0,
-  "min_plan": "individual-go",
-  "out": 10.25
- },
- "zai-org-glm-5.3": {
-  "cache_read": 0.26,
-  "cc_id": "zai-org/GLM-5.3",
-  "in": 1.4,
-  "min_plan": "individual-go",
-  "out": 4.4
- }
+  "claude-fable-5": {
+    "cache_read": 1.0,
+    "cc_id": "claude-fable-5",
+    "in": 10.0,
+    "min_plan": "individual-provider",
+    "out": 50.0
+  },
+  "claude-fable-5-1": {
+    "cache_read": 0.25,
+    "cc_id": "claude-fable-5-1",
+    "in": 10.0,
+    "min_plan": "individual-provider",
+    "out": 50.0
+  },
+  "claude-fable-5-2": {
+    "cache_read": 0.2,
+    "cc_id": "claude-fable-5-2",
+    "in": 8.0,
+    "min_plan": "individual-provider",
+    "out": 40.0
+  },
+  "claude-haiku-4-5-20251001": {
+    "cache_read": 0.1,
+    "cc_id": "claude-haiku-4-5-20251001",
+    "in": 1.0,
+    "min_plan": "individual-pro",
+    "out": 5.0
+  },
+  "claude-haiku-5-5": {
+    "cache_read": 0.01,
+    "cc_id": "claude-haiku-5-5",
+    "in": 0.1,
+    "min_plan": "individual-goat",
+    "out": 0.5
+  },
+  "claude-opus-4-7": {
+    "cache_read": 0.5,
+    "cc_id": "claude-opus-4-7",
+    "in": 5.0,
+    "min_plan": "individual-provider",
+    "out": 25.0
+  },
+  "claude-opus-4-8": {
+    "cache_read": 0.5,
+    "cc_id": "claude-opus-4-8",
+    "in": 5.0,
+    "min_plan": "individual-provider",
+    "out": 25.0
+  },
+  "claude-opus-5": {
+    "cache_read": 0.5,
+    "cc_id": "claude-opus-5",
+    "in": 5.0,
+    "min_plan": "individual-provider",
+    "out": 25.0
+  },
+  "claude-opus-5-5": {
+    "cache_read": 0.2,
+    "cc_id": "claude-opus-5-5",
+    "in": 4.0,
+    "min_plan": "individual-provider",
+    "out": 20.0
+  },
+  "claude-sonnet-4-6": {
+    "cache_read": 0.3,
+    "cc_id": "claude-sonnet-4-6",
+    "in": 3.0,
+    "min_plan": "individual-pro",
+    "out": 15.0
+  },
+  "claude-sonnet-5": {
+    "cache_read": 0.2,
+    "cc_id": "claude-sonnet-5",
+    "in": 2.0,
+    "min_plan": "individual-pro",
+    "out": 10.0
+  },
+  "claude-sonnet-5-5": {
+    "cache_read": 0.1,
+    "cc_id": "claude-sonnet-5-5",
+    "in": 2.0,
+    "min_plan": "individual-goat",
+    "out": 10.0
+  },
+  "deepseek-deepseek-v4-flash": {
+    "cache_read": 0.003,
+    "cc_id": "deepseek/deepseek-v4-flash",
+    "in": 0.15,
+    "min_plan": "individual-go",
+    "out": 0.6
+  },
+  "deepseek-deepseek-v4-flash-fast": {
+    "cache_read": 0.07,
+    "cc_id": "deepseek/deepseek-v4-flash-fast",
+    "in": 0.28,
+    "min_plan": "individual-go",
+    "out": 0.56
+  },
+  "deepseek-deepseek-v4-flash-vision-exp": {
+    "cache_read": 0.003,
+    "cc_id": "deepseek/deepseek-v4-flash-vision-exp",
+    "in": 0.15,
+    "min_plan": "individual-go",
+    "out": 0.6
+  },
+  "deepseek-deepseek-v4-pro": {
+    "cache_read": 0.022,
+    "cc_id": "deepseek/deepseek-v4-pro",
+    "in": 0.66,
+    "min_plan": "individual-go",
+    "out": 1.98
+  },
+  "deepseek-deepseek-v4.1-flash": {
+    "cache_read": 0.003,
+    "cc_id": "deepseek/deepseek-v4.1-flash",
+    "in": 0.15,
+    "min_plan": "individual-go",
+    "out": 0.6
+  },
+  "deepseek-deepseek-v4.1-flash-fast": {
+    "cache_read": 0.016,
+    "cc_id": "deepseek/deepseek-v4.1-flash-fast",
+    "in": 0.16,
+    "min_plan": "individual-go",
+    "out": 0.58
+  },
+  "deepseek-deepseek-v4.1-flash-ultrafast": {
+    "cache_read": 0.048,
+    "cc_id": "deepseek/deepseek-v4.1-flash-ultrafast",
+    "in": 2.4,
+    "min_plan": "individual-goat",
+    "out": 9.6
+  },
+  "google-gemini-3.1-flash-lite": {
+    "cache_read": 0.03,
+    "cc_id": "google/gemini-3.1-flash-lite",
+    "in": 0.25,
+    "min_plan": "individual-pro",
+    "out": 1.5
+  },
+  "google-gemini-3.5-flash": {
+    "cache_read": 0.15,
+    "cc_id": "google/gemini-3.5-flash",
+    "in": 1.5,
+    "min_plan": "individual-pro",
+    "out": 9.0
+  },
+  "google-gemini-3.5-flash-lite": {
+    "cache_read": 0.03,
+    "cc_id": "google/gemini-3.5-flash-lite",
+    "in": 0.3,
+    "min_plan": "individual-pro",
+    "out": 2.5
+  },
+  "google-gemini-3.6-flash": {
+    "cache_read": 0.15,
+    "cc_id": "google/gemini-3.6-flash",
+    "in": 1.5,
+    "min_plan": "individual-pro",
+    "out": 7.5
+  },
+  "google-gemini-3.7-flash": {
+    "cache_read": 0.15,
+    "cc_id": "google/gemini-3.7-flash",
+    "in": 1.5,
+    "min_plan": "individual-goat",
+    "out": 7.5
+  },
+  "google-gemini-3.8-flash": {
+    "cache_read": 0.15,
+    "cc_id": "google/gemini-3.8-flash",
+    "in": 1.5,
+    "min_plan": "individual-goat",
+    "out": 7.5
+  },
+  "google-gemini-4-argon": {
+    "cache_read": 0.1,
+    "cc_id": "google/gemini-4-argon",
+    "in": 2.0,
+    "min_plan": "individual-pro",
+    "out": 10.0
+  },
+  "google-gemini-4-carbon": {
+    "cache_read": 0.1,
+    "cc_id": "google/gemini-4-carbon",
+    "in": 2.0,
+    "min_plan": "individual-pro",
+    "out": 10.0
+  },
+  "gpt-5.3-codex": {
+    "cache_read": 0.5,
+    "cc_id": "gpt-5.3-codex",
+    "in": 2.0,
+    "min_plan": "individual-pro",
+    "out": 8.0
+  },
+  "gpt-5.4": {
+    "cache_read": 0.25,
+    "cc_id": "gpt-5.4",
+    "in": 2.5,
+    "min_plan": "individual-pro",
+    "out": 15.0
+  },
+  "gpt-5.4-mini": {
+    "cache_read": 0.075,
+    "cc_id": "gpt-5.4-mini",
+    "in": 0.75,
+    "min_plan": "individual-pro",
+    "out": 4.5
+  },
+  "gpt-5.5": {
+    "cache_read": 0.5,
+    "cc_id": "gpt-5.5",
+    "in": 5.0,
+    "min_plan": "individual-pro",
+    "out": 30.0
+  },
+  "gpt-5.6-luna": {
+    "cache_read": 0.02,
+    "cc_id": "gpt-5.6-luna",
+    "in": 0.2,
+    "min_plan": "individual-go",
+    "out": 1.2
+  },
+  "gpt-5.6-sol": {
+    "cache_read": 0.5,
+    "cc_id": "gpt-5.6-sol",
+    "in": 5.0,
+    "min_plan": "individual-goat",
+    "out": 30.0
+  },
+  "gpt-5.6-terra": {
+    "cache_read": 0.2,
+    "cc_id": "gpt-5.6-terra",
+    "in": 2.0,
+    "min_plan": "individual-pro",
+    "out": 12.0
+  },
+  "gpt-6-astra": {
+    "cache_read": 1.0,
+    "cc_id": "gpt-6-astra",
+    "in": 10.0,
+    "min_plan": "individual-provider",
+    "out": 50.0
+  },
+  "gpt-6-luna": {
+    "cache_read": 0.01,
+    "cc_id": "gpt-6-luna",
+    "in": 0.1,
+    "min_plan": "individual-go",
+    "out": 0.5
+  },
+  "gpt-6-sol": {
+    "cache_read": 0.2,
+    "cc_id": "gpt-6-sol",
+    "in": 2.0,
+    "min_plan": "individual-pro",
+    "out": 10.0
+  },
+  "gpt-6.1-sol": {
+    "cache_read": 0.1,
+    "cc_id": "gpt-6.1-sol",
+    "in": 2.0,
+    "min_plan": "individual-max",
+    "out": 10.0
+  },
+  "gpt-6.1-terra": {
+    "cache_read": 0.05,
+    "cc_id": "gpt-6.1-terra",
+    "in": 1.0,
+    "min_plan": "individual-pro",
+    "out": 5.0
+  },
+  "inclusionai-ling-3.1-flash": {
+    "cache_read": 0.06,
+    "cc_id": "inclusionai/ling-3.1-flash",
+    "in": 0.3,
+    "min_plan": "individual-go",
+    "out": 0.9
+  },
+  "inclusionai-ling-3.1-flash-1019": {
+    "cache_read": 0.06,
+    "cc_id": "inclusionai/ling-3.1-flash-1019",
+    "in": 0.3,
+    "min_plan": "individual-go",
+    "out": 0.9
+  },
+  "inclusionai-ling-3.1-flash-1019-free": {
+    "cache_read": 0.0,
+    "cc_id": "inclusionai/ling-3.1-flash-1019:free",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "inclusionai-ling-3.1-flash-free": {
+    "cache_read": 0.06,
+    "cc_id": "inclusionai/ling-3.1-flash:free",
+    "in": 0.3,
+    "min_plan": "individual-go",
+    "out": 0.9
+  },
+  "meituan-longcat-2.0": {
+    "cache_read": 0.006,
+    "cc_id": "meituan/LongCat-2.0",
+    "in": 0.3,
+    "min_plan": "individual-go",
+    "out": 1.2
+  },
+  "meituan-longcat-2.0-free": {
+    "cache_read": 0.05,
+    "cc_id": "meituan/LongCat-2.0:free",
+    "in": 1.0,
+    "min_plan": "individual-go",
+    "out": 2.7
+  },
+  "meta-muse-ember": {
+    "cache_read": 0.004,
+    "cc_id": "meta/muse-ember",
+    "in": 0.1,
+    "min_plan": "individual-go",
+    "out": 0.5
+  },
+  "meta-muse-spark-1.1": {
+    "cache_read": 0.15,
+    "cc_id": "meta/muse-spark-1.1",
+    "in": 1.25,
+    "min_plan": "individual-pro",
+    "out": 4.25
+  },
+  "meta-muse-spark-1.2": {
+    "cache_read": 0.15,
+    "cc_id": "meta/muse-spark-1.2",
+    "in": 1.25,
+    "min_plan": "individual-goat",
+    "out": 4.25
+  },
+  "meta-muse-spark-1.2-contributor": {
+    "cache_read": 0.002,
+    "cc_id": "meta/muse-spark-1.2-contributor",
+    "in": 0.1,
+    "min_plan": "individual-go",
+    "out": 0.2
+  },
+  "meta-muse-spark-1.3": {
+    "cache_read": 0.15,
+    "cc_id": "meta/muse-spark-1.3",
+    "in": 1.25,
+    "min_plan": "individual-goat",
+    "out": 4.25
+  },
+  "meta-muse-spark-1.3-contributor": {
+    "cache_read": 0.002,
+    "cc_id": "meta/muse-spark-1.3-contributor",
+    "in": 0.1,
+    "min_plan": "individual-go",
+    "out": 0.2
+  },
+  "meta-muse-spark-open": {
+    "cache_read": 0.15,
+    "cc_id": "meta/muse-spark-open",
+    "in": 1.25,
+    "min_plan": "individual-go",
+    "out": 4.25
+  },
+  "meta-muse-wonder-1.0": {
+    "cache_read": 0.2,
+    "cc_id": "meta/muse-wonder-1.0",
+    "in": 4.0,
+    "min_plan": "individual-max",
+    "out": 20.0
+  },
+  "minimax-minimax-m2.7-free": {
+    "cache_read": 0.03,
+    "cc_id": "minimax/minimax-m2.7-free",
+    "in": 0.3,
+    "min_plan": "individual-go",
+    "out": 1.2
+  },
+  "minimax-minimax-m3-free": {
+    "cache_read": 0.03,
+    "cc_id": "minimax/minimax-m3-free",
+    "in": 0.3,
+    "min_plan": "individual-go",
+    "out": 1.2
+  },
+  "minimax-minimax-m3.1-flash": {
+    "cache_read": 0.015,
+    "cc_id": "minimax/minimax-m3.1-flash",
+    "in": 0.15,
+    "min_plan": "individual-go",
+    "out": 0.6
+  },
+  "minimax-minimax-m3.1-flash-free": {
+    "cache_read": 0.0,
+    "cc_id": "minimax/minimax-m3.1-flash:free",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "minimaxai-minimax-m2.5": {
+    "cache_read": 0.03,
+    "cc_id": "MiniMaxAI/MiniMax-M2.5",
+    "in": 0.3,
+    "min_plan": "individual-go",
+    "out": 1.2
+  },
+  "minimaxai-minimax-m2.7": {
+    "cache_read": 0.06,
+    "cc_id": "MiniMaxAI/MiniMax-M2.7",
+    "in": 0.3,
+    "min_plan": "individual-go",
+    "out": 1.2
+  },
+  "minimaxai-minimax-m3": {
+    "cache_read": 0.06,
+    "cc_id": "MiniMaxAI/MiniMax-M3",
+    "in": 0.3,
+    "min_plan": "individual-go",
+    "out": 1.2
+  },
+  "minimaxai-minimax-m3-free": {
+    "cache_read": 0.06,
+    "cc_id": "MiniMaxAI/MiniMax-M3-Free",
+    "in": 0.3,
+    "min_plan": "individual-go",
+    "out": 1.2
+  },
+  "mistral-mistral-large-4": {
+    "cache_read": 0.14,
+    "cc_id": "mistral/mistral-large-4",
+    "in": 1.36,
+    "min_plan": "individual-go",
+    "out": 4.18
+  },
+  "moonshotai-kimi-k2.5": {
+    "cache_read": 0.1,
+    "cc_id": "moonshotai/Kimi-K2.5",
+    "in": 0.6,
+    "min_plan": "individual-go",
+    "out": 3.0
+  },
+  "moonshotai-kimi-k2.6": {
+    "cache_read": 0.16,
+    "cc_id": "moonshotai/Kimi-K2.6",
+    "in": 0.95,
+    "min_plan": "individual-go",
+    "out": 4.0
+  },
+  "moonshotai-kimi-k2.7-code": {
+    "cache_read": 0.19,
+    "cc_id": "moonshotai/Kimi-K2.7-Code",
+    "in": 0.95,
+    "min_plan": "individual-go",
+    "out": 4.0
+  },
+  "moonshotai-kimi-k2.7-code-highspeed": {
+    "cache_read": 0.38,
+    "cc_id": "moonshotai/Kimi-K2.7-Code-Highspeed",
+    "in": 1.9,
+    "min_plan": "individual-go",
+    "out": 8.0
+  },
+  "moonshotai-kimi-k3": {
+    "cache_read": 0.3,
+    "cc_id": "moonshotai/Kimi-K3",
+    "in": 3.0,
+    "min_plan": "individual-go",
+    "out": 15.0
+  },
+  "moonshotai-kimi-k3.1-pro": {
+    "cache_read": 0.2,
+    "cc_id": "moonshotai/Kimi-K3.1-Pro",
+    "in": 2.0,
+    "min_plan": "individual-go",
+    "out": 10.0
+  },
+  "nvidia-nemotron-3-ultra-550b-a55b": {
+    "cache_read": 0.12,
+    "cc_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "in": 0.6,
+    "min_plan": "individual-go",
+    "out": 2.4
+  },
+  "nvidia-nemotron-3.5-super-vl": {
+    "cache_read": 0.04,
+    "cc_id": "nvidia/nemotron-3.5-super-vl",
+    "in": 0.2,
+    "min_plan": "individual-go",
+    "out": 0.5
+  },
+  "ornith-ornith-1.5-122b": {
+    "cache_read": 0.02,
+    "cc_id": "ornith/ornith-1.5-122b",
+    "in": 0.16,
+    "min_plan": "individual-go",
+    "out": 0.64
+  },
+  "ornith-ornith-1.5-122b-free": {
+    "cache_read": 0.0,
+    "cc_id": "ornith/ornith-1.5-122b:free",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "poolside-laguna-s-2.1-free": {
+    "cache_read": 0.0,
+    "cc_id": "poolside/laguna-s-2.1-free",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "qwen-qwen3.6-max-preview": {
+    "cache_read": 0.26,
+    "cc_id": "Qwen/Qwen3.6-Max-Preview",
+    "in": 1.3,
+    "min_plan": "individual-go",
+    "out": 7.8
+  },
+  "qwen-qwen3.6-plus": {
+    "cache_read": 0.1,
+    "cc_id": "Qwen/Qwen3.6-Plus",
+    "in": 0.5,
+    "min_plan": "individual-go",
+    "out": 3.0
+  },
+  "qwen-qwen3.7-flash": {
+    "cache_read": 0.006,
+    "cc_id": "Qwen/Qwen3.7-Flash",
+    "in": 0.03,
+    "min_plan": "individual-go",
+    "out": 0.13
+  },
+  "qwen-qwen3.7-max": {
+    "cache_read": 0.5,
+    "cc_id": "Qwen/Qwen3.7-Max",
+    "in": 2.5,
+    "min_plan": "individual-go",
+    "out": 7.5
+  },
+  "qwen-qwen3.7-plus": {
+    "cache_read": 0.08,
+    "cc_id": "Qwen/Qwen3.7-Plus",
+    "in": 0.4,
+    "min_plan": "individual-go",
+    "out": 1.6
+  },
+  "qwen-qwen3.8-27b": {
+    "cache_read": 0.04,
+    "cc_id": "Qwen/Qwen3.8-27B",
+    "in": 0.4,
+    "min_plan": "individual-go",
+    "out": 3.0
+  },
+  "qwen-qwen3.8-flash": {
+    "cache_read": 0.016,
+    "cc_id": "Qwen/Qwen3.8-Flash",
+    "in": 0.16,
+    "min_plan": "individual-go",
+    "out": 0.47
+  },
+  "qwen-qwen3.8-max": {
+    "cache_read": 0.25,
+    "cc_id": "Qwen/Qwen3.8-Max",
+    "in": 2.0,
+    "min_plan": "individual-go",
+    "out": 6.0
+  },
+  "qwen-qwen3.8-max-0902": {
+    "cache_read": 0.25,
+    "cc_id": "Qwen/Qwen3.8-Max-0902",
+    "in": 2.0,
+    "min_plan": "individual-go",
+    "out": 6.0
+  },
+  "qwen-qwen3.8-max-prime": {
+    "cache_read": 0.5,
+    "cc_id": "Qwen/Qwen3.8-Max-Prime",
+    "in": 4.0,
+    "min_plan": "individual-goat",
+    "out": 12.0
+  },
+  "qwen-qwen3.8-omni-flash": {
+    "cache_read": 0.016,
+    "cc_id": "Qwen/Qwen3.8-Omni-Flash",
+    "in": 0.15,
+    "min_plan": "individual-go",
+    "out": 0.47
+  },
+  "reflection-beam-free": {
+    "cache_read": 0.0,
+    "cc_id": "reflection/beam:free",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "sakana-fugu-ultra": {
+    "cache_read": 0.5,
+    "cc_id": "sakana/fugu-ultra",
+    "in": 5.0,
+    "min_plan": "individual-provider",
+    "out": 30.0
+  },
+  "stealth-crouton-alpha": {
+    "cache_read": 0.0,
+    "cc_id": "stealth/crouton-alpha",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "stealth-glyph-cluster-free": {
+    "cache_read": 0.0,
+    "cc_id": "stealth/glyph-cluster:free",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "stealth-pixel-canary": {
+    "cache_read": 0.0,
+    "cc_id": "stealth/pixel-canary",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "stealth-space-bunny-alpha": {
+    "cache_read": 0.0,
+    "cc_id": "stealth/space-bunny-alpha",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "stepfun-step-3.5-flash": {
+    "cache_read": 0.02,
+    "cc_id": "stepfun/Step-3.5-Flash",
+    "in": 0.09,
+    "min_plan": "individual-go",
+    "out": 0.3
+  },
+  "stepfun-step-3.7-flash": {
+    "cache_read": 0.04,
+    "cc_id": "stepfun/Step-3.7-Flash",
+    "in": 0.2,
+    "min_plan": "individual-go",
+    "out": 1.15
+  },
+  "stepfun-step-5-preview": {
+    "cache_read": 0.05,
+    "cc_id": "stepfun/Step-5-Preview",
+    "in": 1.0,
+    "min_plan": "individual-go",
+    "out": 2.7
+  },
+  "tencent-hy3": {
+    "cache_read": 0.0,
+    "cc_id": "tencent/Hy3",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "tencent-hy3-paid": {
+    "cache_read": 0.035,
+    "cc_id": "tencent/hy3-paid",
+    "in": 0.14,
+    "min_plan": "individual-go",
+    "out": 0.58
+  },
+  "tencent-hy4-preview": {
+    "cache_read": 0.042,
+    "cc_id": "tencent/hy4-preview",
+    "in": 0.834,
+    "min_plan": "individual-go",
+    "out": 2.501
+  },
+  "thinkingmachines-inkling": {
+    "cache_read": 0.17,
+    "cc_id": "thinkingmachines/inkling",
+    "in": 1.0,
+    "min_plan": "individual-go",
+    "out": 4.05
+  },
+  "thinkingmachines-inkling-2-small-free": {
+    "cache_read": 0.0,
+    "cc_id": "thinkingmachines/inkling-2-small:free",
+    "in": 0.0,
+    "min_plan": "individual-go",
+    "out": 0.0
+  },
+  "thinkingmachines-inkling-small": {
+    "cache_read": 0.1,
+    "cc_id": "thinkingmachines/inkling-small",
+    "in": 0.5,
+    "min_plan": "individual-go",
+    "out": 1.2
+  },
+  "xai-grok-4.5": {
+    "cache_read": 0.5,
+    "cc_id": "xai/grok-4.5",
+    "in": 2.0,
+    "min_plan": "individual-go",
+    "out": 6.0
+  },
+  "xai-grok-4.6": {
+    "cache_read": 0.5,
+    "cc_id": "xai/grok-4.6",
+    "in": 2.0,
+    "min_plan": "individual-goat",
+    "out": 6.0
+  },
+  "xai-grok-4.7": {
+    "cache_read": 0.5,
+    "cc_id": "xai/grok-4.7",
+    "in": 2.0,
+    "min_plan": "individual-goat",
+    "out": 6.0
+  },
+  "xiaomi-mimo-v2.5": {
+    "cache_read": 0.0028,
+    "cc_id": "xiaomi/mimo-v2.5",
+    "in": 0.14,
+    "min_plan": "individual-go",
+    "out": 0.28
+  },
+  "xiaomi-mimo-v2.5-pro": {
+    "cache_read": 0.0036,
+    "cc_id": "xiaomi/mimo-v2.5-pro",
+    "in": 0.435,
+    "min_plan": "individual-go",
+    "out": 0.87
+  },
+  "xiaomi-mimo-v2.6-flash": {
+    "cache_read": 0.0028,
+    "cc_id": "xiaomi/mimo-v2.6-flash",
+    "in": 0.14,
+    "min_plan": "individual-go",
+    "out": 0.28
+  },
+  "xiaomi-mimo-v2.6-pro": {
+    "cache_read": 0.0036,
+    "cc_id": "xiaomi/mimo-v2.6-pro",
+    "in": 0.435,
+    "min_plan": "individual-go",
+    "out": 0.87
+  },
+  "xiaomi-mimo-v2.6-pro-ultraspeed": {
+    "cache_read": 0.036,
+    "cc_id": "xiaomi/mimo-v2.6-pro-ultraspeed",
+    "in": 4.35,
+    "min_plan": "individual-goat",
+    "out": 8.7
+  },
+  "z-ai-glm-5.3-flash": {
+    "cache_read": 0.03,
+    "cc_id": "z-ai/glm-5.3-flash",
+    "in": 0.15,
+    "min_plan": "individual-go",
+    "out": 0.5
+  },
+  "z-ai-glm-5.3-flashx": {
+    "cache_read": 0.075,
+    "cc_id": "z-ai/glm-5.3-flashx",
+    "in": 0.37,
+    "min_plan": "individual-go",
+    "out": 1.25
+  },
+  "zai-org-glm-5": {
+    "cache_read": 0.2,
+    "cc_id": "zai-org/GLM-5",
+    "in": 1.0,
+    "min_plan": "individual-go",
+    "out": 3.2
+  },
+  "zai-org-glm-5.1": {
+    "cache_read": 0.26,
+    "cc_id": "zai-org/GLM-5.1",
+    "in": 1.4,
+    "min_plan": "individual-go",
+    "out": 4.4
+  },
+  "zai-org-glm-5.2": {
+    "cache_read": 0.26,
+    "cc_id": "zai-org/GLM-5.2",
+    "in": 1.4,
+    "min_plan": "individual-go",
+    "out": 4.4
+  },
+  "zai-org-glm-5.2-fast": {
+    "cache_read": 0.5,
+    "cc_id": "zai-org/GLM-5.2-Fast",
+    "in": 3.0,
+    "min_plan": "individual-go",
+    "out": 10.25
+  },
+  "zai-org-glm-5.3": {
+    "cache_read": 0.26,
+    "cc_id": "zai-org/GLM-5.3",
+    "in": 1.4,
+    "min_plan": "individual-go",
+    "out": 4.4
+  }
 }
