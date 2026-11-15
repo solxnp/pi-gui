@@ -3246,8 +3246,21 @@ export class DesktopAppStore {
       return;
     }
 
-    const pendingDialogs = [...uiState.pendingDialogs];
-    uiState.pendingDialogs = [];
+    // A `form` is drawn in the conversation, not over it: leaving the thread hides nothing, so it
+    // keeps waiting for the user to come back. Cancelling it would answer the extension with
+    // "the user walked away", which is not what switching threads means — and the user cannot
+    // even see the card they are being blamed for ignoring. Modal dialogs still cancel here,
+    // because a modal hidden behind another thread would block the session invisibly.
+    const pendingDialogs = options.force
+      ? [...uiState.pendingDialogs]
+      : uiState.pendingDialogs.filter((dialog) => dialog.kind !== "form");
+    if (pendingDialogs.length === 0) {
+      return;
+    }
+
+    uiState.pendingDialogs = uiState.pendingDialogs.filter(
+      (dialog) => !pendingDialogs.includes(dialog),
+    );
     for (const dialog of pendingDialogs) {
       this.clearExtensionDialogTimeout(sessionRef, dialog.requestId);
     }

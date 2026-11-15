@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import {
   createNamedThread,
+  emitTestSessionEvent,
+  getDesktopState,
   launchDesktop,
   makeUserDataDir,
   makeWorkspace,
@@ -452,6 +454,70 @@ test("a multi question answers with every checked option", async () => {
     await submit.click();
 
     await expect(window.getByTestId("extension-notices")).toContainText("Multi multi+pack");
+  } finally {
+    await harness.close();
+  }
+});
+
+test("a pending question is not cancelled by switching threads", async () => {
+  test.setTimeout(60_000);
+  const userDataDir = await makeUserDataDir();
+  const workspacePath = await makeWorkspace("extension-form-switch-workspace");
+  await writeProjectExtension(workspacePath, "form-extension.ts", extensionSource);
+
+  const harness = await launchDesktop(userDataDir, {
+    initialWorkspaces: [workspacePath],
+    testMode: "background",
+  });
+
+  try {
+    const window = await harness.firstWindow();
+    await createNamedThread(window, "Form keep session");
+    await createNamedThread(window, "Other session");
+    await selectSession(window, "Form keep session");
+
+    const state = await getDesktopState(window);
+    const sessionRef = { workspaceId: state.selectedWorkspaceId, sessionId: state.selectedSessionId };
+    // The card is a form the extension is still blocked on. A run's pending request is injected
+    // here so the switch can be exercised without a provider waiting on it.
+    await emitTestSessionEvent(harness, {
+      type: "hostUiRequest",
+      sessionRef,
+      timestamp: new Date().toISOString(),
+      request: {
+        kind: "form",
+        requestId: "switch-away-form",
+        title: "需要你决定",
+        fields: [
+          {
+            id: "answer",
+            title: "旧方案还要继续维护吗？",
+            options: [
+              { value: "维护", label: "继续维护" },
+              { value: "冻结", label: "冻结" },
+            ],
+          },
+        ],
+        allowOther: true,
+      },
+    });
+    const card = window.getByTestId("extension-form");
+    await expect(card).toBeVisible();
+
+    // Leaving the thread must not answer it for the user: the card is drawn in the conversation
+    // (there is nowhere to hide it), so the question keeps waiting for when they come back.
+    await selectSession(window, "Other session");
+    await expect(window.getByTestId("extension-form")).toHaveCount(0);
+    const pendingWhileAway = await getDesktopState(window);
+    expect(
+      pendingWhileAway.sessionExtensionUiBySession[
+        `${sessionRef.workspaceId}:${sessionRef.sessionId}`
+      ]?.pendingDialogs.map((dialog) => dialog.kind),
+    ).toEqual(["form"]);
+
+    await selectSession(window, "Form keep session");
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("旧方案还要继续维护吗？");
   } finally {
     await harness.close();
   }
