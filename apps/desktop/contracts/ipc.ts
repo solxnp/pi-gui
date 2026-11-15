@@ -1104,7 +1104,10 @@ export interface PiDesktopApi {
   readWorkspaceFile(workspaceId: string, filePath: string): Promise<WorkspaceFilePreview>;
   /** Appends one to-do row to the workspace ledger; never writes other files. */
   createTasksBoardTask(input: CreateTasksBoardTaskInput): Promise<CreateTasksBoardTaskResult>;
-  /** Rewrites one task's status row; refuses 已完成 without a commit. */
+  /**
+   * Rewrites one task's status row. 已完成 without a commit row is allowed;
+   * the panel flags such a task instead of refusing the write.
+   */
   updateTasksBoardTaskStatus(
     input: UpdateTasksBoardTaskStatusInput,
   ): Promise<UpdateTasksBoardTaskStatusResult>;

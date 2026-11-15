@@ -28,7 +28,11 @@ const SECTIONS = [
   { status: "cancelled", folded: true },
 ] as const satisfies readonly { status: TasksBoardStatus; folded: boolean }[];
 
-/** A task marked 已完成 by hand but without a commit sha cannot be trusted. */
+/**
+ * A task marked 已完成 without a commit sha is still allowed, but the panel flags it:
+ * the status cell alone is a claim, the commit row is the evidence. Setter is not blocked —
+ * forcing people to edit the markdown by hand just moved the mistake somewhere invisible.
+ */
 function needsCommit(group: TasksBoardGroup): boolean {
   return group.status === "done" && group.statusText.length > 0 && !group.commit;
 }
@@ -331,11 +335,7 @@ export function TasksBoardPanel({
                               value={currentStatusText(group)}
                             >
                               {STATUS_OPTIONS.map((option) => (
-                                <option
-                                  disabled={option === "已完成" && !group.commit}
-                                  key={option}
-                                  value={option}
-                                >
+                                <option key={option} value={option}>
                                   {option}
                                 </option>
                               ))}

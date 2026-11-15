@@ -176,16 +176,25 @@ test("reads TASKS.md, ranks in-progress first, and puts a row in the composer", 
     await expect(window.getByTestId("composer")).toHaveValue(/P0-02 客户端本地验证/);
     await expect(window.getByTestId("composer")).toHaveValue(/跑 npm run dev/);
 
-    // Status is editable from the panel, but 已完成 stays disabled without a commit sha.
+    // 已完成 is selectable even without a commit sha; the panel flags the row instead of
+    // refusing the write, so the fix is visible rather than hidden behind a disabled option.
     const status = todo.getByTestId("tasks-board-status").first();
     await expect(status).toHaveValue("待做");
-    await expect(status.locator('option[value="已完成"]')).toBeDisabled();
+    await expect(status.locator('option[value="已完成"]')).toBeEnabled();
     await status.selectOption("进行中");
     await expect
       .poll(async () => readFile(join(fixture.workspacePath, "TASKS.md"), "utf8"))
       .toContain("| 状态 | 进行中 |");
     await expect(doing).toContainText("P0-02 客户端本地验证");
     await expect(todo).not.toContainText("P0-02 客户端本地验证");
+
+    // A hand-set 已完成 without a commit row is written, then flagged — not refused.
+    await doing.getByTestId("tasks-board-status").first().selectOption("已完成");
+    await expect
+      .poll(async () => readFile(join(fixture.workspacePath, "TASKS.md"), "utf8"))
+      .toContain("| 状态 | 已完成 |");
+    await expect(done).toContainText("P0-02 客户端本地验证");
+    await expect(done.getByTestId("tasks-board-missing-commit")).toHaveCount(2);
   } finally {
     await harness.close();
   }
