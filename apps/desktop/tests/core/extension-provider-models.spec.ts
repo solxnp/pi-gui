@@ -37,6 +37,43 @@ const EXTENSION_SOURCE = `export default async function testProviderExtension(pi
 
 const SCOPED_PREFIX = "ext-e2e-scoped";
 
+const VIRTUAL_PROVIDER_ID = "ext-e2e-virtual";
+const VIRTUAL_MODEL_ID = "auto";
+const VIRTUAL_TARGET_ID = "ext-e2e-virtual-target";
+
+/** A provider whose only model is a virtual one, routing to its own physical model. */
+const VIRTUAL_EXTENSION_SOURCE = `export default async function testVirtualExtension(pi) {
+  pi.registerProvider(${JSON.stringify(VIRTUAL_PROVIDER_ID)}, {
+    baseUrl: "http://127.0.0.1:9/v1",
+    apiKey: "test-extension-key",
+    api: "openai-completions",
+    models: [
+      {
+        id: ${JSON.stringify(VIRTUAL_TARGET_ID)},
+        name: "Virtual Target Model",
+        reasoning: false,
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 128000,
+        maxTokens: 16384,
+      },
+    ],
+  });
+  pi.registerVirtualModel({
+    provider: ${JSON.stringify(VIRTUAL_PROVIDER_ID)},
+    id: ${JSON.stringify(VIRTUAL_MODEL_ID)},
+    name: "Virtual Auto Model",
+    thinkingLevels: ["off", "high"],
+    route(request, ctx) {
+      return {
+        model: ctx.modelRegistry.find(${JSON.stringify(VIRTUAL_PROVIDER_ID)}, ${JSON.stringify(VIRTUAL_TARGET_ID)}),
+        thinkingLevel: request.thinkingLevel,
+      };
+    },
+  });
+}
+`;
+
 function projectExtensionSource(providerId: string, modelId: string): string {
   return `export default async function projectProviderExtension(pi) {
   pi.registerProvider(${JSON.stringify(providerId)}, {
@@ -101,6 +138,69 @@ test("models registered by an extension appear in settings", async () => {
     });
     await expect(modelRow).toHaveCount(1);
     await expect(modelRow).toContainText("Extension E2E Model");
+  } finally {
+    await harness.close();
+  }
+});
+
+// A virtual model (`pi.registerVirtualModel`) is a catalog entry, not a provider model. The
+// runtime snapshot has to replay the extension's virtual-model queue or the model never leaves
+// the queue: Settings shows an empty default and re-flags the saved default on every open.
+test("virtual models registered by an extension are available and can be the default", async () => {
+  test.setTimeout(90_000);
+
+  const userDataDir = await makeUserDataDir();
+  const agentDir = join(userDataDir, "agent");
+  const workspacePath = await makeWorkspace("extension-virtual-model-workspace");
+  await seedAgentDir(agentDir);
+  await mkdir(join(agentDir, "extensions"), { recursive: true });
+  await writeFile(
+    join(agentDir, "extensions", "test-virtual.ts"),
+    VIRTUAL_EXTENSION_SOURCE,
+    "utf8",
+  );
+  // enabledModels 必须显式包含虚拟模型：pi 只看 pattern 决定 scope，不写就会是 off
+  await writeFile(
+    join(agentDir, "settings.json"),
+    `${JSON.stringify(
+      {
+        defaultProvider: VIRTUAL_PROVIDER_ID,
+        defaultModel: VIRTUAL_MODEL_ID,
+        enabledModels: [`${VIRTUAL_PROVIDER_ID}/${VIRTUAL_MODEL_ID}`],
+      },
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
+
+  const harness = await launchDesktop(userDataDir, {
+    agentDir,
+    initialWorkspaces: [workspacePath],
+    testMode: "background",
+  });
+
+  try {
+    const window = await harness.firstWindow();
+
+    // No onboarding notice: the saved default resolves, so nothing is "no longer available".
+    await expect(window.getByTestId("model-onboarding-notice")).toHaveCount(0);
+
+    await window.keyboard.press(desktopShortcut(","));
+    await expect(window.getByTestId("settings-surface")).toBeVisible();
+    await window.getByRole("button", { name: "Models", exact: true }).click();
+    await window.getByLabel("Search models").fill(VIRTUAL_PROVIDER_ID);
+
+    const virtualRow = window.getByTestId("settings-model-list").locator(".model-row", {
+      hasText: `${VIRTUAL_PROVIDER_ID}/${VIRTUAL_MODEL_ID}`,
+    });
+    await expect(virtualRow).toHaveCount(1);
+    await expect(virtualRow).toContainText("Virtual Auto Model");
+
+    // The saved default is the virtual model, and the default picker keeps it selected.
+    await expect(window.getByLabel("Default model")).toHaveValue(
+      `${VIRTUAL_PROVIDER_ID}:${VIRTUAL_MODEL_ID}`,
+    );
   } finally {
     await harness.close();
   }

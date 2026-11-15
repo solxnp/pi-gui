@@ -92,6 +92,10 @@ type ExtensionProviderRegistration = ReturnType<
 type ExtensionNativeProviderRegistration = ReturnType<
   DefaultResourceLoader["getExtensions"]
 >["runtime"]["pendingNativeProviderRegistrations"][number];
+/** A queued `pi.registerVirtualModel()` call, as the extension runtime records it. */
+type ExtensionVirtualModelRegistration = ReturnType<
+  DefaultResourceLoader["getExtensions"]
+>["runtime"]["pendingVirtualModelRegistrations"][number];
 type ProviderAuthStatus = ReturnType<ModelRuntime["getProviderAuthStatus"]>;
 type StoredCredentialType = Awaited<ReturnType<ModelRuntime["listCredentials"]>>[number]["type"];
 type LoginAuthType = Parameters<ModelRuntime["login"]>[1];
@@ -105,6 +109,8 @@ interface RuntimeContext {
   /** `registerProvider()` calls this workspace's extensions made, in call order. */
   extensionProviders: readonly ExtensionProviderRegistration[];
   nativeProviders: readonly ExtensionNativeProviderRegistration[];
+  /** Virtual models (`registerVirtualModel()`) this workspace's extensions registered. */
+  virtualModels: readonly ExtensionVirtualModelRegistration[];
   /** Runtime the snapshot is built from, owned by this workspace. */
   modelRuntime: ModelRuntime;
 }
@@ -591,6 +597,7 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
       resourceLoader,
       extensionProviders: applied.accepted,
       nativeProviders: applied.acceptedNative,
+      virtualModels: applied.acceptedVirtual,
       modelRuntime: applied.runtime,
     };
     this.contexts.set(workspace.workspaceId, context);
@@ -613,6 +620,7 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
     const applied = await this.applyExtensionProviders(context.resourceLoader);
     context.extensionProviders = applied.accepted;
     context.nativeProviders = applied.acceptedNative;
+    context.virtualModels = applied.acceptedVirtual;
     context.modelRuntime = applied.runtime;
   }
 
@@ -638,22 +646,30 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
   private drainExtensionProviders(resourceLoader: DefaultResourceLoader): {
     readonly registrations: ExtensionProviderRegistration[];
     readonly nativeRegistrations: ExtensionNativeProviderRegistration[];
+    readonly virtualRegistrations: ExtensionVirtualModelRegistration[];
   } {
     const { runtime } = resourceLoader.getExtensions();
     const registrations = [...runtime.pendingProviderRegistrations];
     const nativeRegistrations = [...runtime.pendingNativeProviderRegistrations];
+    const virtualRegistrations = [...runtime.pendingVirtualModelRegistrations];
     runtime.pendingProviderRegistrations = [];
     runtime.pendingNativeProviderRegistrations = [];
-    return { registrations, nativeRegistrations };
+    runtime.pendingVirtualModelRegistrations = [];
+    return { registrations, nativeRegistrations, virtualRegistrations };
   }
 
   private async applyExtensionProviders(resourceLoader: DefaultResourceLoader): Promise<{
     readonly runtime: ModelRuntime;
     readonly accepted: ExtensionProviderRegistration[];
     readonly acceptedNative: ExtensionNativeProviderRegistration[];
+    readonly acceptedVirtual: ExtensionVirtualModelRegistration[];
   }> {
     const drained = this.drainExtensionProviders(resourceLoader);
-    return this.buildWorkspaceModelRuntime(drained.registrations, drained.nativeRegistrations);
+    return this.buildWorkspaceModelRuntime(
+      drained.registrations,
+      drained.nativeRegistrations,
+      drained.virtualRegistrations,
+    );
   }
 
   /**
@@ -666,10 +682,12 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
   private async buildWorkspaceModelRuntime(
     registrations: readonly ExtensionProviderRegistration[],
     nativeRegistrations: readonly ExtensionNativeProviderRegistration[],
+    virtualRegistrations: readonly ExtensionVirtualModelRegistration[] = [],
   ): Promise<{
     readonly runtime: ModelRuntime;
     readonly accepted: ExtensionProviderRegistration[];
     readonly acceptedNative: ExtensionNativeProviderRegistration[];
+    readonly acceptedVirtual: ExtensionVirtualModelRegistration[];
   }> {
     const runtime = await ModelRuntime.create({
       authPath: this.authPath,
@@ -692,6 +710,22 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
         );
       }
     }
+    // Virtual models (`registerVirtualModel()`) arrive on their own queue. Without replaying them
+    // here the snapshot never lists them: a workspace default pointing at one then reads as
+    // "no longer available" and every settings open re-flags it.
+    const acceptedVirtual: ExtensionVirtualModelRegistration[] = [];
+    for (const registration of virtualRegistrations) {
+      try {
+        runtime.registerVirtualModel(registration.definition);
+        acceptedVirtual.push(registration);
+      } catch (error) {
+        console.warn(
+          `[pi-gui] Extension "${registration.extensionPath}" failed to register virtual model "${
+            registration.definition.provider
+          }/${registration.definition.id}": ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
     const acceptedNative: ExtensionNativeProviderRegistration[] = [];
     for (const registration of nativeRegistrations) {
       const { provider, extensionPath } = registration;
@@ -707,7 +741,7 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
       }
     }
     await runtime.refresh({ allowNetwork: false });
-    return { runtime, accepted, acceptedNative };
+    return { runtime, accepted, acceptedNative, acceptedVirtual };
   }
 
   private async buildSnapshot(context: RuntimeContext): Promise<RuntimeSnapshot> {

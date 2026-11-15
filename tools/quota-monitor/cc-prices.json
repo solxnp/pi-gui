@@ -1,282 +1,282 @@
 {
- "MiniMaxAI/MiniMax-M2.5": {
-  "cache_read": 0.03,
-  "in": 0.3,
-  "out": 1.2
- },
- "MiniMaxAI/MiniMax-M3": {
-  "cache_read": 0.06,
-  "in": 0.3,
-  "out": 1.2
- },
- "Qwen/Qwen3.6-Plus": {
-  "cache_read": 0.1,
-  "in": 0.5,
-  "out": 3
- },
- "Qwen/Qwen3.7-Flash": {
-  "cache_read": 0.006,
-  "in": 0.03,
-  "out": 0.13
- },
- "Qwen/Qwen3.7-Max": {
-  "cache_read": 0.5,
-  "in": 2.5,
-  "out": 7.5
- },
- "Qwen/Qwen3.7-Plus": {
-  "cache_read": 0.08,
-  "in": 0.4,
-  "out": 1.6
- },
- "Qwen/Qwen3.8-27B": {
-  "cache_read": 0.04,
-  "in": 0.4,
-  "out": 3
- },
- "Qwen/Qwen3.8-Flash": {
-  "cache_read": 0.016,
-  "in": 0.16,
-  "out": 0.47
- },
- "Qwen/Qwen3.8-Max": {
-  "cache_read": 0.25,
-  "in": 2,
-  "out": 6
- },
- "Qwen/Qwen3.8-Max-0902": {
-  "cache_read": 0.25,
-  "in": 2,
-  "out": 6
- },
- "Qwen/Qwen3.8-Max-Prime": {
-  "cache_read": 0.5,
-  "in": 4,
-  "out": 12
- },
- "Qwen/Qwen3.8-Omni-Flash": {
-  "cache_read": 0.016,
-  "in": 0.15,
-  "out": 0.47
- },
- "deepseek/deepseek-v4-flash": {
-  "cache_read": 0.003,
-  "in": 0.15,
-  "out": 0.6
- },
- "deepseek/deepseek-v4-flash-fast": {
-  "cache_read": 0.07,
-  "in": 0.28,
-  "out": 0.56
- },
- "deepseek/deepseek-v4-flash-vision-exp": {
-  "cache_read": 0.003,
-  "in": 0.15,
-  "out": 0.6
- },
- "deepseek/deepseek-v4-pro": {
-  "cache_read": 0.022,
-  "in": 0.66,
-  "out": 1.98
- },
- "deepseek/deepseek-v4.1-flash": {
-  "cache_read": 0.003,
-  "in": 0.15,
-  "out": 0.6
- },
- "deepseek/deepseek-v4.1-flash-fast": {
-  "cache_read": 0.016,
-  "in": 0.16,
-  "out": 0.58
- },
- "deepseek/deepseek-v4.1-flash-ultrafast": {
-  "cache_read": 0.048,
-  "in": 2.4,
-  "out": 9.6
- },
- "google/gemini-3.8-flash": {
-  "cache_read": 0.15,
-  "in": 1.5,
-  "out": 7.5
- },
- "gpt-5.6-luna": {
-  "cache_read": 0.02,
-  "in": 0.2,
-  "out": 1.2
- },
- "gpt-5.6-sol": {
-  "cache_read": 0.5,
-  "in": 5,
-  "out": 30
- },
- "gpt-6-luna": {
-  "cache_read": 0.01,
-  "in": 0.1,
-  "out": 0.5
- },
- "inclusionai/ling-3.1-flash": {
-  "cache_read": 0.06,
-  "in": 0.3,
-  "out": 0.9
- },
- "inclusionai/ling-3.1-flash-1019": {
-  "cache_read": 0.06,
-  "in": 0.3,
-  "out": 0.9
- },
- "meituan/LongCat-2.0": {
-  "cache_read": 0.006,
-  "in": 0.3,
-  "out": 1.2
- },
- "meta/muse-spark-open": {
-  "cache_read": 0.15,
-  "in": 1.25,
-  "out": 4.25
- },
- "minimax/minimax-m3.1-flash": {
-  "cache_read": 0.015,
-  "in": 0.15,
-  "out": 0.6
- },
- "mistral/mistral-large-4": {
-  "cache_read": 0.14,
-  "in": 1.36,
-  "out": 4.18
- },
- "moonshotai/Kimi-K2.5": {
-  "cache_read": 0.1,
-  "in": 0.6,
-  "out": 3
- },
- "moonshotai/Kimi-K2.6": {
-  "cache_read": 0.16,
-  "in": 0.95,
-  "out": 4
- },
- "moonshotai/Kimi-K2.7-Code": {
-  "cache_read": 0.19,
-  "in": 0.95,
-  "out": 4
- },
- "moonshotai/Kimi-K2.7-Code-Highspeed": {
-  "cache_read": 0.38,
-  "in": 1.9,
-  "out": 8
- },
- "moonshotai/Kimi-K3": {
-  "cache_read": 0.3,
-  "in": 3,
-  "out": 15
- },
- "moonshotai/Kimi-K3.1-Pro": {
-  "cache_read": 0.2,
-  "in": 2,
-  "out": 10
- },
- "nvidia/nemotron-3-ultra-550b-a55b": {
-  "cache_read": 0.12,
-  "in": 0.6,
-  "out": 2.4
- },
- "nvidia/nemotron-3.5-super-vl": {
-  "cache_read": 0.04,
-  "in": 0.2,
-  "out": 0.5
- },
- "ornith/ornith-1.5-122b": {
-  "cache_read": 0.02,
-  "in": 0.16,
-  "out": 0.64
- },
- "stealth/glyph-cluster:free": {
-  "cache_read": 0,
-  "in": 0,
-  "out": 0
- },
- "stepfun/Step-3.7-Flash": {
-  "cache_read": 0.04,
-  "in": 0.2,
-  "out": 1.15
- },
- "stepfun/Step-5-Preview": {
-  "cache_read": 0.05,
-  "in": 1,
-  "out": 2.7
- },
- "tencent/hy3-paid": {
-  "cache_read": 0.035,
-  "in": 0.14,
-  "out": 0.58
- },
- "tencent/hy4-preview": {
-  "cache_read": 0.042,
-  "in": 0.834,
-  "out": 2.501
- },
- "thinkingmachines/inkling-2-small:free": {
-  "cache_read": 0,
-  "in": 0,
-  "out": 0
- },
- "xai/grok-4.5": {
-  "cache_read": 0.5,
-  "in": 2,
-  "out": 6
- },
- "xai/grok-4.6": {
-  "cache_read": 0.5,
-  "in": 2,
-  "out": 6
- },
- "xai/grok-4.7": {
-  "cache_read": 0.5,
-  "in": 2,
-  "out": 6
- },
- "xiaomi/mimo-v2.6-flash": {
-  "cache_read": 0.0028,
-  "in": 0.14,
-  "out": 0.28
- },
- "xiaomi/mimo-v2.6-pro": {
-  "cache_read": 0.0036,
-  "in": 0.435,
-  "out": 0.87
- },
- "xiaomi/mimo-v2.6-pro-ultraspeed": {
-  "cache_read": 0.036,
-  "in": 4.35,
-  "out": 8.7
- },
- "z-ai/glm-5.3-flash": {
-  "cache_read": 0.03,
-  "in": 0.15,
-  "out": 0.5
- },
- "z-ai/glm-5.3-flashx": {
-  "cache_read": 0.075,
-  "in": 0.37,
-  "out": 1.25
- },
- "zai-org/GLM-5": {
-  "cache_read": 0.2,
-  "in": 1,
-  "out": 3.2
- },
- "zai-org/GLM-5.2": {
-  "cache_read": 0.26,
-  "in": 1.4,
-  "out": 4.4
- },
- "zai-org/GLM-5.2-Fast": {
-  "cache_read": 0.5,
-  "in": 3,
-  "out": 10.25
- },
- "zai-org/GLM-5.3": {
-  "cache_read": 0.26,
-  "in": 1.4,
-  "out": 4.4
- }
+  "MiniMaxAI/MiniMax-M2.5": {
+    "cache_read": 0.03,
+    "in": 0.3,
+    "out": 1.2
+  },
+  "MiniMaxAI/MiniMax-M3": {
+    "cache_read": 0.06,
+    "in": 0.3,
+    "out": 1.2
+  },
+  "Qwen/Qwen3.6-Plus": {
+    "cache_read": 0.1,
+    "in": 0.5,
+    "out": 3
+  },
+  "Qwen/Qwen3.7-Flash": {
+    "cache_read": 0.006,
+    "in": 0.03,
+    "out": 0.13
+  },
+  "Qwen/Qwen3.7-Max": {
+    "cache_read": 0.5,
+    "in": 2.5,
+    "out": 7.5
+  },
+  "Qwen/Qwen3.7-Plus": {
+    "cache_read": 0.08,
+    "in": 0.4,
+    "out": 1.6
+  },
+  "Qwen/Qwen3.8-27B": {
+    "cache_read": 0.04,
+    "in": 0.4,
+    "out": 3
+  },
+  "Qwen/Qwen3.8-Flash": {
+    "cache_read": 0.016,
+    "in": 0.16,
+    "out": 0.47
+  },
+  "Qwen/Qwen3.8-Max": {
+    "cache_read": 0.25,
+    "in": 2,
+    "out": 6
+  },
+  "Qwen/Qwen3.8-Max-0902": {
+    "cache_read": 0.25,
+    "in": 2,
+    "out": 6
+  },
+  "Qwen/Qwen3.8-Max-Prime": {
+    "cache_read": 0.5,
+    "in": 4,
+    "out": 12
+  },
+  "Qwen/Qwen3.8-Omni-Flash": {
+    "cache_read": 0.016,
+    "in": 0.15,
+    "out": 0.47
+  },
+  "deepseek/deepseek-v4-flash": {
+    "cache_read": 0.003,
+    "in": 0.15,
+    "out": 0.6
+  },
+  "deepseek/deepseek-v4-flash-fast": {
+    "cache_read": 0.07,
+    "in": 0.28,
+    "out": 0.56
+  },
+  "deepseek/deepseek-v4-flash-vision-exp": {
+    "cache_read": 0.003,
+    "in": 0.15,
+    "out": 0.6
+  },
+  "deepseek/deepseek-v4-pro": {
+    "cache_read": 0.022,
+    "in": 0.66,
+    "out": 1.98
+  },
+  "deepseek/deepseek-v4.1-flash": {
+    "cache_read": 0.003,
+    "in": 0.15,
+    "out": 0.6
+  },
+  "deepseek/deepseek-v4.1-flash-fast": {
+    "cache_read": 0.016,
+    "in": 0.16,
+    "out": 0.58
+  },
+  "deepseek/deepseek-v4.1-flash-ultrafast": {
+    "cache_read": 0.048,
+    "in": 2.4,
+    "out": 9.6
+  },
+  "google/gemini-3.8-flash": {
+    "cache_read": 0.15,
+    "in": 1.5,
+    "out": 7.5
+  },
+  "gpt-5.6-luna": {
+    "cache_read": 0.02,
+    "in": 0.2,
+    "out": 1.2
+  },
+  "gpt-5.6-sol": {
+    "cache_read": 0.5,
+    "in": 5,
+    "out": 30
+  },
+  "gpt-6-luna": {
+    "cache_read": 0.01,
+    "in": 0.1,
+    "out": 0.5
+  },
+  "inclusionai/ling-3.1-flash": {
+    "cache_read": 0.06,
+    "in": 0.3,
+    "out": 0.9
+  },
+  "inclusionai/ling-3.1-flash-1019": {
+    "cache_read": 0.06,
+    "in": 0.3,
+    "out": 0.9
+  },
+  "meituan/LongCat-2.0": {
+    "cache_read": 0.006,
+    "in": 0.3,
+    "out": 1.2
+  },
+  "meta/muse-spark-open": {
+    "cache_read": 0.15,
+    "in": 1.25,
+    "out": 4.25
+  },
+  "minimax/minimax-m3.1-flash": {
+    "cache_read": 0.015,
+    "in": 0.15,
+    "out": 0.6
+  },
+  "mistral/mistral-large-4": {
+    "cache_read": 0.14,
+    "in": 1.36,
+    "out": 4.18
+  },
+  "moonshotai/Kimi-K2.5": {
+    "cache_read": 0.1,
+    "in": 0.6,
+    "out": 3
+  },
+  "moonshotai/Kimi-K2.6": {
+    "cache_read": 0.16,
+    "in": 0.95,
+    "out": 4
+  },
+  "moonshotai/Kimi-K2.7-Code": {
+    "cache_read": 0.19,
+    "in": 0.95,
+    "out": 4
+  },
+  "moonshotai/Kimi-K2.7-Code-Highspeed": {
+    "cache_read": 0.38,
+    "in": 1.9,
+    "out": 8
+  },
+  "moonshotai/Kimi-K3": {
+    "cache_read": 0.3,
+    "in": 3,
+    "out": 15
+  },
+  "moonshotai/Kimi-K3.1-Pro": {
+    "cache_read": 0.2,
+    "in": 2,
+    "out": 10
+  },
+  "nvidia/nemotron-3-ultra-550b-a55b": {
+    "cache_read": 0.12,
+    "in": 0.6,
+    "out": 2.4
+  },
+  "nvidia/nemotron-3.5-super-vl": {
+    "cache_read": 0.04,
+    "in": 0.2,
+    "out": 0.5
+  },
+  "ornith/ornith-1.5-122b": {
+    "cache_read": 0.02,
+    "in": 0.16,
+    "out": 0.64
+  },
+  "stealth/glyph-cluster:free": {
+    "cache_read": 0,
+    "in": 0,
+    "out": 0
+  },
+  "stepfun/Step-3.7-Flash": {
+    "cache_read": 0.04,
+    "in": 0.2,
+    "out": 1.15
+  },
+  "stepfun/Step-5-Preview": {
+    "cache_read": 0.05,
+    "in": 1,
+    "out": 2.7
+  },
+  "tencent/hy3-paid": {
+    "cache_read": 0.035,
+    "in": 0.14,
+    "out": 0.58
+  },
+  "tencent/hy4-preview": {
+    "cache_read": 0.042,
+    "in": 0.834,
+    "out": 2.501
+  },
+  "thinkingmachines/inkling-2-small:free": {
+    "cache_read": 0,
+    "in": 0,
+    "out": 0
+  },
+  "xai/grok-4.5": {
+    "cache_read": 0.5,
+    "in": 2,
+    "out": 6
+  },
+  "xai/grok-4.6": {
+    "cache_read": 0.5,
+    "in": 2,
+    "out": 6
+  },
+  "xai/grok-4.7": {
+    "cache_read": 0.5,
+    "in": 2,
+    "out": 6
+  },
+  "xiaomi/mimo-v2.6-flash": {
+    "cache_read": 0.0028,
+    "in": 0.14,
+    "out": 0.28
+  },
+  "xiaomi/mimo-v2.6-pro": {
+    "cache_read": 0.0036,
+    "in": 0.435,
+    "out": 0.87
+  },
+  "xiaomi/mimo-v2.6-pro-ultraspeed": {
+    "cache_read": 0.036,
+    "in": 4.35,
+    "out": 8.7
+  },
+  "z-ai/glm-5.3-flash": {
+    "cache_read": 0.03,
+    "in": 0.15,
+    "out": 0.5
+  },
+  "z-ai/glm-5.3-flashx": {
+    "cache_read": 0.075,
+    "in": 0.37,
+    "out": 1.25
+  },
+  "zai-org/GLM-5": {
+    "cache_read": 0.2,
+    "in": 1,
+    "out": 3.2
+  },
+  "zai-org/GLM-5.2": {
+    "cache_read": 0.26,
+    "in": 1.4,
+    "out": 4.4
+  },
+  "zai-org/GLM-5.2-Fast": {
+    "cache_read": 0.5,
+    "in": 3,
+    "out": 10.25
+  },
+  "zai-org/GLM-5.3": {
+    "cache_read": 0.26,
+    "in": 1.4,
+    "out": 4.4
+  }
 }
