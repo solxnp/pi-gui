@@ -35,9 +35,16 @@ interface UseThreadActionsParams {
   readonly flushComposerDraft: () => void;
 }
 
-/** Where a thread menu is open: a sidebar row's right-click menu, or the thread header. */
+/** Where a thread menu is open: a sidebar row's right-click menu, the thread header, or a tab. */
 type OpenThreadMenu =
-  { readonly surface: "sidebar"; readonly sessionId: string } | { readonly surface: "header" };
+  | { readonly surface: "sidebar"; readonly sessionId: string }
+  | { readonly surface: "header" }
+  | {
+      readonly surface: "tab";
+      readonly key: string;
+      /** Viewport point the menu opens at, so the tab strip's own scroll cannot clip it. */
+      readonly position: { readonly x: number; readonly y: number };
+    };
 
 export interface ThreadMenuState {
   readonly platform: NodeJS.Platform;
@@ -49,6 +56,8 @@ export interface ThreadMenuState {
   readonly renamePanelRef: RefObject<HTMLFormElement | null>;
   readonly openSidebarMenu: (sessionId: string) => void;
   readonly toggleHeaderMenu: () => void;
+  readonly openTabMenu: (key: string, position: { readonly x: number; readonly y: number }) => void;
+  readonly closeMenu: () => void;
   readonly submitRename: (subject: ThreadActionSubject) => void;
   readonly cancelRename: () => void;
   /**
@@ -175,6 +184,15 @@ export function useThreadActions({
       setRenameSessionId(null);
       setOpenMenu((current) => (current?.surface === "header" ? null : { surface: "header" }));
     },
+    openTabMenu: (key, position) => {
+      setRenameSessionId(null);
+      setOpenMenu((current) =>
+        current?.surface === "tab" && current.key === key
+          ? null
+          : { surface: "tab", key, position },
+      );
+    },
+    closeMenu: () => setOpenMenu(null),
     submitRename: (subject) => {
       const nextTitle = renameDraft.trim();
       setRenameSessionId(null);

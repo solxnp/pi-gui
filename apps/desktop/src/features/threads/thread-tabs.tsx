@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { WorkspaceSessionTarget } from "../../../contracts/desktop-state";
 import { CloseIcon } from "../../ui/icons";
 import { useTranslation } from "../../i18n";
+import { ThreadActionsMenu, type ThreadAction } from "./thread-actions";
+import type { ThreadMenuState } from "./hooks/use-thread-actions";
 
 /** How many rows the strip may use before it scrolls sideways instead of growing. */
 export const THREAD_TAB_MAX_ROWS = 3;
@@ -30,6 +32,13 @@ interface ThreadTabsProps {
   readonly platform: NodeJS.Platform;
   readonly onSelect: (target: WorkspaceSessionTarget) => void;
   readonly onClose: (target: WorkspaceSessionTarget) => void;
+  /** Right-click menu state; the tab strip renders the same action list as the sidebar row. */
+  readonly threadMenu: ThreadMenuState;
+  readonly actionsForTarget: (
+    target: WorkspaceSessionTarget,
+  ) => readonly ThreadAction[] | undefined;
+  /** Commits an inline tab rename; the menu's rename entry renames here, not in the sidebar. */
+  readonly onRename: (target: WorkspaceSessionTarget, title: string) => void;
 }
 
 /**
@@ -66,11 +75,23 @@ export function threadTabSlot(
  * The window's open conversations as IDE-style tabs above the transcript.
  * Tabs keep their order, so ⌘1-9 can address them by position.
  */
-export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: ThreadTabsProps) {
+export function ThreadTabs({
+  tabs,
+  activeKey,
+  platform,
+  onSelect,
+  onClose,
+  threadMenu,
+  actionsForTarget,
+  onRename,
+}: ThreadTabsProps) {
   const { t } = useTranslation();
   const stripRef = useRef<HTMLDivElement | null>(null);
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
   const [availableWidth, setAvailableWidth] = useState(0);
+  const [renaming, setRenaming] = useState<{ readonly key: string; readonly draft: string } | null>(
+    null,
+  );
   // Without a measurement the strip is unknown, so keep the tabs on one row
   // rather than wrapping into a second row the width does not require.
   const { rows, columns } = threadTabLayout(
@@ -89,6 +110,11 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
     observer.observe(strip);
     return () => observer.disconnect();
   }, [tabs.length]);
+
+  useEffect(() => {
+    // A tab can close (or be archived) while its rename field is open.
+    if (renaming && !tabs.some((tab) => tab.key === renaming.key)) setRenaming(null);
+  }, [renaming, tabs]);
 
   const stripHeight =
     rows > 0 ? rows * THREAD_TAB_ROW_HEIGHT + (rows - 1) * THREAD_TAB_GAP + THREAD_TAB_PADDING : 0;
@@ -130,6 +156,31 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
 
   if (tabs.length === 0) return null;
 
+  const openTabMenu = threadMenu.openMenu?.surface === "tab" ? threadMenu.openMenu : undefined;
+
+  // The menu's rename is handled inside the strip: the shared entry edits the sidebar row's
+  // field, which lives behind 「全部会话」 and would send the user looking for the thread again.
+  const actionsForTab = (tab: ThreadTabEntry) =>
+    (actionsForTarget(tab.target) ?? []).map((action) =>
+      action.id === "rename-thread"
+        ? {
+            ...action,
+            run: () => {
+              threadMenu.closeMenu();
+              setRenaming({ key: tab.key, draft: tab.title });
+            },
+          }
+        : action,
+    );
+
+  const commitRename = (target: WorkspaceSessionTarget) => {
+    const title = renaming?.draft.trim() ?? "";
+    if (renaming && title && title !== tabs.find((tab) => tab.key === renaming.key)?.title) {
+      onRename(target, title);
+    }
+    setRenaming(null);
+  };
+
   return (
     <div
       aria-label={t("threadTabs.label")}
@@ -153,56 +204,86 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
             }${tab.awaitingInput ? " thread-tabs__tab--input" : ""}`}
             data-testid={`thread-tab-${tab.key}`}
             key={tab.key}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              threadMenu.openTabMenu(tab.key, { x: event.clientX, y: event.clientY });
+            }}
             style={{ gridRow: slot.row, gridColumn: slot.column }}
           >
-            <button
-              aria-keyshortcuts={
-                index < 9 ? `${platform === "darwin" ? "Meta" : "Control"}+${index + 1}` : undefined
-              }
-              aria-label={
-                tab.awaitingInput
-                  ? `${tab.title} · ${t("threadTabs.awaitingInput")}`
-                  : `${tab.title} · ${
+            {renaming?.key === tab.key ? (
+              <input
+                aria-label={t("threadActions.rename")}
+                className="thread-tabs__rename"
+                autoFocus
+                onChange={(event) =>
+                  setRenaming({ key: tab.key, draft: event.currentTarget.value })
+                }
+                onBlur={() => setRenaming(null)}
+                onFocus={(event) => event.currentTarget.select()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    commitRename(tab.target);
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    setRenaming(null);
+                  }
+                }}
+                value={renaming.draft}
+              />
+            ) : (
+              <button
+                aria-keyshortcuts={
+                  index < 9
+                    ? `${platform === "darwin" ? "Meta" : "Control"}+${index + 1}`
+                    : undefined
+                }
+                aria-label={
+                  tab.awaitingInput
+                    ? `${tab.title} · ${t("threadTabs.awaitingInput")}`
+                    : `${tab.title} · ${
+                        tab.status === "running"
+                          ? t("threadTabs.running")
+                          : tab.status === "failed"
+                            ? t("threadTabs.failed")
+                            : tab.status === "unseen"
+                              ? t("threadTabs.unseen")
+                              : t("threadTabs.idle")
+                      }`
+                }
+                aria-selected={active}
+                className="thread-tabs__select"
+                onClick={() => onSelect(tab.target)}
+                onKeyDown={(event) => onTabKeyDown(event, index)}
+                ref={(button) => {
+                  if (button) tabRefs.current.set(tab.key, button);
+                  else tabRefs.current.delete(tab.key);
+                }}
+                role="tab"
+                tabIndex={active ? 0 : -1}
+                title={`${tab.projectName} · ${tab.title}`}
+                type="button"
+              >
+                {tab.awaitingInput ? (
+                  <span className="thread-tabs__badge thread-tabs__badge--input">
+                    {t("threadTabs.awaitingInputBadge")}
+                  </span>
+                ) : tab.status === "idle" ? null : (
+                  <span
+                    aria-label={
                       tab.status === "running"
                         ? t("threadTabs.running")
                         : tab.status === "failed"
                           ? t("threadTabs.failed")
-                          : tab.status === "unseen"
-                            ? t("threadTabs.unseen")
-                            : t("threadTabs.idle")
-                    }`
-              }
-              aria-selected={active}
-              className="thread-tabs__select"
-              onClick={() => onSelect(tab.target)}
-              onKeyDown={(event) => onTabKeyDown(event, index)}
-              ref={(button) => {
-                if (button) tabRefs.current.set(tab.key, button);
-                else tabRefs.current.delete(tab.key);
-              }}
-              role="tab"
-              tabIndex={active ? 0 : -1}
-              title={`${tab.projectName} · ${tab.title}`}
-              type="button"
-            >
-              {tab.awaitingInput ? (
-                <span className="thread-tabs__badge thread-tabs__badge--input">
-                  {t("threadTabs.awaitingInputBadge")}
-                </span>
-              ) : tab.status === "idle" ? null : (
-                <span
-                  aria-label={
-                    tab.status === "running"
-                      ? t("threadTabs.running")
-                      : tab.status === "failed"
-                        ? t("threadTabs.failed")
-                        : t("threadTabs.unseen")
-                  }
-                  className={`thread-tabs__dot thread-tabs__dot--${tab.status}`}
-                />
-              )}
-              <span className="thread-tabs__title">{tab.title}</span>
-            </button>
+                          : t("threadTabs.unseen")
+                    }
+                    className={`thread-tabs__dot thread-tabs__dot--${tab.status}`}
+                  />
+                )}
+                <span className="thread-tabs__title">{tab.title}</span>
+              </button>
+            )}
             <button
               aria-label={t("threadTabs.close", { title: tab.title })}
               className="thread-tabs__close icon-button"
@@ -213,9 +294,53 @@ export function ThreadTabs({ tabs, activeKey, platform, onSelect, onClose }: Thr
             >
               <CloseIcon />
             </button>
+            {openTabMenu?.key === tab.key ? (
+              <div
+                className="thread-tabs__context-menu"
+                ref={threadMenu.menuWrapRef}
+                style={{ left: openTabMenu.position.x, top: openTabMenu.position.y }}
+              >
+                <ThreadActionsMenu
+                  actions={actionsForTab(tab)}
+                  className="thread-tabs__context-menu-list"
+                />
+              </div>
+            ) : null}
           </div>
         );
       })}
     </div>
+  );
+}
+
+interface ThreadTabsSurfaceProps {
+  readonly activeKey: string | undefined;
+  readonly platform: NodeJS.Platform;
+  readonly tabs: {
+    readonly tabs: readonly ThreadTabEntry[];
+    readonly openTab: (target: WorkspaceSessionTarget) => void;
+    readonly closeTab: (target: WorkspaceSessionTarget) => void;
+  };
+  readonly menu: ThreadMenuState & {
+    readonly actionsForTarget: (
+      target: WorkspaceSessionTarget,
+    ) => readonly ThreadAction[] | undefined;
+    readonly renameTab: (target: WorkspaceSessionTarget, title: string) => void;
+  };
+}
+
+/** The strip plus the right-click menu it owns, so the app shell only mounts it. */
+export function ThreadTabsSurface({ activeKey, platform, tabs, menu }: ThreadTabsSurfaceProps) {
+  return (
+    <ThreadTabs
+      activeKey={activeKey}
+      actionsForTarget={menu.actionsForTarget}
+      onClose={tabs.closeTab}
+      onRename={menu.renameTab}
+      onSelect={tabs.openTab}
+      platform={platform}
+      tabs={tabs.tabs}
+      threadMenu={menu}
+    />
   );
 }

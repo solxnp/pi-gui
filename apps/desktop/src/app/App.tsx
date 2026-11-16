@@ -62,7 +62,7 @@ import {
 } from "../features/threads/thread-switcher-order";
 import { useThreadSwitcher } from "../features/threads/hooks/use-thread-switcher";
 import { ThreadListPanel } from "../features/threads/thread-list-panel";
-import { ThreadTabs } from "../features/threads/thread-tabs";
+import { ThreadTabsSurface } from "../features/threads/thread-tabs";
 import { useThreadTabs } from "../features/threads/use-open-thread-tabs";
 import { OpenInEditorButton } from "../features/threads/open-in-editor-button";
 import { useOpenInEditor } from "../features/threads/hooks/use-open-in-editor";
@@ -85,6 +85,7 @@ import { useMentionMenu } from "../features/conversation/hooks/use-mention-menu"
 import { useThreadSearch } from "../features/conversation/hooks/use-thread-search";
 import { useWorkspaceMenu } from "../features/threads/hooks/use-workspace-menu";
 import { useThreadActions } from "../features/threads/hooks/use-thread-actions";
+import { useThreadTabActions } from "../features/threads/hooks/use-thread-tab-actions";
 import { ChatHeaderActions } from "../features/threads/chat-header-actions";
 import { useNewThreadController } from "../features/threads/hooks/use-new-thread-controller";
 import {
@@ -591,6 +592,9 @@ export default function App() {
     openScheduledEditor: setScheduledEditor,
     flushComposerDraft,
   });
+  const threadTabActions = useThreadTabActions({ api, snapshot, setSnapshot, threadMenu });
+  const tabStripActiveKey =
+    snapshot?.activeView === "threads" && selectedSessionKey ? selectedSessionKey : undefined;
 
   const newThread = useNewThreadController({
     api,
@@ -1047,16 +1051,11 @@ export default function App() {
         </Topbar>
 
         {snapshot.activeView === "threads" || snapshot.activeView === "new-thread" ? (
-          <ThreadTabs
-            activeKey={
-              snapshot.activeView === "threads" && selectedSessionKey
-                ? selectedSessionKey
-                : undefined
-            }
-            onClose={threadTabs.closeTab}
-            onSelect={threadTabs.openTab}
+          <ThreadTabsSurface
+            activeKey={tabStripActiveKey}
+            menu={{ ...threadMenu, ...threadTabActions }}
             platform={api.platform}
-            tabs={threadTabs.tabs}
+            tabs={threadTabs}
           />
         ) : null}
 

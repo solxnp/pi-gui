@@ -27,6 +27,7 @@ import { ExtensionCardItem, type RunExtensionAction } from "./extension-card";
 import { ImageAttachmentThumb } from "./image-attachment-thumb";
 import { MessageMarkdown } from "./message-markdown";
 import { stringifyToolValue, toolOutputImages } from "./tool-output-images";
+import { clockTime, clockTimeTitle } from "./clock-time";
 import {
   TurnChangesCard,
   type OpenTurnChange,
@@ -228,6 +229,7 @@ function TimelineMessage({
             {annotated ? <SentAnnotations annotations={annotated.annotations} /> : null}
             {annotated && !body.trim() ? null : <MessageMarkdown annotationRoot text={body} />}
           </div>
+          <MessageClock align="end" createdAt={item.createdAt} />
         </div>
         {markers}
       </article>
@@ -250,6 +252,7 @@ function TimelineMessage({
   const forkable = sourceMessageIndex !== undefined;
   return (
     <article className="timeline-item timeline-item--assistant" ref={articleRef}>
+      <MessageClock align="start" createdAt={item.createdAt} />
       <MessageMarkdown
         annotationRoot
         onOpenWorkspaceFileLine={onOpenWorkspaceFileLine}
@@ -278,6 +281,33 @@ function TimelineMessage({
       ) : null}
       {markers}
     </article>
+  );
+}
+
+/**
+ * The receive time beside a transcript row. Model-side rows take it on the left, prompts on the
+ * right, so the gutter always belongs to whoever spoke.
+ */
+function MessageClock({
+  createdAt,
+  align,
+}: {
+  readonly createdAt: string;
+  readonly align: "start" | "end";
+}) {
+  const time = clockTime(createdAt);
+  if (!time) {
+    return null;
+  }
+  return (
+    <time
+      className={`timeline-item__clock timeline-item__clock--${align}`}
+      data-testid="timeline-item-clock"
+      dateTime={createdAt}
+      title={clockTimeTitle(createdAt)}
+    >
+      {time}
+    </time>
   );
 }
 
@@ -316,6 +346,7 @@ function TimelineToolCallItem({
   const diffLanguage = diffText && filePath ? extensionToLanguage(filePath) : undefined;
   const inlineDetail = item.status === "error" ? item.detail : undefined;
   const images = toolOutputImages(item.output);
+  const receivedTime = clockTime(item.createdAt);
 
   const handleCopy = () => {
     const text = diffText ?? formatToolContent(item.input, item.output);
@@ -327,6 +358,16 @@ function TimelineToolCallItem({
   return (
     <article className={`timeline-tool timeline-tool--${item.status}`}>
       <div className="timeline-tool__header-row">
+        {receivedTime ? (
+          <time
+            className="timeline-tool__time"
+            data-testid="timeline-tool-time"
+            dateTime={item.createdAt}
+            title={clockTimeTitle(item.createdAt)}
+          >
+            {receivedTime}
+          </time>
+        ) : null}
         <span className="timeline-tool__glyph" aria-hidden="true">
           {extensionLabel === undefined || diffText ? toolGlyph(item.toolName) : <SparkIcon />}
         </span>

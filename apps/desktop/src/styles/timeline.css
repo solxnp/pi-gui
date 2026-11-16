@@ -333,6 +333,24 @@
   color: var(--ink);
 }
 
+/* When a row arrived, in the gutter of whoever spoke: model output on the left, prompts on the right. */
+.timeline-item__clock {
+  display: block;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-soft);
+  user-select: none;
+}
+
+.timeline-item__clock--start {
+  margin-bottom: 4px;
+}
+
+.timeline-item__clock--end {
+  margin-top: 4px;
+  text-align: right;
+}
+
 .timeline-item__bubble {
   width: min(620px, 100%);
   min-width: 0;
@@ -448,6 +466,17 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* When each call arrived, in the row's leading gutter: a long silent run still reads as a timeline. */
+.timeline-tool__time {
+  flex-shrink: 0;
+  min-width: 34px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-soft);
+  text-align: right;
+  user-select: none;
 }
 
 .timeline-tool__glyph {

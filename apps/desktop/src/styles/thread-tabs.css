@@ -239,3 +239,31 @@
   min-height: 0;
   overflow-y: auto;
 }
+
+/*
+ * A tab's right-click menu: fixed at the pointer, because the strip scrolls sideways once it
+ * fills three rows and would otherwise clip the menu to the tab's own box.
+ */
+.thread-tabs__context-menu {
+  position: fixed;
+  z-index: 80;
+}
+
+.thread-tabs__context-menu-list {
+  position: static;
+  min-width: 176px;
+}
+
+/* Renaming in place keeps a tab's menu from sending the user to the sidebar to find the thread. */
+.thread-tabs__rename {
+  min-width: 0;
+  width: 100%;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
