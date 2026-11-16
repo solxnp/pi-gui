@@ -322,6 +322,9 @@ export class DesktopAppStore {
       catalogStorage: this.catalogStore,
       ...(options.driverOptions ?? {}),
       isBuiltinExtensionEnabled: (name) => this.builtinExtensionEnabled(name),
+      // 扩展侧靠这个判断「这轮回复用户有没有真的看到」，决定要不要推到手机
+      readSessionViewedAt: (sessionRef) =>
+        this.sessionState.lastViewedAtBySession.get(sessionKey(sessionRef)),
       extensionFlagValuesForSession: (sessionRef) =>
         this.sessionState.extensionFlagsBySession.get(sessionKey(sessionRef)),
       ...(options.generateThreadTitleOverride

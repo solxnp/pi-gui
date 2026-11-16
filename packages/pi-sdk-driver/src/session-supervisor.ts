@@ -191,6 +191,12 @@ export interface PiSdkDriverOptions {
   readonly extensionFlagValuesForSession?: (
     sessionRef: SessionRef,
   ) => ExtensionFlagValues | undefined;
+  /**
+   * 该会话最后一次被用户真正看到的时间（ISO 字符串）。窗口聚焦 + 选中该会话才算「看到」，
+   * 由宿主从自己的已读状态里读。扩展通过 `ctx.ui.sessionViewedAt()` 拿它，
+   * 用来判断「一轮跑完了但人没看见」——比如决定要不要把回复推到手机。
+   */
+  readonly readSessionViewedAt?: (sessionRef: SessionRef) => string | undefined;
   readonly desktopExtensions?: PiDesktopExtensionObserver;
   readonly onTurnCaptureBoundary?: import("@pi-gui/session-driver").TurnCaptureObserver;
   readonly turnCaptureTimeoutMs?: number;
@@ -309,6 +315,11 @@ interface PiGuiExtensionUiContext extends ExtensionUIContext {
     prompt: HostUiFormPrompt,
     opts?: ExtensionUIDialogOptions,
   ) => Promise<Readonly<Record<string, string | readonly string[]>> | undefined>;
+  /**
+   * 当前会话最后一次被用户看到的时间（ISO 字符串），没有记录时是 undefined。
+   * 宿主没注入 `readSessionViewedAt`（旧宿主）时整个方法不存在，扩展必须判空。
+   */
+  readonly sessionViewedAt?: () => string | undefined;
 }
 
 interface RegisteredCommandAdapter {
@@ -353,6 +364,7 @@ export class SessionSupervisor {
   private readonly piAddons: readonly InlineExtension[];
   private readonly desktopExtensions: PiDesktopExtensionObserver | undefined;
   private readonly extensionFlagValuesForSession: PiSdkDriverOptions["extensionFlagValuesForSession"];
+  private readonly readSessionViewedAt: PiSdkDriverOptions["readSessionViewedAt"];
   private readonly onTurnCaptureBoundary: PiSdkDriverOptions["onTurnCaptureBoundary"];
   private readonly turnCaptureTimeoutMs: number | undefined;
   private readonly records = new Map<string, ManagedSessionRecord>();
@@ -381,6 +393,7 @@ export class SessionSupervisor {
     this.piAddons = piAddonExtensions(options.openUrl ? { openUrl: options.openUrl } : {});
     this.desktopExtensions = options.desktopExtensions;
     this.extensionFlagValuesForSession = options.extensionFlagValuesForSession;
+    this.readSessionViewedAt = options.readSessionViewedAt;
     this.onTurnCaptureBoundary = options.onTurnCaptureBoundary;
     this.turnCaptureTimeoutMs = options.turnCaptureTimeoutMs;
     this.agentDir = options.agentDir;
@@ -2269,6 +2282,9 @@ export class SessionSupervisor {
     };
 
     const uiContext: PiGuiExtensionUiContext = {
+      ...(this.readSessionViewedAt
+        ? { sessionViewedAt: () => this.readSessionViewedAt?.(record.ref) }
+        : {}),
       // `form` is pi-gui's own addition: pi spreads the host context it is given onto `ctx.ui`
       // (`pi-coding-agent/dist/core/extensions/runner.js`), so extensions can ask several
       // questions in one blocking call without a change to pi.
