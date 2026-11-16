@@ -63,11 +63,8 @@ export async function generateThreadTitle(
     sessionManager: SessionManager.inMemory(),
     tools: [],
   };
-  if (options.model) {
-    const selectedModel = modelRuntime.getModel(options.model.provider, options.model.modelId);
-    if (!selectedModel) {
-      return null;
-    }
+  const selectedModel = pickThreadTitleModel(modelRuntime, options.model);
+  if (selectedModel) {
     createOptions.model = selectedModel;
   }
   if (options.thinkingLevel) {
@@ -99,6 +96,30 @@ export async function generateThreadTitle(
     options.signal?.removeEventListener("abort", handleAbort);
     session.dispose();
   }
+}
+
+type ThreadTitleModel = NonNullable<ReturnType<ModelRuntime["getModel"]>>;
+
+/**
+ * The caller's model when this bare runtime can resolve it, otherwise undefined so the runtime
+ * default is used. Extensions register virtual providers (e.g. a router), and this generator
+ * deliberately loads no extensions; a model it cannot see must not cost the thread its title.
+ */
+export function pickThreadTitleModel(
+  modelRuntime: Pick<ModelRuntime, "getModel">,
+  selection: SessionModelSelection | undefined,
+): ThreadTitleModel | undefined {
+  if (!selection) {
+    return undefined;
+  }
+  const model = modelRuntime.getModel(selection.provider, selection.modelId);
+  if (model) {
+    return model;
+  }
+  console.warn(
+    `[thread-title] ${selection.provider}/${selection.modelId} is not resolvable without the workspace's extensions; falling back to the runtime default model`,
+  );
+  return undefined;
 }
 
 function createThreadTitleResourceLoader(): ResourceLoader {

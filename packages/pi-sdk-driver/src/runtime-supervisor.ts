@@ -429,6 +429,11 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
 
   async getGlobalModelSettings(workspace: WorkspaceRef): Promise<ModelSettingsSnapshot> {
     const context = await this.ensureContext(workspace);
+    // Every workspace keeps its own SettingsManager, each holding the global settings it read
+    // when its context was created. Settings → Models writes through whichever workspace was
+    // current there, so reading another one's cached copy reports the previous default and the
+    // settings page (and New thread) snap back to the old model. Re-read before reporting.
+    await context.settingsManager.reload();
     return toModelSettingsSnapshot(
       context.settingsManager.getGlobalSettings() as Record<string, unknown>,
     );
