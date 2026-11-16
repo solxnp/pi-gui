@@ -259,6 +259,20 @@
 
 ## 二、已完成
 
+### P0-21 输入框与空对话状态的文案中文化
+
+| 项   | 内容                                                                                                 |
+| ---- | ---------------------------------------------------------------------------------------------------- |
+| 状态 | 待验证                                                                                               |
+| 提交 | 本地提交（未推送：origin 是上游仓库）                                                                |
+| 验收 | 中文界面下输入框占位、空对话提示、对话加载失败提示、加载中提示都是中文；英文包文案不变，用例不受影响 |
+
+- [x] 抽 key：`composer.label` / `composer.placeholder`、`transcript.loading` / `hydrateTitle` / `hydrateBody` / `retry` / `retrying` / `emptyTitle` / `emptyHint`，en 与 zh-CN 同时补
+- [x] `composer-panel.tsx`、`conversation-timeline.tsx` 改用 `t()`（原来这 7 处是硬编码英文）
+- [x] 验证：`pnpm check` 全绿；`navigation` + `hydrate-recovery` 6 条全绿（英文文案未变，旧断言不受影响）
+- [x] 真机截图确认（中文：让 pi 检查仓库、跑个修复，或接着说这个对话…… / 开始对话吧 / 在下方输入一句话，这个会话就开始了。）
+- [ ] 已知未改：顶栏相对时间 `now` / `5m` 与思考档位 `medium` 仍是英文，属 `formatRelativeTime` + `labelForThinking` 的通用文案，需要单独一轮全站拷贝
+
 ### P0-19 时间线每行显示收到时间（模型左侧、我的右侧、工具行前置）
 
 | 项   | 内容                                                                                                                                 |

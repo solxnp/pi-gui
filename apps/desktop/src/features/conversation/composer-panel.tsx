@@ -34,6 +34,7 @@ import type {
 import { ContextMeter } from "./context-meter";
 import { ModelSelector } from "./model-selector";
 import { ExtensionNotices } from "../extensions/extension-notices";
+import { useTranslation } from "../../i18n";
 import { ExtensionFlagsBadge } from "../threads/extension-flags-selector";
 import type { ExtensionDockModel } from "../extensions/extension-session-ui";
 
@@ -153,6 +154,7 @@ export function ComposerPanel({
   extensionNotices,
   annotations,
 }: ComposerPanelProps) {
+  const { t } = useTranslation();
   const hasComposerInput =
     composerDraft.trim().length > 0 || attachments.length > 0 || annotations.list.length > 0;
   const primaryActionIsStop = selectedSession.status === "running" && !hasComposerInput;
@@ -200,9 +202,9 @@ export function ComposerPanel({
           selectedMentionIndex={selectedMentionIndex}
           onSelectMention={onSelectMention}
           onEnableMentionExtension={onEnableMentionExtension}
-          textareaLabel="Composer"
+          textareaLabel={t("composer.label")}
           textareaTestId="composer"
-          textareaPlaceholder="Ask pi to inspect the repo, run a fix, or continue the current thread..."
+          textareaPlaceholder={t("composer.placeholder")}
           pinnedCards={pinnedCards}
           extensionDock={extensionDock}
           extensionDockExpanded={extensionDockExpanded}
