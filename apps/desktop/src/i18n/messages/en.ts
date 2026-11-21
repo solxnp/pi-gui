@@ -617,6 +617,11 @@ export const en = {
     "Lets pi start child threads, read their progress and message them",
   "extensions.builtin.threadOrchestration.detail":
     "The model can split work across child threads, read their progress and conclusions, and send follow-ups to an existing thread. Turned off, the model can only work inside the current thread and those tools disappear.",
+  "extensions.builtin.plan.title": "Plan card",
+  "extensions.builtin.plan.description":
+    "Lets pi publish and update the live plan above the composer",
+  "extensions.builtin.plan.detail":
+    "Adds the update_plan tool: the model publishes the numbered steps it is about to take and rewrites the same pinned card above the composer after each step, so you can watch the progress instead of scrolling the transcript. Turned off, the tool disappears and the model only describes plans in chat.",
   "extensions.builtin.customInstructions.title": "Custom instructions",
   "extensions.builtin.customInstructions.description":
     "Appends custom-instructions.md to every run's system prompt",

@@ -585,6 +585,10 @@ export const zhCN: Partial<Messages> = {
   "extensions.builtin.threadOrchestration.description": "让 pi 起子会话、读它们的进展、互相传话",
   "extensions.builtin.threadOrchestration.detail":
     "模型可以把活拆给多个子会话并行做，读子会话的进展和结论，也能给已经存在的会话追加消息。关掉后模型只能在本会话里干活，多线程协作的那批工具会一起消失。",
+  "extensions.builtin.plan.title": "计划卡",
+  "extensions.builtin.plan.description": "让 pi 把执行计划挂在输入框上方，并随进度实时更新",
+  "extensions.builtin.plan.detail":
+    "多出 update_plan 工具：模型开工前把要做的步骤发布成一张卡片，挂在输入框上方，每走完一步就重写同一张卡。你不用翻会话找进度，展开就能看每一步的状态。关掉后工具消失，模型只能在正文里描述计划。",
   "extensions.builtin.customInstructions.title": "自定义指令",
   "extensions.builtin.customInstructions.description":
     "每轮运行前把 custom-instructions.md 拼进系统提示",

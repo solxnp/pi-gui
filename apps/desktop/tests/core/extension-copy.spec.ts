@@ -33,6 +33,11 @@ test("built-in extensions explain themselves in the app's language", async () =>
     ).toHaveCount(1);
     await expect(list.getByRole("heading", { name: PI_GUI_TOOLS })).toBeVisible();
 
+    // The plan card ships as a built-in extension in both locales, so its row is always there.
+    const planRow = list.locator('[data-resource-id="<inline:pi-gui-plan>"]');
+    await expect(planRow).toBeVisible();
+    await expect(planRow).toContainText(/(live plan above the composer|输入框上方)/);
+
     await gateRow.click();
     const detail = window.locator(".resource-detail");
     await expect(detail).toContainText(GATE_DETAIL);

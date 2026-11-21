@@ -63,6 +63,7 @@ import {
   createCustomInstructionsService,
   customInstructionsFileName,
 } from "./instructions/custom-instructions";
+import { createPlanRuntimeExtension } from "./plan/plan-runtime";
 import { createRecallProjectsService } from "./settings/recall-projects";
 import { getChangedFiles, getFileDiff, stageFile } from "./platform/files/app-store-diff";
 import { listWorkspaceFiles, readWorkspaceFile } from "./platform/files/app-store-files";
@@ -1076,6 +1077,12 @@ app
             getPreferences: () =>
               store?.permissionPreferencesSnapshot() ?? createDefaultPermissionPreferences(),
           }),
+        },
+        {
+          name: "pi-gui-plan",
+          displayName: "Plan card",
+          description: "Lets pi publish and update the live plan above the composer",
+          factory: createPlanRuntimeExtension(),
         },
         {
           name: "pi-gui-custom-instructions",

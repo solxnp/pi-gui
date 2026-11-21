@@ -33,6 +33,11 @@ const BUILTIN_COPY: Readonly<Record<string, BuiltinCopyKeys>> = {
     description: "extensions.builtin.threadOrchestration.description",
     detail: "extensions.builtin.threadOrchestration.detail",
   },
+  "<inline:pi-gui-plan>": {
+    title: "extensions.builtin.plan.title",
+    description: "extensions.builtin.plan.description",
+    detail: "extensions.builtin.plan.detail",
+  },
   "<inline:pi-gui-custom-instructions>": {
     title: "extensions.builtin.customInstructions.title",
     description: "extensions.builtin.customInstructions.description",
