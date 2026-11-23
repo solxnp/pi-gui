@@ -1429,6 +1429,40 @@
   color: var(--muted-soft);
 }
 
+/* A step's own progress sits under its text, so a long step shows movement before it finishes. */
+.extension-card__row-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.extension-card__row-progress-track {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--surface-muted);
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.extension-card__row-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent-strong, var(--accent));
+  transition: width 220ms ease;
+}
+
+.extension-card__row-progress-value {
+  flex-shrink: 0;
+  min-width: 30px;
+  text-align: right;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-soft);
+}
+
 .extension-card__label {
   flex-shrink: 0;
   min-width: 72px;
@@ -1438,6 +1472,7 @@
 .extension-card__value {
   min-width: 0;
   overflow-wrap: anywhere;
+  flex: 1;
 }
 
 .extension-card__action .extension-card__label {

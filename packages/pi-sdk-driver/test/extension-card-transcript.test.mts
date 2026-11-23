@@ -421,9 +421,9 @@ await test("a row's status and a card's progress survive parsing; junk is droppe
       progress: 0.4,
       rows: [
         { label: "●", value: "读台账", status: "done" },
-        { label: "◐", value: "拆模块", status: "in_progress" },
-        { label: "✕", value: "验证", status: "blocked" },
-        { label: "○", value: "收尾", status: "pending" },
+        { label: "◐", value: "拆模块", status: "in_progress", progress: 0.4 },
+        { label: "✕", value: "验证", status: "blocked", progress: 2 },
+        { label: "○", value: "收尾", status: "pending", progress: "half" },
         { label: "?", value: "乱写", status: "whatever" },
         { label: "?", value: "不是字符串", status: 7 },
       ],
@@ -433,8 +433,9 @@ await test("a row's status and a card's progress survive parsing; junk is droppe
   assert.equal(item.card.progress, 0.4);
   assert.deepEqual(item.card.rows, [
     { label: "●", value: "读台账", status: "done" },
-    { label: "◐", value: "拆模块", status: "in_progress" },
-    { label: "✕", value: "验证", status: "blocked" },
+    { label: "◐", value: "拆模块", status: "in_progress", progress: 0.4 },
+    // Out of range is clamped, not trusted; a non-number is no progress at all.
+    { label: "✕", value: "验证", status: "blocked", progress: 1 },
     { label: "○", value: "收尾", status: "pending" },
     { label: "?", value: "乱写" },
     { label: "?", value: "不是字符串" },

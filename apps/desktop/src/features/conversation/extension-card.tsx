@@ -52,6 +52,34 @@ function RowStatusDot({ status }: { readonly status: ExtensionCardRowStatus }) {
   return <span className="extension-card__status-dot" data-dot={status} aria-hidden="true" />;
 }
 
+/**
+ * One step's own progress, under its text. A step can take many tool calls, so the writer reports
+ * a fraction as it goes instead of only flipping the row when it finishes.
+ */
+function RowProgress({ value }: { readonly value: number }) {
+  const { t } = useTranslation();
+  const percent = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  return (
+    <span
+      className="extension-card__row-progress"
+      data-testid="extension-card-row-progress"
+      data-percent={percent}
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      aria-label={t("extensionCard.progress", { percent })}
+    >
+      <span className="extension-card__row-progress-track" aria-hidden="true">
+        <span className="extension-card__row-progress-fill" style={{ width: `${percent}%` }} />
+      </span>
+      <span className="extension-card__row-progress-value" aria-hidden="true">
+        {percent}%
+      </span>
+    </span>
+  );
+}
+
 export type RunExtensionAction = (action: ExtensionAction) => void;
 
 /**
@@ -114,6 +142,7 @@ export function ExtensionCardItem({
               className="extension-card__row"
               key={`row:${index}`}
               data-row-status={row.status ?? ""}
+              data-row-progress={row.progress === undefined ? "" : Math.round(row.progress * 100)}
             >
               {row.status ? (
                 <span
@@ -127,7 +156,12 @@ export function ExtensionCardItem({
               ) : (
                 <span className="extension-card__label">{row.label}</span>
               )}
-              <span className="extension-card__value">{row.value}</span>
+              <span className="extension-card__value">
+                {row.value}
+                {row.progress !== undefined && row.status !== "done" ? (
+                  <RowProgress value={row.progress} />
+                ) : null}
+              </span>
             </li>
           ))}
           {card.actions.map((action, index) => {

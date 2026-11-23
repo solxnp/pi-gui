@@ -29,6 +29,8 @@ export type PlanStepStatus = (typeof PLAN_STEP_STATUSES)[number];
 export interface PlanStep {
   readonly step: string;
   readonly status: PlanStepStatus;
+  /** How far through this step's own work, 0..1, when the writer can judge it. */
+  readonly progress?: number;
 }
 
 export interface UpdatePlanToolDetails {
@@ -77,7 +79,11 @@ export function planStepsFromParams(params: unknown): readonly PlanStep[] | unde
         : index === 0
           ? "in_progress"
           : "pending";
-    steps.push({ step, status: resolved });
+    const progress =
+      typeof raw.progress === "number" && Number.isFinite(raw.progress)
+        ? Math.min(1, Math.max(0, raw.progress))
+        : undefined;
+    steps.push({ step, status: resolved, ...(progress !== undefined ? { progress } : {}) });
   }
   return steps.length > 0 ? steps : undefined;
 }
@@ -102,6 +108,12 @@ export function planPinPayload(title: string, steps: readonly PlanStep[]): Recor
       label: STATUS_MARKS[step.status],
       value: step.step,
       status: step.status,
+      // A finished step reads as complete; otherwise the writer's own fraction wins.
+      ...(step.status === "done"
+        ? { progress: 1 }
+        : step.progress !== undefined
+          ? { progress: step.progress }
+          : {}),
     })),
     actions: [],
   };
@@ -122,6 +134,7 @@ export function createUpdatePlanTool(pi: ExtensionAPI): ToolDefinition<any, Upda
     promptGuidelines: [
       "Call update_plan as the first tool of any multi-step task: the steps you are about to take, with the current one in_progress.",
       "Call it again after each step finishes, flipping that step to done and the next to in_progress. Do not restate the whole plan in chat.",
+      "While a long step is still running, call update_plan with that step's progress (0 to 1) each time you finish a part of it, so its own bar moves before the step ends.",
       "Keep step text short and concrete; the card shows it verbatim.",
       "Call update_plan with remove: true once every step is done, so a finished plan stops sitting above the composer.",
     ],
@@ -140,6 +153,11 @@ export function createUpdatePlanTool(pi: ExtensionAPI): ToolDefinition<any, Upda
                 type: "string",
                 enum: [...PLAN_STEP_STATUSES],
                 description: "pending, in_progress, done or blocked.",
+              },
+              progress: {
+                type: "number",
+                description:
+                  "0 to 1: how far through this step you are. Update it as you finish parts of a long step, so its own bar moves before the step is done.",
               },
             },
             required: ["step"],

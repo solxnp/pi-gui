@@ -71,6 +71,12 @@ export interface ExtensionCardRow {
    * label; one that does not still has `label` and `value` to fall back on.
    */
   readonly status?: ExtensionCardRowStatus;
+  /**
+   * How far through this row's own work it is, 0 to 1, as the writer judged it. A renderer that
+   * knows it draws a thin bar under the row, so one long step's partial progress is visible
+   * without a second tool call.
+   */
+  readonly progress?: number;
 }
 
 /** The four states a step can be in. Anything else is drawn as unmarked. */

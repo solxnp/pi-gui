@@ -62,8 +62,22 @@ export default function plans(pi) {
             title: "计划",
             steps: [
               { step: "读台账", status: "done" },
+              { step: "拆模块", status: "in_progress", progress: 0.4 },
+              { step: "真机验证", status: "pending" },
+            ],
+          },
+        }];
+      } else if (results.length === 2) {
+        content = [{
+          type: "toolCall",
+          id: "plan-3",
+          name: "update_plan",
+          arguments: {
+            title: "计划",
+            steps: [
+              { step: "读台账", status: "done" },
               { step: "拆模块", status: "done" },
-              { step: "真机验证", status: "in_progress" },
+              { step: "真机验证", status: "in_progress", progress: 0.5 },
             ],
           },
         }];
@@ -80,7 +94,7 @@ export default function plans(pi) {
           input: 1, output: 1, cacheRead: 0, cacheWrite: 0, totalTokens: 2,
           cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
         },
-        stopReason: results.length >= 2 ? "stop" : "toolUse",
+        stopReason: results.length >= 3 ? "stop" : "toolUse",
         timestamp: Date.now(),
       };
       const stream = createAssistantMessageEventStream();
@@ -166,6 +180,16 @@ test("update_plan pins the plan above the composer and rewrites it in place", as
     const progress = pinned.getByTestId("extension-card-progress");
     await expect(progress).toHaveAttribute("data-percent", "67");
     await expect(progress).toContainText("67%");
+
+    // The running step keeps its own bar: a long step shows partial progress without finishing.
+    const rowProgress = pinned.getByTestId("extension-card-row-progress");
+    await expect(rowProgress).toHaveCount(1);
+    await expect(rowProgress).toHaveAttribute("data-percent", "50");
+    await expect(pinned.locator('[data-row-progress="50"]')).toHaveCount(1);
+    // A done step's own bar is gone; the tick alone says it finished.
+    await expect(
+      pinned.locator('[data-row-status="done"] [data-testid="extension-card-row-progress"]'),
+    ).toHaveCount(0);
     const pinBox = await pinned.boundingBox();
     const composerBox = await window.getByTestId("composer").boundingBox();
     assertExists(pinBox, "Expected the plan card box");

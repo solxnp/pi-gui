@@ -62,7 +62,7 @@ test("registers update_plan and writes a keyed pin the app reduces by key", asyn
   expect(payload.title).toBe("计划");
   expect(payload.subtitle).toBe("1/3 步完成");
   expect(payload.rows).toEqual([
-    { label: "●", value: "Read the ledger", status: "done" },
+    { label: "●", value: "Read the ledger", status: "done", progress: 1 },
     { label: "◐", value: "Split the modules", status: "in_progress" },
     { label: "○", value: "Verify on desktop", status: "pending" },
   ]);
@@ -92,7 +92,7 @@ test("rewriting the same key replaces the earlier card instead of stacking", asy
     expect((entry.data as Record<string, unknown>).key).toBe(PLAN_PIN_KEY);
   }
   expect((entries[1]?.data as Record<string, unknown>).rows).toEqual([
-    { label: "●", value: "One", status: "done" },
+    { label: "●", value: "One", status: "done", progress: 1 },
   ]);
 });
 
@@ -126,10 +126,42 @@ test("builds one row per step with a status mark and a done counter", () => {
     { step: "B", status: "blocked" },
   ]);
   expect(payload.rows).toEqual([
-    { label: "●", value: "A", status: "done" },
+    { label: "●", value: "A", status: "done", progress: 1 },
     { label: "✕", value: "B", status: "blocked" },
   ]);
   expect(payload.subtitle).toBe("1/2 步完成");
   // A blocked step is stopped, not advanced: only the done one counts.
   expect(payload.progress).toBe(0.5);
+});
+
+test("a step carries its own fraction, and a done step always reads complete", () => {
+  const steps = planStepsFromParams({
+    steps: [
+      { step: "A", status: "in_progress", progress: 0.4 },
+      { step: "B", status: "in_progress", progress: 1.4 },
+      { step: "C", status: "in_progress", progress: -2 },
+      { step: "D", status: "in_progress", progress: "half" },
+      { step: "E", status: "done", progress: 0.2 },
+    ],
+  });
+  expect(steps).toEqual([
+    { step: "A", status: "in_progress", progress: 0.4 },
+    { step: "B", status: "in_progress", progress: 1 },
+    { step: "C", status: "in_progress", progress: 0 },
+    { step: "D", status: "in_progress" },
+    { step: "E", status: "done", progress: 0.2 },
+  ]);
+
+  const payload = planPinPayload("计划", steps ?? []);
+  // Clamped fractions are passed through; a done step is written as 1 rather than its stale 0.2.
+  expect(payload.rows as readonly { readonly value: string; readonly progress?: number }[]).toEqual(
+    [
+      { label: "◐", value: "A", status: "in_progress", progress: 0.4 },
+      { label: "◐", value: "B", status: "in_progress", progress: 1 },
+      { label: "◐", value: "C", status: "in_progress", progress: 0 },
+      { label: "◐", value: "D", status: "in_progress" },
+      { label: "●", value: "E", status: "done", progress: 1 },
+    ],
+  );
+  expect(payload.progress).toBe(0.2);
 });

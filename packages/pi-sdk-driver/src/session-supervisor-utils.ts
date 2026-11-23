@@ -614,7 +614,15 @@ function parseExtensionCard(data: unknown): ExtensionCard | string {
           return [];
         }
         const status = isCardRowStatus(row.status) ? row.status : undefined;
-        return [{ label: row.label, value: String(row.value), ...(status ? { status } : {}) }];
+        const progress = clampUnitInterval(row.progress);
+        return [
+          {
+            label: row.label,
+            value: String(row.value),
+            ...(status ? { status } : {}),
+            ...(progress !== undefined ? { progress } : {}),
+          },
+        ];
       })
     : [];
   const actions = Array.isArray(data.actions)
@@ -627,10 +635,7 @@ function parseExtensionCard(data: unknown): ExtensionCard | string {
     : [];
   const answeredForm =
     data.answeredForm === undefined ? undefined : parseExtensionCardAnsweredForm(data.answeredForm);
-  const progress =
-    typeof data.progress === "number" && Number.isFinite(data.progress)
-      ? Math.min(1, Math.max(0, data.progress))
-      : undefined;
+  const progress = clampUnitInterval(data.progress);
   return {
     ...(key ? { key } : {}),
     title,
@@ -645,6 +650,12 @@ function parseExtensionCard(data: unknown): ExtensionCard | string {
 
 function isCardRowStatus(value: unknown): value is ExtensionCardRowStatus {
   return value === "pending" || value === "in_progress" || value === "done" || value === "blocked";
+}
+
+/** A 0..1 fraction, clamped; anything that is not a finite number is no progress at all. */
+function clampUnitInterval(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return Math.min(1, Math.max(0, value));
 }
 
 /** Card rows and options per card are bounded, so one entry cannot draw thousands of lines. */
