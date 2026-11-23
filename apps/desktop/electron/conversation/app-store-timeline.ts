@@ -104,6 +104,9 @@ export function appendQueuedUserMessage(
     id: message.id,
     role: "user" as const,
     text: message.text,
+    // A steer is drawn while the run is still going, long before the driver projects the stored
+    // message, so the row says what it is from the moment it appears.
+    ...(message.mode === "steer" ? { interjection: true } : {}),
     createdAt: message.createdAt,
     ...(message.attachments?.length
       ? {

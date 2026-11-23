@@ -16,6 +16,7 @@ import { parseCrossProjectMessage } from "../../../contracts/thread-message";
 import { extensionToolRowLabel } from "../../../contracts/tool-labels";
 import { useExtensionToolLabel } from "../extensions/extension-tool-labels";
 import { useRunningLabel } from "./hooks/use-running-label";
+import { useTranslation } from "../../i18n";
 import {
   AnnotationMarkers,
   type AnnotationMarker,
@@ -167,6 +168,7 @@ function TimelineMessage({
   readonly onOpenAnnotation?: OpenAnnotation;
 }) {
   const articleRef = useRef<HTMLElement | null>(null);
+  const { t } = useTranslation();
   const crossProject = useMemo(
     () => (item.role === "user" ? parseCrossProjectMessage(item.text) : null),
     [item.role, item.text],
@@ -198,6 +200,11 @@ function TimelineMessage({
           {crossProject ? (
             <div className="timeline-item__project-origin" data-testid="message-project-origin">
               From project {crossProject.project}
+            </div>
+          ) : null}
+          {item.interjection ? (
+            <div className="timeline-item__interjection" data-testid="message-interjection">
+              {t("timeline.interjection")}
             </div>
           ) : null}
           <div className="timeline-item__bubble">

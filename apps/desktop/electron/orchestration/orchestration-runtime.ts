@@ -15,6 +15,11 @@ export const readThreadAction = "pi_gui_read_thread";
 export const sendMessageToThreadToolName = "send_message_to_thread";
 export const sendMessageToThreadAction = "pi_gui_send_message_to_thread";
 export const archiveChildThreadsToolName = "archive_child_threads";
+export const waitForChildrenToolName = "wait_for_children";
+/** A blocking wait holds the turn open, so it is bounded: ten minutes by default, thirty at most. */
+export const DEFAULT_WAIT_MINUTES = 10;
+export const MAX_WAIT_MINUTES = 30;
+export const waitForChildrenAction = "pi_gui_wait_for_children";
 export const archiveChildThreadsAction = "pi_gui_archive_child_threads";
 
 /** Every pi-gui thread tool. Their names are not file or search tools, whatever they contain. */
@@ -30,6 +35,22 @@ export interface ArchiveChildThreadsToolDetails {
   readonly action: typeof archiveChildThreadsAction;
   readonly archived: readonly string[];
   readonly skipped: readonly { readonly threadId: string; readonly reason: string }[];
+  readonly error?: string;
+}
+
+export interface WaitForChildrenToolDetails {
+  readonly action: typeof waitForChildrenAction;
+  /** One line per child the wait covered, in the order they were given. */
+  readonly children: readonly {
+    readonly threadId: string;
+    readonly title: string;
+    readonly status: string;
+    /** The child's newest line, so the parent can act without opening the thread. */
+    readonly latest: string;
+  }[];
+  /** True when the wait returned because the deadline passed, not because everyone finished. */
+  readonly timedOut: boolean;
+  readonly waitedMs: number;
   readonly error?: string;
 }
 
@@ -115,6 +136,16 @@ export interface OrchestrationRuntimeBridge {
     ctx: ExtensionContext,
     threadIds: readonly string[],
   ) => Promise<AgentToolResult<ArchiveChildThreadsToolDetails>>;
+  readonly waitForChildren: (
+    ctx: ExtensionContext,
+    input: {
+      readonly threadIds?: readonly string[];
+      readonly timeoutMs: number;
+      /** Cancels the wait when the user stops the run; a switch, not a message. */
+      readonly signal?: AbortSignal;
+      readonly onProgress?: (update: { readonly status: string }) => void;
+    },
+  ) => Promise<AgentToolResult<WaitForChildrenToolDetails>>;
   readonly createChildThread: (
     ctx: ExtensionContext,
     input: {
@@ -139,6 +170,7 @@ export interface OrchestrationRuntimeBridge {
 
 type OrchestrationToolDetails =
   | ArchiveChildThreadsToolDetails
+  | WaitForChildrenToolDetails
   | CreateChildThreadToolDetails
   | ListThreadsToolDetails
   | ReadThreadToolDetails
@@ -373,6 +405,70 @@ function createArchiveChildThreadsTool(
   };
 }
 
+function createWaitForChildrenTool(
+  bridge: OrchestrationRuntimeBridge,
+): ToolDefinition<any, OrchestrationToolDetails> {
+  return {
+    name: waitForChildrenToolName,
+    label: "Wait for child threads",
+    description:
+      "Block until the given child threads finish or the deadline passes, then report each one's status and newest line. Use it right after delegating instead of ending the turn and asking later.",
+    promptSnippet:
+      "wait_for_children: block until delegated child threads finish, then read their results.",
+    promptGuidelines: [
+      "Call wait_for_children right after you delegate work, so the turn stays open until the children report.",
+      "It returns when every listed child is complete or failed, when the timeout passes, or when the user stops the run. A timeout is not a failure, just a chance to check in.",
+      "Omit thread_ids to wait for every child of this thread; children that already finished are reported without waiting.",
+    ],
+    parameters: {
+      type: "object",
+      properties: {
+        thread_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Child thread ids to wait for. Omit to wait for every child of this thread.",
+        },
+        timeout_minutes: {
+          type: "number",
+          description: "How long to wait before returning anyway. Default 10, maximum 30.",
+        },
+      },
+    },
+    async execute(_toolCallId, params, signal, onUpdate, ctx) {
+      const requested =
+        isRecord(params) && Array.isArray(params.thread_ids)
+          ? params.thread_ids.filter(
+              (id): id is string => typeof id === "string" && id.trim() !== "",
+            )
+          : undefined;
+      const rawMinutes = isRecord(params) ? params.timeout_minutes : undefined;
+      const minutes =
+        typeof rawMinutes === "number" && Number.isFinite(rawMinutes) && rawMinutes > 0
+          ? Math.min(rawMinutes, MAX_WAIT_MINUTES)
+          : DEFAULT_WAIT_MINUTES;
+      return bridge.waitForChildren(ctx, {
+        ...(requested && requested.length > 0 ? { threadIds: requested } : {}),
+        timeoutMs: minutes * 60_000,
+        ...(signal ? { signal } : {}),
+        ...(onUpdate
+          ? {
+              onProgress: (update: { readonly status: string }) =>
+                onUpdate({
+                  content: [{ type: "text", text: update.status }],
+                  details: {
+                    action: waitForChildrenAction,
+                    children: [],
+                    timedOut: false,
+                    waitedMs: 0,
+                  },
+                }),
+            }
+          : {}),
+      });
+    },
+  };
+}
+
 export function createOrchestrationRuntimeTools(
   bridge: OrchestrationRuntimeBridge,
 ): readonly ToolDefinition<any, OrchestrationToolDetails>[] {
@@ -382,6 +478,7 @@ export function createOrchestrationRuntimeTools(
     createReadThreadTool(bridge),
     createSendMessageToThreadTool(bridge),
     createArchiveChildThreadsTool(bridge),
+    createWaitForChildrenTool(bridge),
   ];
 }
 

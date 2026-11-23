@@ -24,6 +24,22 @@ import {
 export const updatePlanToolName = "update_plan";
 export const updatePlanAction = "pi_gui_update_plan";
 
+/**
+ * How many times one user prompt may be extended without a fresh prompt from them.
+ * Two is deliberate: it covers a model that answered an interjection and stopped, and a model that
+ * forgot to remove a finished card, while an unconditional continuation would loop forever.
+ */
+export const CONTINUE_AFTER_UNFINISHED_PLAN_MAX = 2;
+
+export const CONTINUE_NUDGE_CUSTOM_TYPE = "pi-gui-plan-continue";
+
+/**
+ * Fed to the model only (`display: false`): the card on screen would otherwise claim work that
+ * already stopped.
+ */
+export const CONTINUE_NUDGE_TEXT =
+  "Your plan card still lists unfinished steps, but your last turn ended without a tool call. Pick up the current step now and call a tool for it. Two exceptions: if the user just told you to stop or wait, or you genuinely need something only the user can provide, do not resume — mark that step blocked with update_plan, say in one line what you are waiting for, and stop. Do not reply to this note.";
+
 /** One key for the whole thread, so a new plan replaces the old one instead of stacking. */
 export const PLAN_PIN_KEY = "pi-gui-plan";
 
@@ -143,7 +159,35 @@ export function removedPlanPinPayload(): Record<string, unknown> {
   return { key: PLAN_PIN_KEY, remove: true };
 }
 
-export function createUpdatePlanTool(pi: ExtensionAPI): ToolDefinition<any, UpdatePlanToolDetails> {
+/** A user prompt, whether it started a run or arrived mid-run as a steer. */
+function isUserMessage(message: unknown): boolean {
+  return isRecord(message) && message.role === "user";
+}
+
+/**
+ * Whether an ended run should be extended because the plan is not finished.
+ *
+ * Only a run that finished on its own qualifies: an abort is the user pressing Stop, and an error
+ * is already being reported, so continuing either one would fight the person in front of the app.
+ */
+export function shouldContinueUnfinishedPlan(input: {
+  readonly steps: readonly PlanStep[] | undefined;
+  readonly outcome: "completed" | "aborted" | "error";
+  readonly continuations: number;
+  readonly alreadyContinuing: boolean;
+}): boolean {
+  if (input.outcome !== "completed") return false;
+  if (input.alreadyContinuing) return false;
+  if (input.continuations >= CONTINUE_AFTER_UNFINISHED_PLAN_MAX) return false;
+  const steps = input.steps;
+  if (!steps || steps.length === 0) return false;
+  return steps.some((step) => step.status === "in_progress" || step.status === "pending");
+}
+
+export function createUpdatePlanTool(
+  pi: ExtensionAPI,
+  onPlanChanged?: (steps: readonly PlanStep[] | undefined) => void,
+): ToolDefinition<any, UpdatePlanToolDetails> {
   return {
     name: updatePlanToolName,
     label: "Update plan",
@@ -195,6 +239,7 @@ export function createUpdatePlanTool(pi: ExtensionAPI): ToolDefinition<any, Upda
     async execute(_toolCallId, params, _signal, _onUpdate) {
       if (isRecord(params) && params.remove === true) {
         pi.appendEntry(EXTENSION_PIN_CUSTOM_TYPE, removedPlanPinPayload());
+        onPlanChanged?.(undefined);
         return {
           content: [{ type: "text", text: "Plan card removed." }],
           details: { action: updatePlanAction, title: "", steps: [], removed: true },
@@ -220,6 +265,7 @@ export function createUpdatePlanTool(pi: ExtensionAPI): ToolDefinition<any, Upda
       }
       const title = planTitleFromParams(params);
       pi.appendEntry(EXTENSION_PIN_CUSTOM_TYPE, planPinPayload(title, steps));
+      onPlanChanged?.(steps);
       const done = steps.filter((step) => step.status === "done").length;
       return {
         content: [
@@ -238,6 +284,45 @@ export function createUpdatePlanTool(pi: ExtensionAPI): ToolDefinition<any, Upda
 
 export function createPlanRuntimeExtension(): ExtensionFactory {
   return (pi: ExtensionAPI) => {
-    pi.registerTool(createUpdatePlanTool(pi));
+    // One closure per session: the guard below needs the plan as the model last wrote it.
+    let steps: readonly PlanStep[] | undefined;
+    let continuations = 0;
+
+    pi.registerTool(
+      createUpdatePlanTool(pi, (next) => {
+        steps = next;
+      }),
+    );
+
+    pi.on("message_start", (event) => {
+      // Allowance is per user message. A steer is injected mid-run and starts no new agent run, so
+      // `before_agent_start` never sees it; only the message itself does.
+      if (isUserMessage(event.message)) continuations = 0;
+    });
+
+    pi.on("agent_before_settle", (event) => {
+      if (
+        !shouldContinueUnfinishedPlan({
+          steps,
+          outcome: event.outcome,
+          continuations,
+          alreadyContinuing: event.continue,
+        })
+      ) {
+        return;
+      }
+      continuations += 1;
+      return {
+        continue: true,
+        entries: [
+          {
+            type: "custom_message" as const,
+            customType: CONTINUE_NUDGE_CUSTOM_TYPE,
+            display: false,
+            content: CONTINUE_NUDGE_TEXT,
+          },
+        ],
+      };
+    });
   };
 }

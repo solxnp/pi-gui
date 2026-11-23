@@ -289,6 +289,8 @@ test("delineates queued follow-ups and submitted steers in the timeline", async 
       window.getByTestId("queued-composer-message").filter({ hasText: queuedSteer.text }),
     ).toHaveCount(0);
     await expect(window.getByTestId("transcript")).toContainText(queuedSteer.text);
+    // A message that reached the run mid-flight says so; a queued follow-up does not.
+    await expect(window.getByTestId("message-interjection")).toHaveCount(1);
 
     const composer = window.getByTestId("composer");
     await composer.fill("Steer the current run now");
@@ -304,6 +306,9 @@ test("delineates queued follow-ups and submitted steers in the timeline", async 
     await emitQueuedMessageStarted(harness, window, queuedFollowUp, []);
     await expect(window.getByTestId("queued-composer-messages")).toHaveCount(0);
     await expect(window.getByTestId("transcript")).toContainText(queuedFollowUp.text);
+    // Two steers reached the run mid-flight (the queue item and the composer one); the queued
+    // follow-up did not, so it stays unlabelled.
+    await expect(window.getByTestId("message-interjection")).toHaveCount(2);
 
     await emitTestSessionEvent(harness, {
       type: "assistantDelta",

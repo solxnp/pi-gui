@@ -48,6 +48,7 @@ export const en = {
   "extensionCard.progress": "Progress {percent}%",
   "extensionCard.eta": "~{minutes} min",
   "pinnedCard.justUpdated": "Updated just now",
+  "timeline.interjection": "Added mid-run",
   "pinnedCard.updatedMinutesAgo": "Updated {minutes} min ago",
   "pinnedCard.mayBeOutdated": "may be out of date",
   "pinnedCard.nowRunning": "now: {activity}",

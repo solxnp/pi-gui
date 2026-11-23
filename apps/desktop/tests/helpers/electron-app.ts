@@ -1352,6 +1352,21 @@ export async function runScheduledTaskRuntimeTool(
   }, input);
 }
 
+export async function tickOrchestrationSupervision(harness: DesktopHarness): Promise<void> {
+  await harness.firstWindow();
+  await harness.electronApp.evaluate(async () => {
+    const hooks = (
+      globalThis as {
+        __PI_APP_TEST_HOOKS?: { tickOrchestrationSupervision?: () => Promise<void> };
+      }
+    ).__PI_APP_TEST_HOOKS;
+    if (!hooks?.tickOrchestrationSupervision) {
+      throw new Error("Orchestration supervision tick hook is unavailable");
+    }
+    await hooks.tickOrchestrationSupervision();
+  });
+}
+
 export async function fireDueScheduledTasks(
   harness: DesktopHarness,
   nowIso?: string,

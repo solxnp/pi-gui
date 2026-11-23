@@ -43,6 +43,7 @@ export const zhCN: Partial<Messages> = {
   "extensionCard.progress": "进度 {percent}%",
   "extensionCard.eta": "预计 {minutes} 分钟",
   "pinnedCard.justUpdated": "刚刚更新",
+  "timeline.interjection": "运行中插话",
   "pinnedCard.updatedMinutesAgo": "{minutes} 分钟前更新",
   "pinnedCard.mayBeOutdated": "可能已过期",
   "pinnedCard.nowRunning": "正在：{activity}",

@@ -37,6 +37,8 @@ async function registerPlanExtension(): Promise<{
     appendEntry: (customType: string, data?: unknown) => {
       entries.push({ customType, data });
     },
+    // The extension also guards the plan on settle; that behaviour has its own spec.
+    on: () => () => {},
   } as unknown as ExtensionAPI;
   await createPlanRuntimeExtension()(pi);
   if (!tool) {

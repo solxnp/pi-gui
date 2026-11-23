@@ -32,12 +32,14 @@ import {
   parseCrossProjectMessage,
 } from "../../contracts/thread-message";
 import { latestSessionActivityAt, previewFromTranscript } from "../application/app-store-utils";
+import { delayOrAbort } from "./wait-abort";
 import type { RefreshStateOptions } from "../application/refresh-state-options";
 import {
   archiveChildThreadsAction,
   createChildThreadAction,
   createChildThreadPromptFromToolOutput,
   createChildThreadToolName,
+  waitForChildrenAction,
   listThreadsAction,
   listThreadsRequestedFromToolOutput,
   listThreadsToolName,
@@ -50,6 +52,7 @@ import {
 } from "./orchestration-runtime";
 import type {
   ArchiveChildThreadsToolDetails,
+  WaitForChildrenToolDetails,
   CreateChildThreadToolDetails,
   ListThreadsToolDetails,
   OrchestrationThreadListEntry,
@@ -161,6 +164,14 @@ export interface OrchestrationOwner {
   ): Promise<boolean>;
   hasOrchestrationChildSession(sessionRef: SessionRef): boolean;
   hasOrchestrationParentSession(sessionRef: SessionRef): boolean;
+  waitForChildThreads(
+    parentRef: SessionRef,
+    input: {
+      readonly threadIds?: readonly string[];
+      readonly timeoutMs: number;
+      readonly onProgress?: (update: { readonly status: string }) => void;
+    },
+  ): Promise<AgentToolResult<WaitForChildrenToolDetails>>;
   createChildThreadToolResult(
     parentRef: SessionRef,
     input: { readonly prompt: string; readonly toolCallId: string; readonly model?: string },
@@ -198,6 +209,7 @@ export function createOrchestrationOwner(store: OrchestrationOwnerHost): Orchest
       hasOrchestrationChildSession(store.orchestrationChildren(), sessionRef),
     hasOrchestrationParentSession: (sessionRef) =>
       hasOrchestrationParentSession(store.orchestrationChildren(), sessionRef),
+    waitForChildThreads: (parentRef, input) => waitForChildThreads(store, parentRef, input),
     createChildThreadToolResult: (parentRef, input) =>
       createChildThreadToolResult(store, parentRef, input),
     listThreadsToolResult: (parentRef, workspace) =>
@@ -207,6 +219,9 @@ export function createOrchestrationOwner(store: OrchestrationOwnerHost): Orchest
       sendMessageToThreadToolResult(store, parentRef, input),
   };
 }
+
+/** How often a blocking wait looks at the orchestration state it is already subscribed to. */
+const WAIT_POLL_MS = 2_000;
 
 interface SpawnChildThreadInput {
   readonly parentWorkspaceId: string;
@@ -589,6 +604,130 @@ async function cancelChildRunsForParent(
         child.parentSessionId === parentRef.sessionId,
     );
   await Promise.all(children.map((child) => cancelChildRun(store, child)));
+}
+
+/**
+ * Blocks the parent's turn until the named children finish, or until the deadline passes.
+ *
+ * This is the one relationship that should not need a message: the parent is already running, so
+ * it waits in place instead of ending the turn and hoping to be woken later. Nothing here writes
+ * to the user's conversation, and nothing here starts another run.
+ */
+async function waitForChildThreads(
+  store: OrchestrationOwnerHost,
+  parentRef: SessionRef,
+  input: {
+    readonly threadIds?: readonly string[];
+    readonly timeoutMs: number;
+    readonly signal?: AbortSignal;
+    readonly onProgress?: (update: { readonly status: string }) => void;
+  },
+): Promise<AgentToolResult<WaitForChildrenToolDetails>> {
+  const startedAt = Date.now();
+  const deadline = startedAt + input.timeoutMs;
+  const wanted = input.threadIds ? new Set(input.threadIds) : undefined;
+  let lastReported = "";
+
+  const snapshot = () => {
+    const own = store
+      .orchestrationState()
+      .orchestrationChildren.filter(
+        (child) =>
+          child.parentWorkspaceId === parentRef.workspaceId &&
+          child.parentSessionId === parentRef.sessionId,
+      );
+    const covered = wanted
+      ? own.filter(
+          (child) =>
+            wanted.has(child.id) ||
+            (child.childSessionId !== undefined && wanted.has(child.childSessionId)),
+        )
+      : own;
+    return covered;
+  };
+
+  for (;;) {
+    // A blocking wait must be interruptible: the user's Stop has to end the turn, not sit behind
+    // a sleep until the deadline.
+    if (input.signal?.aborted) {
+      const covered = snapshot();
+      return {
+        content: [{ type: "text", text: "Wait cancelled; the run was stopped." }],
+        details: {
+          action: waitForChildrenAction,
+          children: covered.map((child) => ({
+            threadId: child.id,
+            title: child.title,
+            status: child.status,
+            latest: child.latestTranscript,
+          })),
+          timedOut: false,
+          waitedMs: Date.now() - startedAt,
+          error: "Cancelled",
+        },
+      };
+    }
+    await store.initialize();
+    const covered = snapshot();
+    if (covered.length === 0) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: wanted
+              ? "None of the given threads are child threads of this one."
+              : "This thread has no child threads to wait for.",
+          },
+        ],
+        details: {
+          action: waitForChildrenAction,
+          children: [],
+          timedOut: false,
+          waitedMs: Date.now() - startedAt,
+          error: wanted ? "No matching child threads" : undefined,
+        },
+      };
+    }
+
+    const pending = covered.filter(
+      (child) => child.status !== "complete" && child.status !== "failed",
+    );
+    const elapsed = Date.now() - startedAt;
+    const report = `waiting for ${pending.length}/${covered.length} child thread(s) (${Math.round(
+      elapsed / 1000,
+    )}s)`;
+    if (pending.length > 0 && report !== lastReported) {
+      lastReported = report;
+      input.onProgress?.({ status: report });
+    }
+    if (pending.length === 0 || Date.now() >= deadline) {
+      const timedOut = pending.length > 0;
+      const children = covered.map((child) => ({
+        threadId: child.id,
+        title: child.title,
+        status: child.status,
+        latest: child.latestTranscript,
+      }));
+      const text = [
+        timedOut
+          ? `Timed out after ${Math.round(elapsed / 1000)}s with ${pending.length} child thread(s) still running:`
+          : "Every child thread finished:",
+        ...children.map(
+          (child) => `- ${child.threadId} (${child.status}) ${child.title}: ${child.latest}`,
+        ),
+      ].join("\n");
+      return {
+        content: [{ type: "text", text }],
+        details: {
+          action: waitForChildrenAction,
+          children,
+          timedOut,
+          waitedMs: elapsed,
+        },
+      };
+    }
+    await delayOrAbort(Math.min(WAIT_POLL_MS, Math.max(0, deadline - Date.now())), input.signal);
+  }
 }
 
 async function createChildThreadToolResult(

@@ -214,6 +214,10 @@ function createStoreBackedOrchestrationRuntimeBridge(): OrchestrationRuntimeBrid
       await store.initialize();
       return store.archiveChildThreadsToolResult(sessionRefFromExtensionContext(ctx), threadIds);
     },
+    waitForChildren: async (ctx, input) => {
+      await store.initialize();
+      return store.waitForChildThreads(sessionRefFromExtensionContext(ctx), input);
+    },
     createChildThread: async (ctx, input) => {
       await store.initialize();
       return store.createChildThreadToolResult(sessionRefFromExtensionContext(ctx), input);
@@ -1140,6 +1144,7 @@ app
           },
           promptForText: (message: string, placeholder?: string, allowEmpty?: boolean) =>
             promptForText(mainWindow, message, placeholder ?? "", allowEmpty ?? false),
+          tickOrchestrationSupervision: () => store.tickOrchestrationSupervision(),
           runOrchestrationRuntimeTool: (input: OrchestrationRuntimeToolTestInput) =>
             runOrchestrationRuntimeToolForTest(orchestrationRuntimeBridge, input),
           runScheduledTaskRuntimeTool: (input: ScheduledTaskRuntimeToolTestInput) =>

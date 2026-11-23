@@ -299,6 +299,9 @@ export class DesktopAppStore {
   private persistenceReadiness: "pending" | "ready" | "blocked" = "pending";
   private orchestrationSupervisionTimer: NodeJS.Timeout | undefined;
   private scheduledOrchestrationSupervisionRunAt: string | undefined;
+  /** Child ids whose completion already woke their parent, so one finish wakes it once. */
+  private readonly wokenChildIds = new Set<string>();
+
   private scheduledTaskTimer: NodeJS.Timeout | undefined;
   private scheduledTaskWakeAt: string | undefined;
   private readonly extensionDialogTimeoutTimers = new Map<string, NodeJS.Timeout>();
@@ -877,6 +880,11 @@ export class DesktopAppStore {
     await writeScheduledTasksFile(this.scheduledTasksFilePath, this.state.scheduledTasks);
   }
 
+  /** Pushes one supervision tick now, so a test does not have to wait out the real interval. */
+  async tickOrchestrationSupervision(): Promise<void> {
+    await this.runOrchestrationSupervisionTick();
+  }
+
   private async runOrchestrationSupervisionTick(): Promise<void> {
     await this.initialize();
     const result = this.orchestrationOwner.reconcileDueSupervisionLoops();
@@ -884,7 +892,70 @@ export class DesktopAppStore {
       await this.persistUiState();
       this.emit();
     }
+    await this.wakeParentsOfFinishedChildren();
     this.scheduleOrchestrationSupervision();
+  }
+
+  /**
+   * Keeps a parent alive after its children finish.
+   *
+   * Normally the parent waits in place with `wait_for_children`, so no message is needed. This is
+   * the fallback for when that turn is already gone — a crash, a dropped connection, a user who
+   * closed the window mid-run: the delegated work is done and something has to bring the parent
+   * back to wrap it up. The wake message is prefixed so it can never be mistaken for the user's
+   * own words, and it is delivered once per child completion, not on every supervision tick.
+   */
+  private async wakeParentsOfFinishedChildren(): Promise<void> {
+    // One message per parent, listing everything that finished: several children finishing while
+    // the parent is away must not become several runs.
+    const pendingByParent = new Map<string, OrchestrationChildThread[]>();
+    for (const child of this.state.orchestrationChildren) {
+      const gate = child.supervisionLoop?.gate;
+      if (gate !== "wake") {
+        // A child that is running again will finish again, and deserve its own wake then.
+        this.wokenChildIds.delete(child.id);
+        continue;
+      }
+      if (this.wokenChildIds.has(child.id)) {
+        continue;
+      }
+      const parentRef = { workspaceId: child.parentWorkspaceId, sessionId: child.parentSessionId };
+      const parent = this.sessionFromState(parentRef);
+      // The parent is already working: it will see the child when it gets there.
+      if (!parent || parent.archivedAt || parent.status === "running") {
+        continue;
+      }
+      const key = `${parentRef.workspaceId}\u0000${parentRef.sessionId}`;
+      const group = pendingByParent.get(key) ?? [];
+      group.push(child);
+      pendingByParent.set(key, group);
+    }
+
+    for (const [, children] of pendingByParent) {
+      const parentRef = {
+        workspaceId: children[0]!.parentWorkspaceId,
+        sessionId: children[0]!.parentSessionId,
+      };
+      for (const child of children) {
+        this.wokenChildIds.add(child.id);
+      }
+      const lines = children.map(
+        (child) => `- ${child.title}: ${child.latestTranscript.trim() || child.goal}`,
+      );
+      const text = [
+        `[子会话完成] ${children.length} 个子会话已经结束，需要你收尾：`,
+        ...lines,
+        "（这是 App 的完成通知，不是用户输入。用 list_threads 可以查看其余子会话。）",
+      ].join("\n");
+      try {
+        await this.conversationOwner.deliverBackgroundInstruction(parentRef, text);
+      } catch (error) {
+        for (const child of children) {
+          this.wokenChildIds.delete(child.id);
+        }
+        console.error("[app-store] waking the parent for finished children failed", error);
+      }
+    }
   }
 
   async emitTestSessionEvent(event: SessionDriverEvent): Promise<void> {
@@ -1285,12 +1356,28 @@ export class DesktopAppStore {
     return state;
   }
 
+  async waitForChildThreads(
+    parentRef: SessionRef,
+    input: {
+      readonly threadIds?: readonly string[];
+      readonly timeoutMs: number;
+      readonly onProgress?: (update: { readonly status: string }) => void;
+    },
+  ) {
+    await this.initialize();
+    return this.orchestrationOwner.waitForChildThreads(parentRef, input);
+  }
+
   async createChildThreadToolResult(
     parentRef: SessionRef,
     input: { readonly prompt: string; readonly toolCallId: string; readonly model?: string },
   ) {
     await this.initialize();
-    return this.orchestrationOwner.createChildThreadToolResult(parentRef, input);
+    const result = await this.orchestrationOwner.createChildThreadToolResult(parentRef, input);
+    // A new child needs the supervision timer armed, or a parent that is no longer running is
+    // never woken when the child finishes.
+    this.scheduleOrchestrationSupervision();
+    return result;
   }
 
   listThreadsToolResult(parentRef: SessionRef, workspace?: string) {
