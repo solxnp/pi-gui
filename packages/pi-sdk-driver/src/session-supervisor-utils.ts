@@ -30,6 +30,7 @@ import type {
   WorkspaceRef,
 } from "@pi-gui/session-driver";
 import {
+  clampEtaMinutes,
   clampUnitInterval,
   EXTENSION_CARD_CUSTOM_TYPE,
   EXTENSION_PIN_CUSTOM_TYPE,
@@ -616,12 +617,15 @@ function parseExtensionCard(data: unknown): ExtensionCard | string {
         }
         const status = isCardRowStatus(row.status) ? row.status : undefined;
         const progress = clampUnitInterval(row.progress);
+        // Minutes only: a sub-minute estimate would read as false precision on a card.
+        const etaMinutes = clampEtaMinutes(row.etaMinutes);
         return [
           {
             label: row.label,
             value: String(row.value),
             ...(status ? { status } : {}),
             ...(progress !== undefined ? { progress } : {}),
+            ...(etaMinutes ? { etaMinutes } : {}),
           },
         ];
       })

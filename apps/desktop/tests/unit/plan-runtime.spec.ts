@@ -232,3 +232,28 @@ test("a fraction on a pending step neither advances the card nor draws a bar", (
   expect(showsRowProgress({ progress: 0.5 })).toBe(true);
   expect(showsRowProgress({ status: "done", progress: 1 })).toBe(false);
 });
+
+test("an eta is rounded, kept in range, and carried onto the row", () => {
+  const steps = planStepsFromParams({
+    steps: [
+      { step: "A", status: "in_progress", etaMinutes: 4.6 },
+      { step: "F", status: "pending", etaMinutes: 0.4 },
+      { step: "B", status: "pending", etaMinutes: 0 },
+      { step: "C", status: "pending", etaMinutes: -5 },
+      { step: "D", status: "pending", etaMinutes: 24 * 60 + 1 },
+      { step: "E", status: "pending", etaMinutes: "soon" },
+    ],
+  });
+  expect(steps?.map((step) => step.etaMinutes)).toEqual([
+    5,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+  ]);
+
+  const payload = planPinPayload("计划", steps ?? []);
+  const rows = payload.rows as readonly { readonly etaMinutes?: number }[];
+  expect(rows[0]?.etaMinutes).toBe(5);
+  expect(rows[1]?.etaMinutes).toBeUndefined();
+});

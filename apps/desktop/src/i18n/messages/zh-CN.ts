@@ -41,6 +41,13 @@ export const zhCN: Partial<Messages> = {
   "extensionRow.done": "已完成",
   "extensionRow.blocked": "阻塞",
   "extensionCard.progress": "进度 {percent}%",
+  "extensionCard.eta": "预计 {minutes} 分钟",
+  "pinnedCard.justUpdated": "刚刚更新",
+  "pinnedCard.updatedMinutesAgo": "{minutes} 分钟前更新",
+  "pinnedCard.mayBeOutdated": "可能已过期",
+  "pinnedCard.nowRunning": "正在：{activity}",
+  "pinnedCard.lastActivity": "最近：{activity}",
+  "pinnedCard.staleHint": "计划卡已经几分钟没更新，卡片上的进度可能落后于实际进展。",
   "ui.configureAnOpenAICompatibleServerTheEndpointAndAPIKeyAreStored":
     "配置兼容 OpenAI 的服务。端点和 API 密钥将以明文保存在",
   "ui.providerID": "提供方标识",

@@ -74,7 +74,7 @@ export type {
   RuntimeSnapshot,
 } from "./runtime-types.js";
 
-export { clampUnitInterval } from "./transcript.js";
+export { clampEtaMinutes, clampUnitInterval, MAX_ETA_MINUTES } from "./transcript.js";
 
 export type {
   ExtensionCard,

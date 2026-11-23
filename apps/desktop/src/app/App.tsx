@@ -278,7 +278,8 @@ export default function App() {
       ? selectedTranscript
       : null;
   const activeTranscript = selectedTranscriptForSession?.transcript ?? [];
-  const pins = usePinnedCards(selectedSessionKey, activeTranscript);
+  const selectedSessionRunning = selectedSession?.status === "running";
+  const pins = usePinnedCards(selectedSessionKey, activeTranscript, selectedSessionRunning);
   const scheduledOrigins = useMemo(() => {
     if (!snapshot || !selectedWorkspace || !selectedSession) {
       return new Map();
@@ -297,7 +298,6 @@ export default function App() {
   const transcriptFailed = transcriptHydration?.kind === "failed" ? transcriptHydration : null;
   const isTranscriptLoading =
     Boolean(selectedSession) && !selectedTranscriptForSession && !transcriptFailed;
-  const selectedSessionRunning = selectedSession?.status === "running";
   const turnChanges = useTurnChanges({
     api,
     target: workbenchTarget,
@@ -1271,8 +1271,7 @@ export default function App() {
                 onEnableMentionExtension={mentionMenu.enableMentionExtension}
                 pinnedCards={
                   <PinnedCards
-                    pins={pins.visiblePins}
-                    collapsedPinIds={pins.collapsedPinIds}
+                    stack={pins}
                     onToggle={pins.togglePin}
                     onDismiss={pins.dismissPin}
                     onAction={runExtensionCardAction}

@@ -77,6 +77,11 @@ export interface ExtensionCardRow {
    * without a second tool call.
    */
   readonly progress?: number;
+  /**
+   * How long the writer expects this row to take, in minutes. Shown as an estimate: with the
+   * card's own age beside it, an overrun becomes visible instead of invisible.
+   */
+  readonly etaMinutes?: number;
 }
 
 /** The four states a step can be in. Anything else is drawn as unmarked. */
@@ -89,6 +94,22 @@ export type ExtensionCardRowStatus = "pending" | "in_progress" | "done" | "block
  * tool building one, and the renderer guarding a card built by hand. Two copies drifted apart
  * once already (the renderer could print `NaN%` while the parser had dropped the value).
  */
+/** A day is plenty; a larger estimate is a typo, not a plan. */
+export const MAX_ETA_MINUTES = 24 * 60;
+
+/**
+ * Whole minutes for an estimate, or nothing. One implementation: the plan tool and the entry
+ * parser both write this field, and two copies of the rule drifted apart once already.
+ */
+export function clampEtaMinutes(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  if (value > MAX_ETA_MINUTES) return undefined;
+  const minutes = Math.round(value);
+  // Anything that rounds to 0 is not a usable estimate, and returning 0 would let the writer save
+  // a value the reader then silently drops: one rule, applied on both sides.
+  return minutes >= 1 ? minutes : undefined;
+}
+
 export function clampUnitInterval(value: unknown): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
   return Math.min(1, Math.max(0, value));

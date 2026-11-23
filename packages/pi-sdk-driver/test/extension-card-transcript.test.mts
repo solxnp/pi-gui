@@ -452,3 +452,23 @@ await test("a row's status and a card's progress survive parsing; junk is droppe
   assert.ok(junk.kind === "card");
   assert.equal(junk.card.progress, undefined);
 });
+
+await test("a row's eta survives parsing; junk and out-of-range values are dropped", () => {
+  const item = transcriptItemFromCardEntry(
+    cardEntry({
+      title: "计划",
+      rows: [
+        { label: "a", value: "A", status: "in_progress", etaMinutes: 4.6 },
+        { label: "b", value: "B", status: "in_progress", etaMinutes: 0 },
+        { label: "c", value: "C", status: "in_progress", etaMinutes: 1441 },
+        { label: "d", value: "D", status: "in_progress", etaMinutes: "5" },
+        { label: "e", value: "E", status: "in_progress", etaMinutes: Number.NaN },
+      ],
+    }),
+  );
+  assert.ok(item.kind === "card");
+  assert.deepEqual(
+    item.card.rows.map((row) => row.etaMinutes),
+    [5, undefined, undefined, undefined, undefined],
+  );
+});

@@ -79,7 +79,7 @@ export default function plans(pi) {
             steps: [
               { step: "读台账", status: "done" },
               { step: "拆模块", status: "done" },
-              { step: "真机验证", status: "in_progress", progress: 0.5 },
+              { step: "真机验证", status: "in_progress", progress: 0.5, etaMinutes: 5 },
               { step: "补测试", status: "blocked", progress: 0.3 },
             ],
           },
@@ -204,11 +204,32 @@ test("update_plan pins the plan above the composer and rewrites it in place", as
     assertExists(composerBox, "Expected the composer box");
     expect(pinBox.y + pinBox.height).toBeLessThanOrEqual(composerBox.y);
 
+    // The running step says how long it expects to take, so an overrun is visible.
+    const eta = pinned.getByTestId("extension-card-row-eta");
+    await expect(eta).toHaveCount(1);
+    await expect(eta).toContainText(/\d+/);
+
+    // The card reports its own age, and stays quiet while it is fresh.
+    const freshness = pinned.getByTestId("pinned-card-freshness");
+    await expect(freshness).toBeVisible();
+    await expect(freshness).toHaveAttribute("data-stale", "false");
+    await expect(freshness).toContainText(/Updated just now|刚刚更新/);
+
+    // The live step says whether work is happening now or merely happened last: "now" is only
+    // claimed for a tool call still in flight, so the wording cannot outrun the evidence.
+    const activity = pinned.getByTestId("pinned-card-activity");
+    await expect(activity).toHaveCount(1);
+    await expect(activity).toHaveAttribute("data-live", /true|false/);
+    await expect(activity).toContainText(/now:|正在：|last:|最近：/);
+
     // Collapse hides the rows but keeps the header, so the progress stays readable.
     const rows = pinned.locator(".extension-card__row");
     await expect(rows).toHaveCount(4);
     await pinned.getByTestId("pinned-card-toggle").click();
     await expect(rows).toHaveCount(0);
+    // The footer is not part of the body: a collapsed card still says how old it is, so a user
+    // who folded it away cannot be left staring at a number that silently stopped updating.
+    await expect(freshness).toBeVisible();
     await expect(pinned).toContainText("2/4 步完成");
   } finally {
     await harness.close();

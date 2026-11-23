@@ -98,11 +98,13 @@ export function ExtensionCardItem({
   card,
   onAction,
   controls,
+  footer,
   collapsed = false,
 }: {
   readonly card: ExtensionCard;
   readonly onAction?: RunExtensionAction;
   readonly controls?: ReactNode;
+  readonly footer?: ReactNode;
   readonly collapsed?: boolean;
 }) {
   const { t } = useTranslation();
@@ -160,6 +162,11 @@ export function ExtensionCardItem({
               )}
               <span className="extension-card__value">
                 {row.value}
+                {row.etaMinutes !== undefined && row.status === "in_progress" ? (
+                  <span className="extension-card__eta" data-testid="extension-card-row-eta">
+                    {t("extensionCard.eta", { minutes: row.etaMinutes })}
+                  </span>
+                ) : null}
                 {showsRowProgress(row) ? <RowProgress value={row.progress ?? 0} /> : null}
               </span>
             </li>
@@ -184,6 +191,7 @@ export function ExtensionCardItem({
           })}
         </ul>
       ) : null}
+      {footer ? <div className="extension-card__footer">{footer}</div> : null}
     </section>
   );
 }

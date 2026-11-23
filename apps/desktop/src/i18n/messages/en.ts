@@ -46,6 +46,14 @@ export const en = {
   "extensionRow.done": "Done",
   "extensionRow.blocked": "Blocked",
   "extensionCard.progress": "Progress {percent}%",
+  "extensionCard.eta": "~{minutes} min",
+  "pinnedCard.justUpdated": "Updated just now",
+  "pinnedCard.updatedMinutesAgo": "Updated {minutes} min ago",
+  "pinnedCard.mayBeOutdated": "may be out of date",
+  "pinnedCard.nowRunning": "now: {activity}",
+  "pinnedCard.lastActivity": "last: {activity}",
+  "pinnedCard.staleHint":
+    "This plan card has not been rewritten for a few minutes, so its progress can lag behind the actual work.",
   "ui.configureAnOpenAICompatibleServerTheEndpointAndAPIKeyAreStored":
     "Configure an OpenAI-compatible server. The endpoint and API key are stored in plaintext at",
   "ui.providerID": "Provider ID",

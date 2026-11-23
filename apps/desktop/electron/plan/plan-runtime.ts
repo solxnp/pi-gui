@@ -15,7 +15,11 @@ import type {
   ExtensionFactory,
   ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
-import { clampUnitInterval, EXTENSION_PIN_CUSTOM_TYPE } from "@pi-gui/session-driver";
+import {
+  clampEtaMinutes,
+  clampUnitInterval,
+  EXTENSION_PIN_CUSTOM_TYPE,
+} from "@pi-gui/session-driver";
 
 export const updatePlanToolName = "update_plan";
 export const updatePlanAction = "pi_gui_update_plan";
@@ -31,6 +35,8 @@ export interface PlanStep {
   readonly status: PlanStepStatus;
   /** How far through this step's own work, 0..1, when the writer can judge it. */
   readonly progress?: number;
+  /** The writer's estimate for this step, in minutes. */
+  readonly etaMinutes?: number;
 }
 
 export interface UpdatePlanToolDetails {
@@ -93,7 +99,13 @@ export function planStepsFromParams(params: unknown): readonly PlanStep[] | unde
           ? "in_progress"
           : "pending";
     const progress = clampUnitInterval(raw.progress);
-    steps.push({ step, status: resolved, ...(progress !== undefined ? { progress } : {}) });
+    const etaMinutes = clampEtaMinutes(raw.etaMinutes);
+    steps.push({
+      step,
+      status: resolved,
+      ...(progress !== undefined ? { progress } : {}),
+      ...(etaMinutes !== undefined ? { etaMinutes } : {}),
+    });
   }
   return steps.length > 0 ? steps : undefined;
 }
@@ -121,6 +133,7 @@ export function planPinPayload(title: string, steps: readonly PlanStep[]): Recor
       // `status` is the truth for a finished step; writing `progress: 1` as well would be a
       // second source for the same fact.
       ...(step.status === "done" || step.progress === undefined ? {} : { progress: step.progress }),
+      ...(step.etaMinutes === undefined ? {} : { etaMinutes: step.etaMinutes }),
     })),
     actions: [],
   };
@@ -141,7 +154,8 @@ export function createUpdatePlanTool(pi: ExtensionAPI): ToolDefinition<any, Upda
     promptGuidelines: [
       "Call update_plan as the first tool of any multi-step task: the steps you are about to take, with the current one in_progress.",
       "Call it again after each step finishes, flipping that step to done and the next to in_progress. Do not restate the whole plan in chat.",
-      "While a long step is still running, call update_plan with that step's progress (0 to 1) each time you finish a part of it, so its own bar moves before the step ends.",
+      "While a long step is still running, call update_plan with that step's progress (0 to 1) each time you finish a part of it, so its own bar moves before the step ends. Never let more than a few minutes pass without updating the card: a card nobody rewrites keeps showing the old percentage.",
+      "Give the running step an etaMinutes estimate. It is shown as an estimate, so an honest rough number beats omitting it.",
       "Keep step text short and concrete; the card shows it verbatim.",
       "Call update_plan with remove: true once every step is done, so a finished plan stops sitting above the composer.",
     ],
@@ -165,6 +179,11 @@ export function createUpdatePlanTool(pi: ExtensionAPI): ToolDefinition<any, Upda
                 type: "number",
                 description:
                   "0 to 1: how far through this step you are. Update it as you finish parts of a long step, so its own bar moves before the step is done.",
+              },
+              etaMinutes: {
+                type: "number",
+                description:
+                  "Rough minutes this step will take. The card shows it beside its own age, so the user can see an overrun instead of guessing.",
               },
             },
             required: ["step"],
