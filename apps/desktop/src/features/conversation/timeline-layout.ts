@@ -1,4 +1,5 @@
 import type { ExtensionCard } from "@pi-gui/session-driver";
+import { ROW_PROGRESS_HEIGHT, showsRowProgress } from "./extension-row-progress";
 import type { DisplayTimelineItem } from "../../../contracts/timeline-types";
 
 export interface ReadingAnchor {
@@ -28,7 +29,11 @@ export function estimateRowHeight(item: DisplayTimelineItem, width: number): num
       return 66 + textLines(item.text, width) * 24;
     case "card": {
       const bodyRows = item.card.rows.length + item.card.actions.length;
-      return 50 + (bodyRows ? 12 + bodyRows * 34 : 0);
+      // The card's own bar is one row of chrome; a row's bar is one extra line under its text.
+      // Both are counted here so the estimate matches what the renderer draws.
+      const cardBar = item.card.progress === undefined ? 0 : 22;
+      const rowBars = item.card.rows.filter(showsRowProgress).length * ROW_PROGRESS_HEIGHT;
+      return 50 + cardBar + (bodyRows ? 12 + bodyRows * 34 : 0) + rowBars;
     }
     case "tool":
       return 52;

@@ -52,10 +52,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-/** A step counts as progress once it is done; a blocked step is stopped, not advanced. */
+/**
+ * The card's own progress: finished steps plus the fraction each in-progress step reports.
+ *
+ * Counting only finished steps made the header disagree with the rows — a screen could show
+ * "25%" over a row reading 45%, which reads as an arithmetic bug. Pending and blocked steps
+ * contribute nothing: they are standing still.
+ */
 export function planProgress(steps: readonly PlanStep[]): number {
   if (steps.length === 0) return 0;
-  return steps.filter((step) => step.status === "done").length / steps.length;
+  const earned = steps.reduce((total, step) => {
+    if (step.status === "done") return total + 1;
+    // Only a step that is actually moving contributes its fraction. `pending` and `blocked` are
+    // standing still, and a stale fraction on either must not advance the card.
+    if (step.status !== "in_progress") return total;
+    return total + (step.progress ?? 0);
+  }, 0);
+  return Math.min(1, earned / steps.length);
 }
 
 export function planStepsFromParams(params: unknown): readonly PlanStep[] | undefined {
@@ -105,12 +118,9 @@ export function planPinPayload(title: string, steps: readonly PlanStep[]): Recor
       label: STATUS_MARKS[step.status],
       value: step.step,
       status: step.status,
-      // A finished step reads as complete; otherwise the writer's own fraction wins.
-      ...(step.status === "done"
-        ? { progress: 1 }
-        : step.progress !== undefined
-          ? { progress: step.progress }
-          : {}),
+      // `status` is the truth for a finished step; writing `progress: 1` as well would be a
+      // second source for the same fact.
+      ...(step.status === "done" || step.progress === undefined ? {} : { progress: step.progress }),
     })),
     actions: [],
   };

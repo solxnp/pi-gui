@@ -98,3 +98,69 @@ test("an extension card re-estimates when its rows change and keeps its estimate
   expect(threeRows).toBeGreaterThan(oneRow);
   expect(estimates.get("card-entry")?.height).toBe(threeRows);
 });
+
+test("a plan card's estimate counts its own bar and each running row's bar", () => {
+  const planCard = (
+    progress: number | undefined,
+    rows: readonly {
+      readonly status?: "pending" | "in_progress" | "done" | "blocked";
+      readonly progress?: number;
+    }[],
+  ): DisplayTimelineItem => ({
+    kind: "card",
+    id: "plan-entry",
+    createdAt: "2026-09-30T00:00:00Z",
+    card: {
+      title: "计划",
+      tone: "neutral",
+      ...(progress === undefined ? {} : { progress }),
+      rows: rows.map((row, index) => ({ label: `${index}`, value: `Step ${index}`, ...row })),
+      actions: [],
+    },
+  });
+
+  const plain = layoutRows(
+    [planCard(undefined, [{ status: "in_progress" }])],
+    new Map(),
+    700,
+    new Map(),
+  )[0]!.height;
+  // The card's own bar is one block of chrome.
+  const withCardBar = layoutRows(
+    [planCard(0.5, [{ status: "in_progress" }])],
+    new Map(),
+    700,
+    new Map(),
+  )[0]!.height;
+  expect(withCardBar - plain).toBe(22);
+
+  // Only a moving row draws a bar, so only it grows the estimate.
+  const withRowBar = layoutRows(
+    [planCard(0.5, [{ status: "in_progress", progress: 0.5 }])],
+    new Map(),
+    700,
+    new Map(),
+  )[0]!.height;
+  expect(withRowBar - withCardBar).toBe(16);
+
+  const stillRows = [
+    { status: "done" as const },
+    { status: "blocked" as const, progress: 0.3 },
+    { status: "pending" as const, progress: 0.4 },
+  ];
+  const doneAndBlocked = layoutRows([planCard(0.5, stillRows)], new Map(), 700, new Map())[0]!
+    .height;
+  // Same three rows with no fractions: only the row count differs, never a bar.
+  const stillNoFractions = layoutRows(
+    [
+      planCard(
+        0.5,
+        stillRows.map((row) => ({ status: row.status })),
+      ),
+    ],
+    new Map(),
+    700,
+    new Map(),
+  )[0]!.height;
+  expect(doneAndBlocked).toBe(stillNoFractions);
+});

@@ -180,22 +180,17 @@ test("update_plan pins the plan above the composer and rewrites it in place", as
     await expect(statuses.nth(2)).toHaveAttribute("aria-label", "In progress");
     await expect(statuses.last()).toHaveAttribute("aria-label", "Blocked");
 
-    // Progress is a bar plus a percentage over the whole card: 2 of 4 done reads 50%.
+    // The card's bar counts the running step's fraction too: 2 done + 0.5 running, over 4 steps.
+    // Counting only finished steps would print 50% beside a row reading 45%/50%.
     const progress = pinned.getByTestId("extension-card-progress");
-    await expect(progress).toHaveAttribute("data-percent", "50");
-    await expect(progress).toContainText("50%");
+    await expect(progress).toHaveAttribute("data-percent", "63");
+    await expect(progress).toContainText("63%");
 
     // Only the running step draws its own bar. The blocked row carries a fraction in the data
     // but must not draw one: a stopped step that showed a bar would read as still moving.
     const rowProgress = pinned.getByTestId("extension-card-row-progress");
     await expect(rowProgress).toHaveCount(1);
     await expect(rowProgress).toHaveAttribute("data-percent", "50");
-    await expect(
-      pinned.locator('[data-row-status="in_progress"][data-row-progress="50"]'),
-    ).toHaveCount(1);
-    await expect(pinned.locator('[data-row-status="blocked"][data-row-progress="30"]')).toHaveCount(
-      1,
-    );
     await expect(
       pinned.locator('[data-row-status="blocked"] [data-testid="extension-card-row-progress"]'),
     ).toHaveCount(0);

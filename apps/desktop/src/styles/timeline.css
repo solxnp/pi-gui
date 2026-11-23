@@ -1343,7 +1343,7 @@
 }
 
 /* A row that reports a state leads with its icon, so the label column (the step number) is gone. */
-.extension-card__row[data-row-status]:not([data-row-status=""]) {
+.extension-card__row[data-row-status] {
   gap: 9px;
 }
 
@@ -1385,8 +1385,28 @@
   display: block;
 }
 
+/* A half-filled dot states a fraction, which the row's own bar already reports. Filled plus a
+   slow pulse says "running" without pretending to be 50%. */
 .extension-card__status-dot[data-dot="in_progress"] {
-  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+  background: currentColor;
+  border-color: currentColor;
+  animation: extension-status-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes extension-status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .extension-card__status-dot[data-dot="in_progress"] {
+    animation: none;
+  }
 }
 
 .extension-card__status-dot[data-dot="blocked"] {
@@ -1397,22 +1417,37 @@
   opacity: 0.55;
 }
 
-.extension-card__progress {
+.extension-card__bar {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+/* The card's bar sits under the header and speaks for the whole plan. */
+.extension-card__bar--card {
   gap: 10px;
   padding: 0 14px 10px;
 }
 
-.extension-card__progress-track {
+/* A row's bar sits under its text, so a long step shows movement before it ends. */
+.extension-card__bar--row {
+  margin-top: 5px;
+}
+
+.extension-card__bar-track {
   flex: 1;
   height: 4px;
   border-radius: 2px;
   background: var(--surface-muted);
   overflow: hidden;
+  min-width: 60px;
 }
 
-.extension-card__progress-fill {
+.extension-card__bar--row .extension-card__bar-track {
+  height: 3px;
+}
+
+.extension-card__bar-fill {
   display: block;
   height: 100%;
   border-radius: 2px;
@@ -1420,7 +1455,7 @@
   transition: width 220ms ease;
 }
 
-.extension-card__progress-value {
+.extension-card__bar-value {
   flex-shrink: 0;
   min-width: 34px;
   text-align: right;
@@ -1429,38 +1464,9 @@
   color: var(--muted-soft);
 }
 
-/* A step's own progress sits under its text, so a long step shows movement before it finishes. */
-.extension-card__row-progress {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 5px;
-}
-
-.extension-card__row-progress-track {
-  flex: 1;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--surface-muted);
-  overflow: hidden;
-  min-width: 60px;
-}
-
-.extension-card__row-progress-fill {
-  display: block;
-  height: 100%;
-  border-radius: 2px;
-  background: var(--accent-strong, var(--accent));
-  transition: width 220ms ease;
-}
-
-.extension-card__row-progress-value {
-  flex-shrink: 0;
+.extension-card__bar--row .extension-card__bar-value {
   min-width: 30px;
-  text-align: right;
   font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted-soft);
 }
 
 .extension-card__label {
@@ -1472,6 +1478,10 @@
 .extension-card__value {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* Only a plan row stretches its text: it carries a bar that needs the width. */
+.extension-card__row[data-row-status] .extension-card__value {
   flex: 1;
 }
 

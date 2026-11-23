@@ -9,6 +9,7 @@ import type {
 } from "@pi-gui/session-driver";
 import { clampUnitInterval } from "@pi-gui/session-driver";
 import { useTranslation } from "../../i18n";
+import { showsRowProgress } from "./extension-row-progress";
 import { CheckIcon, ExtensionIcon } from "../../ui/icons";
 
 /** The four states a plan row reports, as the labels their icons and screen readers get. */
@@ -34,12 +35,28 @@ function percentFrom(value: number): number {
  * at a glance.
  */
 function CardProgress({ value }: { readonly value: number }) {
+  return <ProgressBar value={value} variant="card" testId="extension-card-progress" />;
+}
+
+/**
+ * A bar and a percentage. `variant` only picks the class prefix: the card's bar is thicker and
+ * sits under the header, a row's is thin and sits under its text.
+ */
+function ProgressBar({
+  value,
+  variant,
+  testId,
+}: {
+  readonly value: number;
+  readonly variant: "card" | "row";
+  readonly testId: string;
+}) {
   const { t } = useTranslation();
   const percent = percentFrom(value);
   return (
-    <div
-      className="extension-card__progress"
-      data-testid="extension-card-progress"
+    <span
+      className={`extension-card__bar extension-card__bar--${variant}`}
+      data-testid={testId}
       data-percent={percent}
       role="progressbar"
       aria-valuemin={0}
@@ -47,26 +64,14 @@ function CardProgress({ value }: { readonly value: number }) {
       aria-valuenow={percent}
       aria-label={t("extensionCard.progress", { percent })}
     >
-      <span className="extension-card__progress-track" aria-hidden="true">
-        <span className="extension-card__progress-fill" style={{ width: `${percent}%` }} />
+      <span className="extension-card__bar-track" aria-hidden="true">
+        <span className="extension-card__bar-fill" style={{ width: `${percent}%` }} />
       </span>
-      <span className="extension-card__progress-value" aria-hidden="true">
+      <span className="extension-card__bar-value" aria-hidden="true">
         {percent}%
       </span>
-    </div>
+    </span>
   );
-}
-
-/**
- * A row shows its own bar only while it can still move. Done is a finished tick and blocked is a
- * stopped step, so a bar under either would read as progress that is not happening.
- */
-function showsRowProgress(row: {
-  readonly status?: ExtensionCardRowStatus;
-  readonly progress?: number;
-}): boolean {
-  if (row.progress === undefined) return false;
-  return row.status !== "done" && row.status !== "blocked";
 }
 
 /** Done draws a check; the other three are dots whose fill says which state they are in. */
@@ -79,27 +84,7 @@ function RowStatusDot({ status }: { readonly status: ExtensionCardRowStatus }) {
  * a fraction as it goes instead of only flipping the row when it finishes.
  */
 function RowProgress({ value }: { readonly value: number }) {
-  const { t } = useTranslation();
-  const percent = percentFrom(value);
-  return (
-    <span
-      className="extension-card__row-progress"
-      data-testid="extension-card-row-progress"
-      data-percent={percent}
-      role="progressbar"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={percent}
-      aria-label={t("extensionCard.progress", { percent })}
-    >
-      <span className="extension-card__row-progress-track" aria-hidden="true">
-        <span className="extension-card__row-progress-fill" style={{ width: `${percent}%` }} />
-      </span>
-      <span className="extension-card__row-progress-value" aria-hidden="true">
-        {percent}%
-      </span>
-    </span>
-  );
+  return <ProgressBar value={value} variant="row" testId="extension-card-row-progress" />;
 }
 
 export type RunExtensionAction = (action: ExtensionAction) => void;
@@ -160,12 +145,7 @@ export function ExtensionCardItem({
       {hasBody ? (
         <ul className="turn-changes__files">
           {rows.map((row, index) => (
-            <li
-              className="extension-card__row"
-              key={`row:${index}`}
-              data-row-status={row.status ?? ""}
-              data-row-progress={row.progress === undefined ? "" : percentFrom(row.progress)}
-            >
+            <li className="extension-card__row" key={`row:${index}`} data-row-status={row.status}>
               {row.status ? (
                 <span
                   className={`extension-card__status extension-card__status--${row.status}`}
