@@ -38,7 +38,7 @@ export const CONTINUE_NUDGE_CUSTOM_TYPE = "pi-gui-plan-continue";
  * already stopped.
  */
 export const CONTINUE_NUDGE_TEXT =
-  "Your plan card still lists unfinished steps, but your last turn ended without a tool call. Pick up the current step now and call a tool for it. Two exceptions: if the user just told you to stop or wait, or you genuinely need something only the user can provide, do not resume — mark that step blocked with update_plan, say in one line what you are waiting for, and stop. Do not reply to this note.";
+  "Your plan card still lists unfinished steps, but your last turn ended without a tool call. Pick up the current step now and call a tool for it. Two exceptions: if the user just told you to stop, wait or undo the work, or you genuinely need something only the user can provide, do not resume — mark that step blocked with update_plan, say in one line what you are waiting for, and stop. Do not reply to this note.";
 
 /** One key for the whole thread, so a new plan replaces the old one instead of stacking. */
 export const PLAN_PIN_KEY = "pi-gui-plan";
@@ -285,6 +285,8 @@ export function createUpdatePlanTool(
 export function createPlanRuntimeExtension(): ExtensionFactory {
   return (pi: ExtensionAPI) => {
     // One closure per session: the guard below needs the plan as the model last wrote it.
+    // Both values live in memory, so a reloaded session guards nothing until the model writes a
+    // plan again. That is the quiet failure: an idle session has nothing to continue anyway.
     let steps: readonly PlanStep[] | undefined;
     let continuations = 0;
 

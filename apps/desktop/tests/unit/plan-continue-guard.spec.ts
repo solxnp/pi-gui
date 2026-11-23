@@ -93,6 +93,8 @@ test("a run that ends with the plan unfinished is asked to keep going", async ()
   })) as { readonly continue: boolean; readonly entries: readonly Record<string, unknown>[] };
 
   expect(result.continue).toBe(true);
+  // A user who asked to undo the last change must not be pushed back into it.
+  expect(CONTINUE_NUDGE_TEXT).toContain("undo the work");
   expect(result.entries).toEqual([
     {
       type: "custom_message",

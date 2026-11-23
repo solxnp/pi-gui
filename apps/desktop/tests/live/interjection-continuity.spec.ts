@@ -1,5 +1,5 @@
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import {
@@ -153,9 +153,12 @@ test("a mid-run interjection is labelled and the run continues afterwards", asyn
 });
 
 /**
- * The guard: a model that ends its run while the plan still lists unfinished work gets one more
- * turn. The prompt asks it to stop half-way, so without `agent_before_settle` the file never
- * appears; with it, the next turn picks the pending step up.
+ * The guard asks pi for one more turn when a run ends with unfinished plan steps.
+ *
+ * The prompt tells the model to pause after writing a half-finished plan. Whether the next turn
+ * does the pending work is the model's call (it may wait for the user instead), so what this
+ * asserts is the guard itself: the session file records the continuation entry we asked for.
+ * Without the guard that entry never exists.
  */
 test("a run that stops with an unfinished plan is extended once", async () => {
   test.setTimeout(300_000);
@@ -173,7 +176,6 @@ test("a run that stops with an unfinished plan is extended once", async () => {
   await pinDefaultModel(agentDir, provider, model);
 
   const workspacePath = await makeWorkspace("interjection-guard");
-  const markerPath = join(workspacePath, "guard-step.txt");
   const harness = await launchDesktop(userDataDir, {
     agentDir,
     initialWorkspaces: [workspacePath],
@@ -194,20 +196,36 @@ test("a run that stops with an unfinished plan is extended once", async () => {
       );
     await window.getByRole("button", { name: "Start thread" }).click();
 
-    await expect(window.getByTestId("pinned-cards"))
-      .toContainText("PAUSING_HERE", {
-        timeout: 1,
-      })
-      .catch(() => {});
     await expect(window.getByTestId("transcript")).toContainText("PAUSING_HERE", {
       timeout: 180_000,
     });
 
-    await expect.poll(() => existsSync(markerPath), { timeout: 240_000 }).toBe(true);
-
-    const fileText = await readFile(markerPath, "utf8");
-    expect(fileText.length).toBeGreaterThan(0);
+    await expect
+      .poll(() => sessionFilesMention(agentDir, "pi-gui-plan-continue"), {
+        timeout: 180_000,
+      })
+      .toBe(true);
   } finally {
     await harness.close();
   }
 });
+
+/** Whether any persisted session under `agentDir` records the continuation entry. */
+function sessionFilesMention(agentDir: string, needle: string): boolean {
+  const sessionsDir = join(agentDir, "sessions");
+  if (!existsSync(sessionsDir)) return false;
+  const pending = [sessionsDir];
+  while (pending.length > 0) {
+    const dir = pending.pop() as string;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const target = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        pending.push(target);
+        continue;
+      }
+      if (!entry.name.endsWith(".jsonl")) continue;
+      if (readFileSync(target, "utf8").includes(needle)) return true;
+    }
+  }
+  return false;
+}
