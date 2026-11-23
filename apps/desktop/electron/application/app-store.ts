@@ -533,6 +533,8 @@ export class DesktopAppStore {
       workspaceRefFromState: (workspaceId) => this.workspaceRefFromState(workspaceId),
       sessionFromState: (sessionRef) => this.sessionFromState(sessionRef),
       ensureSessionReady: (sessionRef) => this.ensureSessionReady(sessionRef),
+      sessionConfig: (sessionRef) =>
+        this.sessionState.sessionConfigBySession.get(sessionKey(sessionRef)),
       ensureSessionSubscription: (sessionRef) => this.ensureSessionSubscription(sessionRef),
       subscribeToSessionEvents: (listener) => this.subscribeToSessionEvents(listener),
       updateSessionConfig: (sessionRef, config) => this.updateSessionConfig(sessionRef, config),
@@ -1285,7 +1287,7 @@ export class DesktopAppStore {
 
   async createChildThreadToolResult(
     parentRef: SessionRef,
-    input: { readonly prompt: string; readonly toolCallId: string },
+    input: { readonly prompt: string; readonly toolCallId: string; readonly model?: string },
   ) {
     await this.initialize();
     return this.orchestrationOwner.createChildThreadToolResult(parentRef, input);

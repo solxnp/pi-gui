@@ -7,6 +7,7 @@ import type {
   CreateSessionOptions,
   SessionConfig,
   SessionDriverEvent,
+  SessionModelSelection,
   SessionRef,
   SessionRunOutcome,
   SessionSnapshot,
@@ -96,6 +97,8 @@ interface OrchestrationOwnerHost {
     | { archivedAt?: string; updatedAt: string; title: string; status: string; preview?: string }
     | undefined;
   ensureSessionReady(sessionRef: SessionRef): Promise<SessionSnapshot | undefined>;
+  /** The session's model and thinking level, as the app last recorded them. */
+  sessionConfig(sessionRef: SessionRef): SessionConfig | undefined;
   /** The driver's report of how the session's newest assistant reply ended. */
   lastRunOutcome(sessionRef: SessionRef): SessionRunOutcome | undefined;
   /**
@@ -160,7 +163,7 @@ export interface OrchestrationOwner {
   hasOrchestrationParentSession(sessionRef: SessionRef): boolean;
   createChildThreadToolResult(
     parentRef: SessionRef,
-    input: { readonly prompt: string; readonly toolCallId: string },
+    input: { readonly prompt: string; readonly toolCallId: string; readonly model?: string },
   ): Promise<AgentToolResult<CreateChildThreadToolDetails>>;
   listThreadsToolResult(
     parentRef: SessionRef,
@@ -209,12 +212,16 @@ interface SpawnChildThreadInput {
   readonly parentWorkspaceId: string;
   readonly parentSessionId: string;
   readonly prompt: string;
+  /** `provider/modelId` the child should run, when the caller asked instead of inheriting. */
+  readonly model?: string;
   readonly sourceToolCallId?: string;
 }
 
 interface CreatedChildThreadResult {
   readonly child: OrchestrationChildThread;
   readonly deliveryStatus: NonNullable<CreateChildThreadToolDetails["deliveryStatus"]>;
+  /** The model the child was created with, when the caller named one instead of inheriting. */
+  readonly model?: SessionModelSelection | undefined;
 }
 
 async function createChildThreadRecord(
@@ -252,9 +259,34 @@ async function createChildThreadRecord(
     }
     const childRef = childSessionRef(existing);
     await store.ensureSessionReady(childRef);
+    // A retry of the same tool call must report the model the child actually runs, not the one
+    // this call happens to carry: replaying with a different model would otherwise claim a switch
+    // that never happened.
+    const existingModel = store.sessionConfig(childRef);
+    const existingSelection =
+      existingModel?.provider && existingModel.modelId
+        ? { provider: existingModel.provider, modelId: existingModel.modelId }
+        : undefined;
+    const requested = input.model ? parseChildModel(input.model) : undefined;
+    // A model that is present but unparseable is a caller error on the retry path too, exactly as
+    // it is on the first call. Silently treating it as "not given" would answer as if it applied.
+    if (input.model && !requested) {
+      throw new Error(malformedModelMessage(input.model));
+    }
+    if (
+      requested &&
+      existingSelection &&
+      (requested.provider !== existingSelection.provider ||
+        requested.modelId !== existingSelection.modelId)
+    ) {
+      throw new Error(
+        `This child already runs on ${existingSelection.provider}/${existingSelection.modelId}; a retry cannot switch it to ${requested.provider}/${requested.modelId}.`,
+      );
+    }
     return {
       child: existing,
       deliveryStatus: requireInitialPromptRun(store, childRef, prompt),
+      ...(existingSelection ? { model: existingSelection } : {}),
     };
   }
 
@@ -263,10 +295,27 @@ async function createChildThreadRecord(
   }
   try {
     const createOptions = await store.buildCreateSessionOptions(input.parentWorkspaceId);
-    const session = await store.driver.createSession(workspace, {
-      ...createOptions,
-      title: titleFromPrompt(prompt),
-    });
+    // A caller that names a model wants exactly that one: no silent fallback to the parent's,
+    // because a reviewer on the same model shares its blind spots.
+    const childModel = input.model ? parseChildModel(input.model) : undefined;
+    if (input.model && !childModel) {
+      throw new Error(malformedModelMessage(input.model));
+    }
+    let session;
+    try {
+      session = await store.driver.createSession(workspace, {
+        ...createOptions,
+        ...(childModel ? { initialModel: childModel } : {}),
+        title: titleFromPrompt(prompt),
+      });
+    } catch (error) {
+      if (!childModel) throw error;
+      // The model is only one of the reasons this can fail, so the message names it as the
+      // request without asserting it as the cause.
+      throw new Error(
+        `Could not start the child session (requested model ${childModel.provider}/${childModel.modelId}): ${errorMessage(error)}. If the model is the problem, pi --list-models shows the available pairs.`,
+      );
+    }
     const childRef = session.ref;
     store.seedSession(session);
     await store.ensureSessionSubscription(childRef);
@@ -340,6 +389,7 @@ async function createChildThreadRecord(
         store.orchestrationState().orchestrationChildren.find((entry) => entry.id === child.id) ??
         childWithEvidence,
       deliveryStatus,
+      ...(childModel ? { model: childModel } : {}),
     };
   } finally {
     if (pendingKey) {
@@ -544,17 +594,19 @@ async function cancelChildRunsForParent(
 async function createChildThreadToolResult(
   store: OrchestrationOwnerHost,
   parentRef: SessionRef,
-  input: { readonly prompt: string; readonly toolCallId: string },
+  input: { readonly prompt: string; readonly toolCallId: string; readonly model?: string },
 ): Promise<AgentToolResult<CreateChildThreadToolDetails>> {
-  const { child, deliveryStatus } = await createChildThreadRecord(store, {
+  const { child, deliveryStatus, model } = await createChildThreadRecord(store, {
     parentWorkspaceId: parentRef.workspaceId,
     parentSessionId: parentRef.sessionId,
     prompt: input.prompt,
+    ...(input.model ? { model: input.model } : {}),
     sourceToolCallId: input.toolCallId,
   });
   const details: CreateChildThreadToolDetails = {
     action: createChildThreadAction,
     prompt: input.prompt.trim(),
+    ...(model ? { model: `${model.provider}/${model.modelId}` } : {}),
     childThreadId: child.id,
     childWorkspaceId: child.childWorkspaceId,
     childSessionId: child.childSessionId,
@@ -675,6 +727,28 @@ async function archiveChildThreadsToolResult(
     ],
     details: { action: archiveChildThreadsAction, archived, skipped },
   };
+}
+
+/** One wording for a malformed model, on both the create and the retry path. */
+function malformedModelMessage(value: string): string {
+  return `model must be "provider/modelId", got "${value}". Run pi --list-models to see the available pairs.`;
+}
+
+/**
+ * `provider/modelId` as the tool takes it. The model id itself may contain slashes
+ * (`commandcode/deepseek/deepseek-v4.1-flash`), so only the first slash splits.
+ */
+export function parseChildModel(
+  value: string,
+): { readonly provider: string; readonly modelId: string } | undefined {
+  const trimmed = value.trim();
+  const slash = trimmed.indexOf("/");
+  if (slash <= 0 || slash === trimmed.length - 1) {
+    return undefined;
+  }
+  const provider = trimmed.slice(0, slash).trim();
+  const modelId = trimmed.slice(slash + 1).trim();
+  return provider && modelId ? { provider, modelId } : undefined;
 }
 
 /** Resolves an id only among the caller's own children, never the UI selection. */
@@ -1953,6 +2027,7 @@ function formatThreadReadResult(result: {
 function formatCreateChildThreadResult(result: CreateChildThreadToolDetails): string {
   return (
     `Created child thread: ${result.title ?? result.prompt}\n` +
+    (result.model ? `model: ${result.model}\n` : "") +
     `childThreadId: ${result.childThreadId ?? ""}\n` +
     `childWorkspaceId: ${result.childWorkspaceId ?? ""}\n` +
     `childSessionId: ${result.childSessionId ?? ""}` +

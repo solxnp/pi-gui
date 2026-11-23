@@ -36,6 +36,11 @@ export interface ArchiveChildThreadsToolDetails {
 export interface CreateChildThreadToolDetails {
   readonly action: typeof createChildThreadAction;
   readonly prompt: string;
+  /**
+   * The model the child runs, when it is not the parent's. Present when the caller asked for one,
+   * and also when a retry replays a call whose child was created with one.
+   */
+  readonly model?: string;
   readonly childThreadId?: string;
   readonly childWorkspaceId?: string;
   readonly childSessionId?: string;
@@ -112,7 +117,11 @@ export interface OrchestrationRuntimeBridge {
   ) => Promise<AgentToolResult<ArchiveChildThreadsToolDetails>>;
   readonly createChildThread: (
     ctx: ExtensionContext,
-    input: { readonly prompt: string; readonly toolCallId: string },
+    input: {
+      readonly prompt: string;
+      readonly toolCallId: string;
+      readonly model?: string;
+    },
   ) => Promise<AgentToolResult<CreateChildThreadToolDetails>>;
   readonly listThreads: (
     ctx: ExtensionContext,
@@ -147,6 +156,7 @@ function createCreateChildThreadTool(
     promptGuidelines: [
       "Use create_child_thread when the user asks you to spin up, delegate to, or run a separate child thread.",
       "Keep the child prompt concrete and self-contained so the user can inspect the resulting thread.",
+      "For a review or second opinion, pass model with a provider different from the model you are running: a reviewer on the same model shares its blind spots. Check availability first (pi --list-models and pi auth check --provider), never assume a subscription exists.",
     ],
     parameters: {
       type: "object",
@@ -154,6 +164,10 @@ function createCreateChildThreadTool(
         prompt: {
           type: "string",
           description: "Concrete instructions for the child thread.",
+        },
+        model: {
+          type: "string",
+          description: `Optional "provider/modelId" for the child, e.g. "opencode-go/glm-5.3-flash". Omit to inherit the parent's model. An unavailable provider or model fails with the reason instead of silently falling back.`,
         },
       },
       required: ["prompt"],
@@ -163,7 +177,21 @@ function createCreateChildThreadTool(
       if (!prompt) {
         throw new Error("create_child_thread requires a non-empty prompt.");
       }
-      return bridge.createChildThread(ctx, { prompt, toolCallId });
+      // A model that is present but wrong must fail here: falling back to the parent's model
+      // would run a "cross-model" review on the same model and share its blind spots.
+      const rawModel = isRecord(params) ? params.model : undefined;
+      if (rawModel !== undefined && typeof rawModel !== "string") {
+        throw new Error('create_child_thread model must be a string "provider/modelId".');
+      }
+      const model = typeof rawModel === "string" ? rawModel.trim() : "";
+      if (typeof rawModel === "string" && !model) {
+        throw new Error('create_child_thread model must be a non-empty "provider/modelId".');
+      }
+      return bridge.createChildThread(ctx, {
+        prompt,
+        toolCallId,
+        ...(model ? { model } : {}),
+      });
     },
   };
 }
