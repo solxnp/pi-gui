@@ -1301,6 +1301,8 @@ export interface OrchestrationRuntimeToolTestInput {
   readonly toolCallId?: string;
   readonly sessionRef: SessionRef;
   readonly params: unknown;
+  /** Aborts the tool call after this many ms, the way the user's Stop does. */
+  readonly abortAfterMs?: number;
 }
 
 export interface OrchestrationRuntimeToolTestResult {

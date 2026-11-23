@@ -430,21 +430,37 @@ function createWaitForChildrenTool(
         },
         timeout_minutes: {
           type: "number",
-          description: "How long to wait before returning anyway. Default 10, maximum 30.",
+          description:
+            "How long to wait before returning anyway. Default 10, maximum 30; 0 checks once and returns.",
         },
       },
     },
     async execute(_toolCallId, params, signal, onUpdate, ctx) {
-      const requested =
-        isRecord(params) && Array.isArray(params.thread_ids)
-          ? params.thread_ids.filter(
-              (id): id is string => typeof id === "string" && id.trim() !== "",
-            )
-          : undefined;
+      const rawIds = isRecord(params) ? params.thread_ids : undefined;
+      const requested = Array.isArray(rawIds)
+        ? rawIds.filter((id): id is string => typeof id === "string" && id.trim() !== "")
+        : undefined;
+      // Naming children and getting all of them wrong must not silently become "wait for every
+      // child": that would block on threads the caller never asked about.
+      if (Array.isArray(rawIds) && rawIds.length > 0 && (requested?.length ?? 0) === 0) {
+        return {
+          content: [
+            { type: "text", text: "wait_for_children thread_ids must contain at least one id." },
+          ],
+          details: {
+            action: waitForChildrenAction,
+            children: [],
+            timedOut: false,
+            waitedMs: 0,
+            error: "Invalid thread_ids",
+          },
+        };
+      }
       const rawMinutes = isRecord(params) ? params.timeout_minutes : undefined;
       const minutes =
-        typeof rawMinutes === "number" && Number.isFinite(rawMinutes) && rawMinutes > 0
-          ? Math.min(rawMinutes, MAX_WAIT_MINUTES)
+        typeof rawMinutes === "number" && Number.isFinite(rawMinutes)
+          ? // Zero asks for one immediate look; omitting the field takes the default wait.
+            Math.min(Math.max(rawMinutes, 0), MAX_WAIT_MINUTES)
           : DEFAULT_WAIT_MINUTES;
       return bridge.waitForChildren(ctx, {
         ...(requested && requested.length > 0 ? { threadIds: requested } : {}),

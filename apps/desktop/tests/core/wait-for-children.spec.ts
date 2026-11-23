@@ -135,6 +135,12 @@ test("wait_for_children returns once the child finishes, without messaging the p
     const parentText = await window.getByTestId("transcript").innerText();
     expect(parentText).not.toContain("子会话完成");
     expect(parentText).not.toContain("waiting for");
+
+    // The parent already read the result, so a later supervision tick must not repeat it back
+    // as a wake message: that would be the redundancy the wait exists to remove.
+    await tickOrchestrationSupervision(harness);
+    await tickOrchestrationSupervision(harness);
+    expect(await window.getByTestId("transcript").innerText()).not.toContain("子会话完成");
   } finally {
     await harness.close();
   }
@@ -278,6 +284,191 @@ test("a finished child wakes a parent whose turn is already gone", async () => {
     // Two ticks, one child: the wake happens once, not on every tick.
     const countWakes = async () => (await transcript.innerText()).split("子会话完成").length - 1;
     expect(await countWakes()).toBe(1);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("a wait can be cancelled mid-flight, the way the user's Stop does", async () => {
+  test.setTimeout(120_000);
+  const server = await startHangingOpenAiServer();
+  const userDataDir = await makeUserDataDir();
+  const agentDir = join(userDataDir, "agent");
+  const workspacePath = await makeWorkspace("wait-for-children-cancel");
+  await seedAgentDir(agentDir, {
+    withOpenAiAuth: false,
+    withDefaultModel: false,
+    enabledModels: ["slow-test/slow"],
+  });
+  await writeFile(
+    join(agentDir, "settings.json"),
+    JSON.stringify({
+      defaultProvider: "slow-test",
+      defaultModel: "slow",
+      enabledModels: ["slow-test/slow"],
+      packages: [],
+      cacheWarming: "off",
+      compaction: { enabled: false },
+    }),
+  );
+  await writeFile(
+    join(agentDir, "models.json"),
+    `${JSON.stringify(
+      {
+        providers: {
+          "slow-test": {
+            baseUrl: server.baseUrl,
+            api: "openai-completions",
+            apiKey: "unused",
+            models: [{ id: "slow" }],
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  const harness = await launchDesktop(userDataDir, {
+    agentDir,
+    initialWorkspaces: [workspacePath],
+    scrubProviderEnv: true,
+    testMode: "background",
+  });
+
+  try {
+    const window = await harness.firstWindow();
+    await createNamedThread(window, "Parent cancels its wait");
+    const parentRef = await selectedSessionRef(window);
+    const created = await runOrchestrationRuntimeTool(harness, {
+      toolName: "create_child_thread",
+      toolCallId: "cancel-child",
+      sessionRef: parentRef,
+      params: { prompt: "Never answer." },
+    });
+    const childThreadId = String(created.details?.childThreadId ?? "");
+
+    const started = Date.now();
+    const cancelled = await runOrchestrationRuntimeTool(harness, {
+      toolName: "wait_for_children",
+      toolCallId: "wait-cancelled",
+      sessionRef: parentRef,
+      params: { thread_ids: [childThreadId], timeout_minutes: 10 },
+      abortAfterMs: 300,
+    });
+
+    // Ten-minute wait, cancelled after 300ms: the turn must come back, not sit out the deadline.
+    expect(Date.now() - started).toBeLessThan(10_000);
+    expect(cancelled.details).toMatchObject({ error: "Cancelled", timedOut: false });
+    const children = cancelled.details?.children as readonly { readonly threadId: string }[];
+    expect(children.map((child) => child.threadId)).toContain(childThreadId);
+  } finally {
+    await harness.close();
+  }
+});
+
+test("timeout 0 checks once, and a child that finishes afterwards still wakes the parent", async () => {
+  test.setTimeout(120_000);
+  const userDataDir = await makeUserDataDir();
+  const agentDir = join(userDataDir, "agent");
+  const workspacePath = await makeWorkspace("wait-for-children-zero");
+  await seedAgentDir(agentDir, { withOpenAiAuth: false, withDefaultModel: false });
+  await writeFile(
+    join(agentDir, "settings.json"),
+    JSON.stringify({
+      defaultProvider: "fast-child-test",
+      defaultModel: "scripted",
+      enabledModels: ["fast-child-test/scripted"],
+      packages: [],
+      cacheWarming: "off",
+      compaction: { enabled: false },
+    }),
+  );
+  const { writeProjectExtension } = await import("../helpers/electron-app");
+  await writeProjectExtension(workspacePath, "fast.ts", FAST_EXTENSION);
+  const harness = await launchDesktop(userDataDir, {
+    agentDir,
+    initialWorkspaces: [workspacePath],
+    scrubProviderEnv: true,
+    testMode: "background",
+  });
+
+  try {
+    const window = await harness.firstWindow();
+    await createNamedThread(window, "Parent checks once");
+    const parentRef = await selectedSessionRef(window);
+    const created = await runOrchestrationRuntimeTool(harness, {
+      toolName: "create_child_thread",
+      toolCallId: "zero-child",
+      sessionRef: parentRef,
+      params: { prompt: "Review the change." },
+    });
+    const childThreadId = String(created.details?.childThreadId ?? "");
+
+    const started = Date.now();
+    const peek = await runOrchestrationRuntimeTool(harness, {
+      toolName: "wait_for_children",
+      toolCallId: "peek",
+      sessionRef: parentRef,
+      params: { thread_ids: [childThreadId], timeout_minutes: 0 },
+    });
+    // Zero means "look once", not "use the ten-minute default".
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(peek.details).toMatchObject({ timedOut: true });
+
+    // The child finishes after that peek: the wake must still happen, or the result is lost.
+    await expect
+      .poll(async () => (await getDesktopState(window)).orchestrationChildren[0]?.status, {
+        timeout: 30_000,
+      })
+      .toBe("complete");
+    await tickOrchestrationSupervision(harness);
+    await expect(window.getByTestId("transcript")).toContainText("子会话完成", {
+      timeout: 30_000,
+    });
+  } finally {
+    await harness.close();
+  }
+});
+
+test("a thread_ids list with no usable id is refused instead of waiting for everything", async () => {
+  test.setTimeout(120_000);
+  const userDataDir = await makeUserDataDir();
+  const agentDir = join(userDataDir, "agent");
+  const workspacePath = await makeWorkspace("wait-for-children-blank-ids");
+  await seedAgentDir(agentDir, { withOpenAiAuth: false, withDefaultModel: false });
+  await writeFile(
+    join(agentDir, "settings.json"),
+    JSON.stringify({
+      defaultProvider: "fast-child-test",
+      defaultModel: "scripted",
+      enabledModels: ["fast-child-test/scripted"],
+      packages: [],
+      cacheWarming: "off",
+      compaction: { enabled: false },
+    }),
+  );
+  const { writeProjectExtension } = await import("../helpers/electron-app");
+  await writeProjectExtension(workspacePath, "fast.ts", FAST_EXTENSION);
+  const harness = await launchDesktop(userDataDir, {
+    agentDir,
+    initialWorkspaces: [workspacePath],
+    scrubProviderEnv: true,
+    testMode: "background",
+  });
+
+  try {
+    const window = await harness.firstWindow();
+    await createNamedThread(window, "Parent sends blank ids");
+    const parentRef = await selectedSessionRef(window);
+
+    const refused = await runOrchestrationRuntimeTool(harness, {
+      toolName: "wait_for_children",
+      toolCallId: "blank-ids",
+      sessionRef: parentRef,
+      params: { thread_ids: [" ", ""], timeout_minutes: 10 },
+    });
+    expect(refused.details).toMatchObject({ error: "Invalid thread_ids" });
+    expect(Number(refused.details?.waitedMs)).toBe(0);
   } finally {
     await harness.close();
   }

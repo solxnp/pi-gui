@@ -948,7 +948,9 @@ export class DesktopAppStore {
         "（这是 App 的完成通知，不是用户输入。用 list_threads 可以查看其余子会话。）",
       ].join("\n");
       try {
-        await this.conversationOwner.deliverBackgroundInstruction(parentRef, text);
+        await this.conversationOwner.deliverBackgroundInstruction(parentRef, text, {
+          rollbackOnError: true,
+        });
       } catch (error) {
         for (const child of children) {
           this.wokenChildIds.delete(child.id);
@@ -1361,11 +1363,23 @@ export class DesktopAppStore {
     input: {
       readonly threadIds?: readonly string[];
       readonly timeoutMs: number;
+      readonly signal?: AbortSignal;
       readonly onProgress?: (update: { readonly status: string }) => void;
     },
   ) {
     await this.initialize();
-    return this.orchestrationOwner.waitForChildThreads(parentRef, input);
+    const result = await this.orchestrationOwner.waitForChildThreads(parentRef, input);
+    // Only a child whose result the parent actually read is settled: marking one that is still
+    // running would suppress the wake it will need when it finishes. A cancelled wait read
+    // nothing at all, so it settles nothing either.
+    if (result.details?.error !== "Cancelled") {
+      for (const child of result.details?.children ?? []) {
+        if (child.status === "complete" || child.status === "failed") {
+          this.wokenChildIds.add(child.threadId);
+        }
+      }
+    }
+    return result;
   }
 
   async createChildThreadToolResult(

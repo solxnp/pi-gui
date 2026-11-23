@@ -169,6 +169,7 @@ export interface OrchestrationOwner {
     input: {
       readonly threadIds?: readonly string[];
       readonly timeoutMs: number;
+      readonly signal?: AbortSignal;
       readonly onProgress?: (update: { readonly status: string }) => void;
     },
   ): Promise<AgentToolResult<WaitForChildrenToolDetails>>;
@@ -647,6 +648,7 @@ async function waitForChildThreads(
   };
 
   for (;;) {
+    await store.initialize();
     // A blocking wait must be interruptible: the user's Stop has to end the turn, not sit behind
     // a sleep until the deadline.
     if (input.signal?.aborted) {
@@ -667,7 +669,6 @@ async function waitForChildThreads(
         },
       };
     }
-    await store.initialize();
     const covered = snapshot();
     if (covered.length === 0) {
       return {
