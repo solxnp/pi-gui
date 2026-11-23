@@ -7,6 +7,7 @@ import type {
   ExtensionCardTone,
   HostUiFormField,
 } from "@pi-gui/session-driver";
+import { clampUnitInterval } from "@pi-gui/session-driver";
 import { useTranslation } from "../../i18n";
 import { CheckIcon, ExtensionIcon } from "../../ui/icons";
 
@@ -19,13 +20,22 @@ const ROW_STATUS_LABEL_KEYS = {
 } as const satisfies Readonly<Record<ExtensionCardRowStatus, string>>;
 
 /**
+ * A fraction as a whole percentage. The parser already clamps and drops non-finite values, but a
+ * card built by hand in the renderer skips that path, and `NaN%` is worse than a wrong bar: it
+ * reaches `width` and `aria-valuenow` verbatim. Every percentage in this file goes through here.
+ */
+function percentFrom(value: number): number {
+  return Math.round((clampUnitInterval(value) ?? 0) * 100);
+}
+
+/**
  * A bar and a percentage for a card that reports `progress`. A ring was tried first and dropped:
  * at one row of text it is too small to read a fifth of a step out of, while a bar's width reads
  * at a glance.
  */
 function CardProgress({ value }: { readonly value: number }) {
   const { t } = useTranslation();
-  const percent = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  const percent = percentFrom(value);
   return (
     <div
       className="extension-card__progress"
@@ -47,6 +57,18 @@ function CardProgress({ value }: { readonly value: number }) {
   );
 }
 
+/**
+ * A row shows its own bar only while it can still move. Done is a finished tick and blocked is a
+ * stopped step, so a bar under either would read as progress that is not happening.
+ */
+function showsRowProgress(row: {
+  readonly status?: ExtensionCardRowStatus;
+  readonly progress?: number;
+}): boolean {
+  if (row.progress === undefined) return false;
+  return row.status !== "done" && row.status !== "blocked";
+}
+
 /** Done draws a check; the other three are dots whose fill says which state they are in. */
 function RowStatusDot({ status }: { readonly status: ExtensionCardRowStatus }) {
   return <span className="extension-card__status-dot" data-dot={status} aria-hidden="true" />;
@@ -58,7 +80,7 @@ function RowStatusDot({ status }: { readonly status: ExtensionCardRowStatus }) {
  */
 function RowProgress({ value }: { readonly value: number }) {
   const { t } = useTranslation();
-  const percent = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  const percent = percentFrom(value);
   return (
     <span
       className="extension-card__row-progress"
@@ -142,7 +164,7 @@ export function ExtensionCardItem({
               className="extension-card__row"
               key={`row:${index}`}
               data-row-status={row.status ?? ""}
-              data-row-progress={row.progress === undefined ? "" : Math.round(row.progress * 100)}
+              data-row-progress={row.progress === undefined ? "" : percentFrom(row.progress)}
             >
               {row.status ? (
                 <span
@@ -158,9 +180,7 @@ export function ExtensionCardItem({
               )}
               <span className="extension-card__value">
                 {row.value}
-                {row.progress !== undefined && row.status !== "done" ? (
-                  <RowProgress value={row.progress} />
-                ) : null}
+                {showsRowProgress(row) ? <RowProgress value={row.progress ?? 0} /> : null}
               </span>
             </li>
           ))}

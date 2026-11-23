@@ -83,6 +83,18 @@ export interface ExtensionCardRow {
 export type ExtensionCardRowStatus = "pending" | "in_progress" | "done" | "blocked";
 
 /**
+ * A 0..1 fraction, clamped; anything that is not a finite number is no progress at all.
+ *
+ * One implementation, because three places need it: the driver parsing a card entry, the plan
+ * tool building one, and the renderer guarding a card built by hand. Two copies drifted apart
+ * once already (the renderer could print `NaN%` while the parser had dropped the value).
+ */
+export function clampUnitInterval(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return Math.min(1, Math.max(0, value));
+}
+
+/**
  * A card an extension declares as data with `pi.appendEntry("pi-gui.card", card)`.
  * pi-gui draws it with its own component; there are no styling knobs.
  */

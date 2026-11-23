@@ -50,6 +50,7 @@ export default function plans(pi) {
               { step: "读台账", status: "done" },
               { step: "拆模块", status: "in_progress" },
               { step: "真机验证", status: "pending" },
+              { step: "补测试", status: "pending" },
             ],
           },
         }];
@@ -64,6 +65,7 @@ export default function plans(pi) {
               { step: "读台账", status: "done" },
               { step: "拆模块", status: "in_progress", progress: 0.4 },
               { step: "真机验证", status: "pending" },
+              { step: "补测试", status: "pending" },
             ],
           },
         }];
@@ -78,6 +80,7 @@ export default function plans(pi) {
               { step: "读台账", status: "done" },
               { step: "拆模块", status: "done" },
               { step: "真机验证", status: "in_progress", progress: 0.5 },
+              { step: "补测试", status: "blocked", progress: 0.3 },
             ],
           },
         }];
@@ -161,31 +164,41 @@ test("update_plan pins the plan above the composer and rewrites it in place", as
     await expect(pinned).toHaveCount(1);
     await expect(transcriptCards).toHaveCount(0);
     await expect(pinned).toContainText("计划");
-    await expect(pinned).toContainText("2/3 步完成");
+    await expect(pinned).toContainText("2/4 步完成");
     await expect(pinned).toContainText("拆模块");
     await expect(pinned).toContainText("真机验证");
 
     // The step number is gone; each row leads with a status icon instead.
     const statuses = pinned.getByTestId("extension-card-row-status");
-    await expect(statuses).toHaveCount(3);
+    await expect(statuses).toHaveCount(4);
     const rowStates = await pinned
       .locator(".extension-card__row")
       .evaluateAll((rows) => rows.map((row) => row.getAttribute("data-row-status")));
-    expect(rowStates).toEqual(["done", "done", "in_progress"]);
+    expect(rowStates).toEqual(["done", "done", "in_progress", "blocked"]);
     // The spec pins Chromium to en-US, so the labels are the English ones.
     await expect(statuses.first()).toHaveAttribute("aria-label", "Done");
-    await expect(statuses.last()).toHaveAttribute("aria-label", "In progress");
+    await expect(statuses.nth(2)).toHaveAttribute("aria-label", "In progress");
+    await expect(statuses.last()).toHaveAttribute("aria-label", "Blocked");
 
-    // Progress is a bar plus a percentage, not a ring: 2 of 3 done reads 67%.
+    // Progress is a bar plus a percentage over the whole card: 2 of 4 done reads 50%.
     const progress = pinned.getByTestId("extension-card-progress");
-    await expect(progress).toHaveAttribute("data-percent", "67");
-    await expect(progress).toContainText("67%");
+    await expect(progress).toHaveAttribute("data-percent", "50");
+    await expect(progress).toContainText("50%");
 
-    // The running step keeps its own bar: a long step shows partial progress without finishing.
+    // Only the running step draws its own bar. The blocked row carries a fraction in the data
+    // but must not draw one: a stopped step that showed a bar would read as still moving.
     const rowProgress = pinned.getByTestId("extension-card-row-progress");
     await expect(rowProgress).toHaveCount(1);
     await expect(rowProgress).toHaveAttribute("data-percent", "50");
-    await expect(pinned.locator('[data-row-progress="50"]')).toHaveCount(1);
+    await expect(
+      pinned.locator('[data-row-status="in_progress"][data-row-progress="50"]'),
+    ).toHaveCount(1);
+    await expect(pinned.locator('[data-row-status="blocked"][data-row-progress="30"]')).toHaveCount(
+      1,
+    );
+    await expect(
+      pinned.locator('[data-row-status="blocked"] [data-testid="extension-card-row-progress"]'),
+    ).toHaveCount(0);
     // A done step's own bar is gone; the tick alone says it finished.
     await expect(
       pinned.locator('[data-row-status="done"] [data-testid="extension-card-row-progress"]'),
@@ -198,10 +211,10 @@ test("update_plan pins the plan above the composer and rewrites it in place", as
 
     // Collapse hides the rows but keeps the header, so the progress stays readable.
     const rows = pinned.locator(".extension-card__row");
-    await expect(rows).toHaveCount(3);
+    await expect(rows).toHaveCount(4);
     await pinned.getByTestId("pinned-card-toggle").click();
     await expect(rows).toHaveCount(0);
-    await expect(pinned).toContainText("2/3 步完成");
+    await expect(pinned).toContainText("2/4 步完成");
   } finally {
     await harness.close();
   }

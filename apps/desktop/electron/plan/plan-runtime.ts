@@ -15,7 +15,7 @@ import type {
   ExtensionFactory,
   ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
-import { EXTENSION_PIN_CUSTOM_TYPE } from "@pi-gui/session-driver";
+import { clampUnitInterval, EXTENSION_PIN_CUSTOM_TYPE } from "@pi-gui/session-driver";
 
 export const updatePlanToolName = "update_plan";
 export const updatePlanAction = "pi_gui_update_plan";
@@ -79,10 +79,7 @@ export function planStepsFromParams(params: unknown): readonly PlanStep[] | unde
         : index === 0
           ? "in_progress"
           : "pending";
-    const progress =
-      typeof raw.progress === "number" && Number.isFinite(raw.progress)
-        ? Math.min(1, Math.max(0, raw.progress))
-        : undefined;
+    const progress = clampUnitInterval(raw.progress);
     steps.push({ step, status: resolved, ...(progress !== undefined ? { progress } : {}) });
   }
   return steps.length > 0 ? steps : undefined;

@@ -30,6 +30,7 @@ import type {
   WorkspaceRef,
 } from "@pi-gui/session-driver";
 import {
+  clampUnitInterval,
   EXTENSION_CARD_CUSTOM_TYPE,
   EXTENSION_PIN_CUSTOM_TYPE,
   parseExtensionAction,
@@ -650,12 +651,6 @@ function parseExtensionCard(data: unknown): ExtensionCard | string {
 
 function isCardRowStatus(value: unknown): value is ExtensionCardRowStatus {
   return value === "pending" || value === "in_progress" || value === "done" || value === "blocked";
-}
-
-/** A 0..1 fraction, clamped; anything that is not a finite number is no progress at all. */
-function clampUnitInterval(value: unknown): number | undefined {
-  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
-  return Math.min(1, Math.max(0, value));
 }
 
 /** Card rows and options per card are bounded, so one entry cannot draw thousands of lines. */

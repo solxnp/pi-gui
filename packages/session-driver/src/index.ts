@@ -74,6 +74,8 @@ export type {
   RuntimeSnapshot,
 } from "./runtime-types.js";
 
+export { clampUnitInterval } from "./transcript.js";
+
 export type {
   ExtensionCard,
   ExtensionCardAnsweredForm,
