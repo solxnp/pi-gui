@@ -1,4 +1,4 @@
-import { isCardEntryItem, sessionKey } from "@pi-gui/session-driver";
+import { isCardEntryItem, isInterjectionSteer, sessionKey } from "@pi-gui/session-driver";
 import type { SessionTranscriptItem, SessionTranscriptPin } from "@pi-gui/session-driver";
 import type { SessionDriverEvent, SessionQueuedMessage, SessionRef } from "@pi-gui/session-driver";
 import type { TranscriptMessage } from "../../contracts/desktop-state";
@@ -105,8 +105,9 @@ export function appendQueuedUserMessage(
     role: "user" as const,
     text: message.text,
     // A steer is drawn while the run is still going, long before the driver projects the stored
-    // message, so the row says what it is from the moment it appears.
-    ...(message.mode === "steer" ? { interjection: true } : {}),
+    // message, so the row says what it is from the moment it appears. Same rule as the delivery
+    // path, so a reload cannot drop the label.
+    ...(isInterjectionSteer(message) ? { interjection: true } : {}),
     createdAt: message.createdAt,
     ...(message.attachments?.length
       ? {
