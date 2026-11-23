@@ -99,6 +99,7 @@ export {
   EXTENSION_CARD_CUSTOM_TYPE,
   EXTENSION_PIN_CUSTOM_TYPE,
   isCardEntryItem,
+  isInterjectionSteer,
 } from "./transcript.js";
 export type { ExtensionAction, ExtensionActionType } from "./extension-actions.js";
 export { parseExtensionAction, parseExtensionUrl } from "./extension-actions.js";

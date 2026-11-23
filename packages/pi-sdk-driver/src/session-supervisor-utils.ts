@@ -41,6 +41,42 @@ import type { SessionQueuedMessage } from "@pi-gui/session-driver/types";
 const FILE_ATTACHMENT_BLOCK_START = "<pi-gui-file-attachments>";
 const FILE_ATTACHMENT_BLOCK_END = "</pi-gui-file-attachments>";
 
+/**
+ * A message the user typed while a run was already going (a steer). pi hands it to the model as an
+ * ordinary user message (`agent-session.js:1805`), so nothing in the transcript says "this arrived
+ * mid-run, answer it and keep working". Without that, a model that treats it as a fresh user turn
+ * answers and ends the run, leaving half the work undone — the failure this block prevents.
+ */
+const INTERJECTION_BLOCK_START = "<pi-gui-interjection>";
+const INTERJECTION_BLOCK_END = "</pi-gui-interjection>";
+const INTERJECTION_DIRECTIVE =
+  "The user typed this while you were already working on a task. If it needs an answer, answer it briefly and then keep going: continue the task you were doing and call a tool in this same turn. Do not end your run with only a reply. If it is just extra context, read it and continue without replying. If instead it tells you to stop, wait or undo the work, do that: the user outranks this note.";
+
+/** The exact block a steering message carries, so only our own block is ever recognised. */
+const INTERJECTION_BLOCK = `${INTERJECTION_BLOCK_START}${INTERJECTION_DIRECTIVE}${INTERJECTION_BLOCK_END}`;
+
+/** Wrap a steering message so the model reads it as a mid-run addition, not a new user turn. */
+export function injectInterjectionPreamble(text: string): string {
+  return `${INTERJECTION_BLOCK}\n${text}`;
+}
+
+/**
+ * Whether a stored message was delivered as a mid-run interjection.
+ *
+ * Matching the whole block, not just the opening tag, keeps a prompt that happens to quote the
+ * marker from being mislabelled or having its text cut.
+ */
+export function isInterjectionMessage(message: unknown): boolean {
+  if (!isRecord(message) || message.role !== "user") return false;
+  return textPartsOf(message).some((text) => text.startsWith(INTERJECTION_BLOCK));
+}
+
+/** Drop the block the model needs but the user should never see. */
+function stripInterjectionPreamble(text: string, role: unknown): string {
+  if (role !== "user" || !text.startsWith(INTERJECTION_BLOCK)) return text;
+  return text.slice(INTERJECTION_BLOCK.length).replace(/^\n+/, "");
+}
+
 export interface SnapshotSource {
   readonly ref: SessionRef;
   readonly workspace: WorkspaceRef;
@@ -442,6 +478,7 @@ function transcriptFromSources(
         role,
         text,
         ...(attachments.length > 0 ? { attachments } : {}),
+        ...(isInterjectionMessage(message) ? { interjection: true } : {}),
         createdAt,
       });
     }
@@ -838,35 +875,36 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/** The text a message carries, before the model-facing envelopes are stripped. */
+function textPartsOf(message: Record<string, unknown>): string[] {
+  const { content } = message;
+  if (typeof content === "string") {
+    return [content];
+  }
+  if (!Array.isArray(content)) {
+    return [];
+  }
+  return content.flatMap((part) =>
+    isRecord(part) && part.type === "text" && typeof part.text === "string" ? [part.text] : [],
+  );
+}
+
 export function messageText(message: Record<string, unknown>): string {
   if (message.role === "branchSummary" || message.role === "compactionSummary") {
     return typeof message.summary === "string" ? message.summary.trim() : "";
   }
 
-  const { content } = message;
-  if (typeof content === "string") {
-    return stripSerializedFileAttachments(content, message.role).text.trim();
-  }
-
-  if (Array.isArray(content)) {
-    return content
-      .map((part) =>
-        isRecord(part) && part.type === "text" && typeof part.text === "string"
-          ? stripSerializedFileAttachments(part.text, message.role).text
-          : "",
-      )
-      .filter((text) => text.length > 0)
-      .join("\n\n")
-      .trim();
-  }
-
-  return "";
+  return textPartsOf(message)
+    .map((text) => stripSerializedEnvelope(text, message.role).text)
+    .filter((text) => text.length > 0)
+    .join("\n\n")
+    .trim();
 }
 
 function messageAttachments(message: Record<string, unknown>) {
   const { content } = message;
   if (typeof content === "string") {
-    return stripSerializedFileAttachments(content, message.role).attachments;
+    return stripSerializedEnvelope(content, message.role).attachments;
   }
 
   if (!Array.isArray(content)) {
@@ -875,7 +913,7 @@ function messageAttachments(message: Record<string, unknown>) {
 
   return content.flatMap((part) => {
     if (isRecord(part) && part.type === "text" && typeof part.text === "string") {
-      return stripSerializedFileAttachments(part.text, message.role).attachments;
+      return stripSerializedEnvelope(part.text, message.role).attachments;
     }
 
     if (
@@ -898,10 +936,13 @@ function messageAttachments(message: Record<string, unknown>) {
   });
 }
 
-function stripSerializedFileAttachments(
+function stripSerializedEnvelope(
   text: string,
   role: unknown,
 ): { readonly text: string; readonly attachments: readonly SessionTranscriptAttachment[] } {
+  // Both envelopes are only for the model, and they can stack: the composer serializes attachments
+  // before the driver wraps a steering message, so the interjection block comes first.
+  text = stripInterjectionPreamble(text, role);
   if (role !== "user" || !text.startsWith(FILE_ATTACHMENT_BLOCK_START)) {
     return {
       text,

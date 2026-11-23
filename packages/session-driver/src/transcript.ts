@@ -1,5 +1,17 @@
 import type { ExtensionAction } from "./extension-actions.js";
-import type { HostUiFormField } from "./types.js";
+import type { HostUiFormField, SessionQueuedMessage } from "./types.js";
+
+/**
+ * Whether a queued message is delivered as an interjection of the running task.
+ *
+ * A steer is, but a slash command is not: the driver leaves `/…` text alone so pi can still expand
+ * skills and prompt templates, so there is no instruction block to detect later either. Both the
+ * delivery path and the optimistic transcript row ask this one function, so a steer can never be
+ * labelled live and then lose the label after a reload.
+ */
+export function isInterjectionSteer(message: Pick<SessionQueuedMessage, "mode" | "text">): boolean {
+  return message.mode === "steer" && !message.text.startsWith("/");
+}
 
 export interface SessionTranscriptImageAttachment {
   readonly kind: "image";
@@ -25,6 +37,12 @@ export interface SessionTranscriptMessage {
   readonly kind: "message";
   readonly role: SessionTranscriptRole;
   readonly text: string;
+  /**
+   * A prompt the user typed while a run was already going (a steer). It is an ordinary user row
+   * in the transcript, so the app has to say so itself: the reader cannot tell it apart from a
+   * fresh request otherwise.
+   */
+  readonly interjection?: boolean;
   readonly attachments?: readonly SessionTranscriptAttachment[];
   readonly createdAt: string;
   readonly id: string;

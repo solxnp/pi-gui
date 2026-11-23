@@ -60,6 +60,7 @@ import type { SessionFileCatalogStorage } from "@pi-gui/catalogs";
 import {
   EXTENSION_CARD_CUSTOM_TYPE,
   FORM_SKIP_ANSWER_FIELD,
+  isInterjectionSteer,
   sessionKey,
 } from "@pi-gui/session-driver";
 import { buildSessionSchemaInfo, readSessionFileSchemaVersion } from "./session-schema.js";
@@ -102,6 +103,7 @@ import {
   displayMessagesFromSession,
   extractPreview,
   injectFileAttachmentPreamble,
+  injectInterjectionPreamble,
   isExtensionCardEntry,
   isExtensionPinEntry,
   messageText,
@@ -2489,7 +2491,14 @@ export class SessionSupervisor {
     }[],
   ): Promise<void> {
     if (deliverAs === "steer") {
-      await session.steer(text, images ? [...images] : undefined);
+      // A steer lands in the transcript as a plain user message, so pi gives the model no way to
+      // tell it apart from a fresh request. Say so in the text, or the model answers and ends the
+      // run instead of resuming the work it was already doing. A slash command keeps its own
+      // prefix: pi expands skills and prompt templates only when the text starts with `/`.
+      const steeringText = isInterjectionSteer({ mode: "steer", text })
+        ? injectInterjectionPreamble(text)
+        : text;
+      await session.steer(steeringText, images ? [...images] : undefined);
       return;
     }
     await session.followUp(text, images ? [...images] : undefined);
