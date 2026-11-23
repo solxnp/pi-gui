@@ -78,6 +78,7 @@ export type {
   ExtensionCard,
   ExtensionCardAnsweredForm,
   ExtensionCardRow,
+  ExtensionCardRowStatus,
   ExtensionCardTone,
   SessionTranscriptCard,
   SessionTranscriptCustomMessage,

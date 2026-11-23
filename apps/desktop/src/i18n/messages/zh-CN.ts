@@ -36,6 +36,11 @@ export const zhCN: Partial<Messages> = {
   "extensionForm.other": "其他 —— 我自己写",
   "extensionForm.otherBadge": "自己写的",
   "extensionForm.otherPlaceholder": "写你的答案",
+  "extensionRow.pending": "待做",
+  "extensionRow.in_progress": "进行中",
+  "extensionRow.done": "已完成",
+  "extensionRow.blocked": "阻塞",
+  "extensionCard.progress": "进度 {percent}%",
   "ui.configureAnOpenAICompatibleServerTheEndpointAndAPIKeyAreStored":
     "配置兼容 OpenAI 的服务。端点和 API 密钥将以明文保存在",
   "ui.providerID": "提供方标识",

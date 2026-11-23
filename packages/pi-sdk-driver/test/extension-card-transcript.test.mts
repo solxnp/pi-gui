@@ -413,3 +413,41 @@ await test("a live card and the reopened transcript show the same card once", as
   assert.deepEqual(allCards[0], live);
   assert.deepEqual(await pins(), [livePins[1]], "and the same pin");
 });
+
+await test("a row's status and a card's progress survive parsing; junk is dropped or clamped", () => {
+  const item = transcriptItemFromCardEntry(
+    cardEntry({
+      title: "计划",
+      progress: 0.4,
+      rows: [
+        { label: "●", value: "读台账", status: "done" },
+        { label: "◐", value: "拆模块", status: "in_progress" },
+        { label: "✕", value: "验证", status: "blocked" },
+        { label: "○", value: "收尾", status: "pending" },
+        { label: "?", value: "乱写", status: "whatever" },
+        { label: "?", value: "不是字符串", status: 7 },
+      ],
+    }),
+  );
+  assert.ok(item.kind === "card");
+  assert.equal(item.card.progress, 0.4);
+  assert.deepEqual(item.card.rows, [
+    { label: "●", value: "读台账", status: "done" },
+    { label: "◐", value: "拆模块", status: "in_progress" },
+    { label: "✕", value: "验证", status: "blocked" },
+    { label: "○", value: "收尾", status: "pending" },
+    { label: "?", value: "乱写" },
+    { label: "?", value: "不是字符串" },
+  ]);
+
+  // A percentage outside 0..1 is clamped rather than trusted; a non-number is no progress at all.
+  const clamped = transcriptItemFromCardEntry(cardEntry({ title: "Clamp", progress: 1.8 }));
+  assert.ok(clamped.kind === "card");
+  assert.equal(clamped.card.progress, 1);
+  const negative = transcriptItemFromCardEntry(cardEntry({ title: "Negative", progress: -3 }));
+  assert.ok(negative.kind === "card");
+  assert.equal(negative.card.progress, 0);
+  const junk = transcriptItemFromCardEntry(cardEntry({ title: "Junk", progress: "half" }));
+  assert.ok(junk.kind === "card");
+  assert.equal(junk.card.progress, undefined);
+});

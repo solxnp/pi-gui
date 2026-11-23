@@ -66,7 +66,15 @@ export type ExtensionCardTone = "neutral" | "success" | "warning" | "error";
 export interface ExtensionCardRow {
   readonly label: string;
   readonly value: string;
+  /**
+   * Progress a plan row reports. A renderer that knows it draws a status icon and drops the
+   * label; one that does not still has `label` and `value` to fall back on.
+   */
+  readonly status?: ExtensionCardRowStatus;
 }
+
+/** The four states a step can be in. Anything else is drawn as unmarked. */
+export type ExtensionCardRowStatus = "pending" | "in_progress" | "done" | "blocked";
 
 /**
  * A card an extension declares as data with `pi.appendEntry("pi-gui.card", card)`.
@@ -83,6 +91,11 @@ export interface ExtensionCard {
   readonly tone: ExtensionCardTone;
   readonly rows: readonly ExtensionCardRow[];
   readonly actions: readonly ExtensionAction[];
+  /**
+   * How far through the card's work it is, 0 to 1. Drawn as a bar and a percentage; a card that
+   * omits it gets no bar, which keeps answered forms and one-off notices unchanged.
+   */
+  readonly progress?: number;
   /**
    * A question that was asked and answered, with its question and every option kept: the thread
    * shows the whole board afterwards, with the chosen options marked. `rows` still carries the

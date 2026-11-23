@@ -50,6 +50,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/** A step counts as progress once it is done; a blocked step is stopped, not advanced. */
+export function planProgress(steps: readonly PlanStep[]): number {
+  if (steps.length === 0) return 0;
+  return steps.filter((step) => step.status === "done").length / steps.length;
+}
+
 export function planStepsFromParams(params: unknown): readonly PlanStep[] | undefined {
   if (!isRecord(params) || !Array.isArray(params.steps)) {
     return undefined;
@@ -89,9 +95,13 @@ export function planPinPayload(title: string, steps: readonly PlanStep[]): Recor
     title,
     subtitle: `${done}/${steps.length} 步完成`,
     tone: "neutral",
-    rows: steps.map((step, index) => ({
-      label: `${index + 1}`,
-      value: `${STATUS_MARKS[step.status]} ${step.step}`,
+    progress: planProgress(steps),
+    // The status icon replaces the step number, so `label` carries the status mark and `value`
+    // the step text: a client that does not know `status` still reads the plan in order.
+    rows: steps.map((step) => ({
+      label: STATUS_MARKS[step.status],
+      value: step.step,
+      status: step.status,
     })),
     actions: [],
   };

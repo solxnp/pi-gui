@@ -12,6 +12,7 @@ import type {
   ExtensionCardAnsweredForm,
   HostUiFormOption,
   ExtensionCardRow,
+  ExtensionCardRowStatus,
   SessionAttachment,
   SessionConfig,
   SessionErrorInfo,
@@ -608,11 +609,13 @@ function parseExtensionCard(data: unknown): ExtensionCard | string {
       ? data.tone
       : "neutral";
   const rows = Array.isArray(data.rows)
-    ? data.rows.flatMap((row): ExtensionCardRow[] =>
-        isRecord(row) && nonEmptyString(row.label) && isCardValue(row.value)
-          ? [{ label: row.label, value: String(row.value) }]
-          : [],
-      )
+    ? data.rows.flatMap((row): ExtensionCardRow[] => {
+        if (!isRecord(row) || !nonEmptyString(row.label) || !isCardValue(row.value)) {
+          return [];
+        }
+        const status = isCardRowStatus(row.status) ? row.status : undefined;
+        return [{ label: row.label, value: String(row.value), ...(status ? { status } : {}) }];
+      })
     : [];
   const actions = Array.isArray(data.actions)
     ? data.actions
@@ -624,6 +627,10 @@ function parseExtensionCard(data: unknown): ExtensionCard | string {
     : [];
   const answeredForm =
     data.answeredForm === undefined ? undefined : parseExtensionCardAnsweredForm(data.answeredForm);
+  const progress =
+    typeof data.progress === "number" && Number.isFinite(data.progress)
+      ? Math.min(1, Math.max(0, data.progress))
+      : undefined;
   return {
     ...(key ? { key } : {}),
     title,
@@ -631,8 +638,13 @@ function parseExtensionCard(data: unknown): ExtensionCard | string {
     tone,
     rows,
     actions,
+    ...(progress !== undefined ? { progress } : {}),
     ...(answeredForm ? { answeredForm } : {}),
   };
+}
+
+function isCardRowStatus(value: unknown): value is ExtensionCardRowStatus {
+  return value === "pending" || value === "in_progress" || value === "done" || value === "blocked";
 }
 
 /** Card rows and options per card are bounded, so one entry cannot draw thousands of lines. */

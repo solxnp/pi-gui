@@ -148,8 +148,24 @@ test("update_plan pins the plan above the composer and rewrites it in place", as
     await expect(transcriptCards).toHaveCount(0);
     await expect(pinned).toContainText("计划");
     await expect(pinned).toContainText("2/3 步完成");
-    await expect(pinned).toContainText("● 拆模块");
-    await expect(pinned).toContainText("◐ 真机验证");
+    await expect(pinned).toContainText("拆模块");
+    await expect(pinned).toContainText("真机验证");
+
+    // The step number is gone; each row leads with a status icon instead.
+    const statuses = pinned.getByTestId("extension-card-row-status");
+    await expect(statuses).toHaveCount(3);
+    const rowStates = await pinned
+      .locator(".extension-card__row")
+      .evaluateAll((rows) => rows.map((row) => row.getAttribute("data-row-status")));
+    expect(rowStates).toEqual(["done", "done", "in_progress"]);
+    // The spec pins Chromium to en-US, so the labels are the English ones.
+    await expect(statuses.first()).toHaveAttribute("aria-label", "Done");
+    await expect(statuses.last()).toHaveAttribute("aria-label", "In progress");
+
+    // Progress is a bar plus a percentage, not a ring: 2 of 3 done reads 67%.
+    const progress = pinned.getByTestId("extension-card-progress");
+    await expect(progress).toHaveAttribute("data-percent", "67");
+    await expect(progress).toContainText("67%");
     const pinBox = await pinned.boundingBox();
     const composerBox = await window.getByTestId("composer").boundingBox();
     assertExists(pinBox, "Expected the plan card box");

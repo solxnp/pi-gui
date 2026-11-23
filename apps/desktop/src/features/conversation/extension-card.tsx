@@ -3,13 +3,55 @@ import type {
   ExtensionAction,
   ExtensionCard,
   ExtensionCardAnsweredForm,
+  ExtensionCardRowStatus,
   ExtensionCardTone,
   HostUiFormField,
 } from "@pi-gui/session-driver";
 import { useTranslation } from "../../i18n";
-import { ExtensionIcon } from "../../ui/icons";
+import { CheckIcon, ExtensionIcon } from "../../ui/icons";
 
-/** Asks the app to run one of the fixed actions an extension's button can name. */
+/** The four states a plan row reports, as the labels their icons and screen readers get. */
+const ROW_STATUS_LABEL_KEYS = {
+  pending: "extensionRow.pending",
+  in_progress: "extensionRow.in_progress",
+  done: "extensionRow.done",
+  blocked: "extensionRow.blocked",
+} as const satisfies Readonly<Record<ExtensionCardRowStatus, string>>;
+
+/**
+ * A bar and a percentage for a card that reports `progress`. A ring was tried first and dropped:
+ * at one row of text it is too small to read a fifth of a step out of, while a bar's width reads
+ * at a glance.
+ */
+function CardProgress({ value }: { readonly value: number }) {
+  const { t } = useTranslation();
+  const percent = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  return (
+    <div
+      className="extension-card__progress"
+      data-testid="extension-card-progress"
+      data-percent={percent}
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      aria-label={t("extensionCard.progress", { percent })}
+    >
+      <span className="extension-card__progress-track" aria-hidden="true">
+        <span className="extension-card__progress-fill" style={{ width: `${percent}%` }} />
+      </span>
+      <span className="extension-card__progress-value" aria-hidden="true">
+        {percent}%
+      </span>
+    </div>
+  );
+}
+
+/** Done draws a check; the other three are dots whose fill says which state they are in. */
+function RowStatusDot({ status }: { readonly status: ExtensionCardRowStatus }) {
+  return <span className="extension-card__status-dot" data-dot={status} aria-hidden="true" />;
+}
+
 export type RunExtensionAction = (action: ExtensionAction) => void;
 
 /**
@@ -63,12 +105,28 @@ export function ExtensionCardItem({
         {toneLabel ? <span className="extension-card__tone">{toneLabel}</span> : null}
         {controls}
       </header>
+      {card.progress !== undefined ? <CardProgress value={card.progress} /> : null}
       {!collapsed && board ? <AnsweredBoard board={board} /> : null}
       {hasBody ? (
         <ul className="turn-changes__files">
           {rows.map((row, index) => (
-            <li className="extension-card__row" key={`row:${index}`}>
-              <span className="extension-card__label">{row.label}</span>
+            <li
+              className="extension-card__row"
+              key={`row:${index}`}
+              data-row-status={row.status ?? ""}
+            >
+              {row.status ? (
+                <span
+                  className={`extension-card__status extension-card__status--${row.status}`}
+                  data-testid="extension-card-row-status"
+                  role="img"
+                  aria-label={t(ROW_STATUS_LABEL_KEYS[row.status])}
+                >
+                  {row.status === "done" ? <CheckIcon /> : <RowStatusDot status={row.status} />}
+                </span>
+              ) : (
+                <span className="extension-card__label">{row.label}</span>
+              )}
               <span className="extension-card__value">{row.value}</span>
             </li>
           ))}

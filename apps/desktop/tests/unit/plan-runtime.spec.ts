@@ -62,10 +62,11 @@ test("registers update_plan and writes a keyed pin the app reduces by key", asyn
   expect(payload.title).toBe("计划");
   expect(payload.subtitle).toBe("1/3 步完成");
   expect(payload.rows).toEqual([
-    { label: "1", value: "● Read the ledger" },
-    { label: "2", value: "◐ Split the modules" },
-    { label: "3", value: "○ Verify on desktop" },
+    { label: "●", value: "Read the ledger", status: "done" },
+    { label: "◐", value: "Split the modules", status: "in_progress" },
+    { label: "○", value: "Verify on desktop", status: "pending" },
   ]);
+  expect(payload.progress).toBeCloseTo(1 / 3);
   expect(result.details).toMatchObject({ action: "pi_gui_update_plan" });
 });
 
@@ -91,7 +92,7 @@ test("rewriting the same key replaces the earlier card instead of stacking", asy
     expect((entry.data as Record<string, unknown>).key).toBe(PLAN_PIN_KEY);
   }
   expect((entries[1]?.data as Record<string, unknown>).rows).toEqual([
-    { label: "1", value: "● One" },
+    { label: "●", value: "One", status: "done" },
   ]);
 });
 
@@ -125,8 +126,10 @@ test("builds one row per step with a status mark and a done counter", () => {
     { step: "B", status: "blocked" },
   ]);
   expect(payload.rows).toEqual([
-    { label: "1", value: "● A" },
-    { label: "2", value: "✕ B" },
+    { label: "●", value: "A", status: "done" },
+    { label: "✕", value: "B", status: "blocked" },
   ]);
   expect(payload.subtitle).toBe("1/2 步完成");
+  // A blocked step is stopped, not advanced: only the done one counts.
+  expect(payload.progress).toBe(0.5);
 });

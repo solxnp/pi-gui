@@ -1342,6 +1342,93 @@
   color: var(--ink);
 }
 
+/* A row that reports a state leads with its icon, so the label column (the step number) is gone. */
+.extension-card__row[data-row-status]:not([data-row-status=""]) {
+  gap: 9px;
+}
+
+.extension-card__status {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  align-self: center;
+  color: var(--muted);
+}
+
+.extension-card__status--done {
+  color: var(--success);
+}
+
+.extension-card__status--blocked {
+  color: var(--error);
+}
+
+.extension-card__status--in_progress {
+  color: var(--accent-strong, var(--accent));
+}
+
+.extension-card__status .icon,
+.extension-card__status svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Pending is a hairline ring, in progress a half-filled dot, blocked a solid dot in red. */
+.extension-card__status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  display: block;
+}
+
+.extension-card__status-dot[data-dot="in_progress"] {
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+}
+
+.extension-card__status-dot[data-dot="blocked"] {
+  background: currentColor;
+}
+
+.extension-card__status-dot[data-dot="pending"] {
+  opacity: 0.55;
+}
+
+.extension-card__progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px 10px;
+}
+
+.extension-card__progress-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-muted);
+  overflow: hidden;
+}
+
+.extension-card__progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent-strong, var(--accent));
+  transition: width 220ms ease;
+}
+
+.extension-card__progress-value {
+  flex-shrink: 0;
+  min-width: 34px;
+  text-align: right;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-soft);
+}
+
 .extension-card__label {
   flex-shrink: 0;
   min-width: 72px;

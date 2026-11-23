@@ -41,6 +41,11 @@ export const en = {
   "extensionForm.other": "Other — write my own",
   "extensionForm.otherBadge": "Custom",
   "extensionForm.otherPlaceholder": "Type your answer",
+  "extensionRow.pending": "Pending",
+  "extensionRow.in_progress": "In progress",
+  "extensionRow.done": "Done",
+  "extensionRow.blocked": "Blocked",
+  "extensionCard.progress": "Progress {percent}%",
   "ui.configureAnOpenAICompatibleServerTheEndpointAndAPIKeyAreStored":
     "Configure an OpenAI-compatible server. The endpoint and API key are stored in plaintext at",
   "ui.providerID": "Provider ID",
