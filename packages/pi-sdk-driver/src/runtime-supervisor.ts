@@ -29,6 +29,7 @@ import type {
   RuntimeSnapshot,
 } from "@pi-gui/session-driver/runtime-types";
 import type { WorkspaceRef } from "@pi-gui/session-driver";
+import type { WorkspaceModelContext } from "./thread-title-generator.js";
 import { createRuntimeDependencies } from "./runtime-deps.js";
 import {
   createSettingsManagerWithoutNpmPackages,
@@ -152,6 +153,28 @@ export class RuntimeSupervisor implements RuntimeResourceDriver {
   async getRuntimeSnapshot(workspace: WorkspaceRef): Promise<RuntimeSnapshot> {
     const context = await this.ensureContext(workspace);
     return this.buildSnapshot(context);
+  }
+
+  /**
+   * Models and defaults the auto thread-title prompt runs on.
+   *
+   * The workspace's own runtime, not a freshly built one: extension-registered providers (a
+   * router, a custom endpoint) only exist there, and a title request that cannot resolve the
+   * user's default model falls back to some other provider's model — which then fails on quota
+   * or auth and leaves the thread titled "New thread".
+   */
+  async getThreadTitleModelContext(
+    workspace: WorkspaceRef,
+  ): Promise<WorkspaceModelContext | undefined> {
+    const context = await this.ensureContext(workspace);
+    await context.settingsManager.reload();
+    const defaultProvider = context.settingsManager.getDefaultProvider();
+    const defaultModelId = context.settingsManager.getDefaultModel();
+    return {
+      modelRuntime: context.modelRuntime,
+      ...(defaultProvider ? { defaultProvider } : {}),
+      ...(defaultModelId ? { defaultModelId } : {}),
+    };
   }
 
   async refreshRuntime(workspace: WorkspaceRef): Promise<RuntimeSnapshot> {

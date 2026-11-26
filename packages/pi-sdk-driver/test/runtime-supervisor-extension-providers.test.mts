@@ -339,3 +339,33 @@ await test("extension providers survive a runtime refresh", async () => {
     "extension-registered provider should still be listed after refreshRuntime",
   );
 });
+
+await test("the title prompt context resolves extension providers and the real default", async () => {
+  // Regression ("every new thread says New thread"): auto-title built its own runtime, so the
+  // default model — one an extension registers, e.g. a router — did not resolve there and the
+  // prompt silently went to a different provider that then failed. The context handed to the
+  // title generator must be the workspace's own runtime and its real settings defaults.
+  const { agentDir, workspacePath } = await createAgentDir();
+  await writeFile(
+    join(agentDir, "settings.json"),
+    JSON.stringify({
+      packages: [],
+      defaultProvider: EXTENSION_PROVIDER,
+      defaultModel: EXTENSION_MODEL,
+    }),
+  );
+  const supervisor = createSupervisor(agentDir);
+  const workspace = { workspaceId: "workspace-1", path: workspacePath };
+
+  const context = await supervisor.getThreadTitleModelContext(workspace);
+  assert.ok(context, "a title context should be available");
+  assert.equal(context.defaultProvider, EXTENSION_PROVIDER);
+  assert.equal(context.defaultModelId, EXTENSION_MODEL);
+  assert.ok(
+    context.modelRuntime.getModel(EXTENSION_PROVIDER, EXTENSION_MODEL),
+    "the extension-registered default model must resolve on the title context",
+  );
+  // And the same runtime cannot be produced without the extension, which is what made the
+  // bug invisible: a plain runtime lists neither the provider nor its model.
+  assert.equal(context.modelRuntime.getModel(EXTENSION_PROVIDER, "missing-model"), undefined);
+});

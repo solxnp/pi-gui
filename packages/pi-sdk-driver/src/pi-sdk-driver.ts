@@ -31,7 +31,11 @@ import {
 } from "./session-supervisor.js";
 import { RuntimeSupervisor, type RuntimeSupervisorOptions } from "./runtime-supervisor.js";
 import { createRuntimeDependencies } from "./runtime-deps.js";
-import { generateThreadTitle, type GenerateThreadTitleOptions } from "./thread-title-generator.js";
+import {
+  generateThreadTitle,
+  type GenerateThreadTitleOptions,
+  type ThreadTitleGeneratorDeps,
+} from "./thread-title-generator.js";
 
 export interface PiSdkDriverConfig extends PiSdkDriverOptions, RuntimeSupervisorOptions {}
 
@@ -200,14 +204,23 @@ export class PiSdkDriver implements SessionDriver {
         (override) =>
           override !== undefined
             ? override
-            : generateThreadTitle(workspace, options, {
-                agentDir: this.agentDir,
-              }),
+            : generateThreadTitle(workspace, options, this.threadTitleDeps()),
       );
     }
-    return generateThreadTitle(workspace, options, {
+    return generateThreadTitle(workspace, options, this.threadTitleDeps());
+  }
+
+  /**
+   * Title generation normally runs off the workspace's runtime supervisor so its extension
+   * providers (routers, custom endpoints) are visible and the real default model applies.
+   * Load failures are the generator's problem, not the caller's.
+   */
+  private threadTitleDeps(): ThreadTitleGeneratorDeps {
+    return {
       agentDir: this.agentDir,
-    });
+      loadWorkspaceModelContext: (workspace) =>
+        this.runtimeSupervisor.getThreadTitleModelContext(workspace),
+    };
   }
 }
 
