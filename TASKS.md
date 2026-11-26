@@ -300,6 +300,24 @@
 - [ ] 唤醒通道：目前只能走 `sendUserMessage`（driver 仅暴露这一个入口，见 `packages/session-driver/src/types.ts:484`），所以通知会落在用户对话里。要彻底不进用户对话，需要给 driver 增加「注入带标记的编排消息」能力，并让 UI 单独渲染（不混进 user 气泡）
 - [ ] 若做第 2 条，同步补：消息角色/来源标记、时间线渲染、两个语言包文案、违反「用户对话只属于用户和父会话」的回归用例
 
+### P0-25 新建对话一直停在 New thread（标题生成用错模型）
+
+| 项   | 内容 |
+| ---- | ---- |
+| 状态 | 待验证 |
+| 提交 | `9bcdf06` |
+| 验收 | ① 新建对话（含默认模型是扩展注册的 provider / 虚拟路由模型）几秒内得到真实标题，不再停在 `New thread`；② 标题请求失败（额度用尽、provider 报错）时退化成用户首句，而不是永久占位 |
+
+- [x] 定位：标题生成器自建裸 `ModelRuntime`（不加载扩展）+ 空 `SettingsManager.inMemory()`，默认模型解析不到 → 退回运行时默认 `opencode-go/kimi-k3` → 该订阅本月额度用尽 429 → 标题为空
+- [x] 改为用 workspace 自己的运行时与真实默认模型（`RuntimeSupervisor.getThreadTitleModelContext`）
+- [x] 虚拟路由模型（`commandcode/auto`）在一次性命中会话里无法路由，改为降级到同 provider 的物理模型
+- [x] 生成失败 / 无可用模型时退化为用户首句（`fallbackThreadTitle`），不再留占位
+- [x] 驱动单测 229 条全绿（新增 8 条：默认模型生效、失败退化、虚拟模型降级、首句压缩）
+- [x] core 新增 `new-thread-auto-title-provider.spec.ts`（扩展注册的默认 provider 必须收到标题请求）—— 已确认改动前红、改动后绿
+- [x] live 新增 `new-thread-title.spec.ts`，真实 provider 实测出标题
+- [x] 用户 2026-11-26 明确「不需要评审，直接发」（跳过 §8/§14 评审卡点，此处记录在案）
+- [ ] 推送（origin 是 solxnp/pi-gui，可推）
+
 ## 二、已完成
 
 ### P0-21 输入框与空对话状态的文案中文化
