@@ -304,7 +304,7 @@
 
 | 项   | 内容 |
 | ---- | ---- |
-| 状态 | 待验证 |
+| 状态 | 已完成 |
 | 提交 | `9bcdf06` |
 | 验收 | ① 新建对话（含默认模型是扩展注册的 provider / 虚拟路由模型）几秒内得到真实标题，不再停在 `New thread`；② 标题请求失败（额度用尽、provider 报错）时退化成用户首句，而不是永久占位 |
 
@@ -316,7 +316,7 @@
 - [x] core 新增 `new-thread-auto-title-provider.spec.ts`（扩展注册的默认 provider 必须收到标题请求）—— 已确认改动前红、改动后绿
 - [x] live 新增 `new-thread-title.spec.ts`，真实 provider 实测出标题
 - [x] 用户 2026-11-26 明确「不需要评审，直接发」（跳过 §8/§14 评审卡点，此处记录在案）
-- [ ] 推送（origin 是 solxnp/pi-gui，可推）
+- [x] 已推送 `30944e9`（origin = solxnp/pi-gui）
 
 ## 二、已完成
 
