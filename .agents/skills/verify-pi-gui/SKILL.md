@@ -19,7 +19,7 @@ PI_GUI_MODEL=gpt-5.6-luna \
 .agents/skills/verify-pi-gui/scripts/prove.sh
 ```
 
-Use a provider/model actually configured for this user; those example values are not a guarantee of usable authentication. The explicit environment opts into real requests and usage. Missing configuration exits 2 before build; invalid credentials fail the run. Never silently skip core proof or substitute fake auth. Custom endpoints that require `models.json` are not supported by this initial recipe; use a configured built-in provider or extend the credential/config setup deliberately.
+Use a provider/model actually configured for this user; those example values are not a guarantee of usable authentication. On this machine `pi --list-models` reports only `commandcode` and `opencode-go`, so the working invocation is e.g. `PI_GUI_PROVIDER=opencode-go PI_GUI_MODEL=deepseek-v4.1-flash` — copy those values from that command rather than the upstream examples. The explicit environment opts into real requests and usage. Missing configuration exits 2 before build; invalid credentials fail the run. Never silently skip core proof or substitute fake auth. Custom endpoints that require `models.json` are not supported by this initial recipe; use a configured built-in provider or extend the credential/config setup deliberately.
 
 For the remaining mapped surfaces after the default conversation proof, use the same real-auth environment:
 
@@ -69,7 +69,7 @@ For product changes, use `apps/desktop/tests/AGENTS.md` and the current package 
 
 ## Evidence
 
-The helper prints the evidence directory. Conversation runs retain doctor JSON, screenshots and ARIA at each checkpoint, timestamped assistant streaming samples, scroll frame intervals, synthetic composer input/pre-close values, action traces, tool output file, Stop timing and cancellation evidence in `stop-proof.json`, build/run logs, exit code, progress/result JSON, and cleanup records. These recipes do not request Playwright Electron `recordVideo`. For a UI change verified in a Claude cloud session, record the whole display with the `record-screen` skill: start it just before `prove.sh` and stop it after, then attach the MP4 to the result. `prove.sh` does not record video itself. Inspect assistant-only content so a prompt containing the expected answer cannot make the test pass. Streaming requires observed growth during a run; a completed answer alone is insufficient. Persistence requires a second process using the same profile. Tool proof needs both visible output and the file side effect.
+The helper prints the evidence directory. Conversation runs retain doctor JSON, screenshots and ARIA at each checkpoint, timestamped assistant streaming samples, scroll frame intervals, synthetic composer input/pre-close values, action traces, tool output file, Stop timing and cancellation evidence in `stop-proof.json`, build/run logs, exit code, progress/result JSON, and cleanup records. These recipes do not request Playwright Electron `recordVideo`. `prove.sh` does not record video itself; when a recording is required, screen-record the run externally and attach the video to the result. Inspect assistant-only content so a prompt containing the expected answer cannot make the test pass. Streaming requires observed growth during a run; a completed answer alone is insufficient. Persistence requires a second process using the same profile. Tool proof needs both visible output and the file side effect.
 
 Open the actual `conversation.zip` or `restart.zip` from the printed directory with `pnpm exec playwright show-trace`. The settings smoke instead uses `change.zip` and `restart.zip`. Maintenance uses `surfaces.zip` and `follow-ups.zip`. Inspect screenshots and traces as well as assertions. Keep credentials outside artifacts shared with reviewers; trace source includes test code and prompts, so use synthetic prompts only.
 
@@ -89,4 +89,4 @@ Root `AGENTS.md` prohibits deleting temporary artifacts without approval. Retain
 - `scripts/proof.spec.ts`: secondary no-provider UI smoke.
 - `scripts/playwright.config.ts`: inherits repo defaults, selects these recipes, disables retries.
 
-Use `$maintain-verification-skill` to keep the map and live recipes aligned with the app.
+When the app gains a user-flow surface, update `features/README.md` and the matching recipe in the same change; there is no separate maintenance command in this repo.
